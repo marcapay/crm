@@ -1,40 +1,40 @@
-# CRM Análise Contabilidade
+# Template Base de CRM (React + Vite)
 
-Sistema de CRM e Gestão Contábil responsivo, desenvolvido em React + Vite.
-
-## 🚀 Como Executar o Projeto Localmente
-
-1. Instale as dependências:
-   ```bash
-   npm install
-   ```
-2. Execute o servidor de desenvolvimento:
-   ```bash
-   npm run dev
-   ```
+Este é um projeto base de CRM personalizável e pronto para duplicação rápida para novos clientes.
 
 ---
 
-## ☁️ Deploy e Hospedagem (Vercel)
+## ⚡ Como Duplicar para um Novo Cliente
 
-O projeto está hospedado na Vercel sob o domínio principal:
-👉 **[crmanalisecontabilidade.vercel.app](https://crmanalisecontabilidade.vercel.app)**
+Siga os passos abaixo para implantar uma nova instância do CRM para um cliente:
 
-### ⚠️ Regra Crítica para Evitar Quedas de Servidor (403 Forbidden)
+### 1. Duplicar a Pasta
+Copie a pasta inteira do projeto base para um novo diretório com o nome do seu cliente (ex: `CRM-cliente-x`).
 
-Para garantir que o site nunca mais saia do ar com erro de roteamento/WAF:
-1. **Nome do Projeto no Vercel**: O nome do projeto na Vercel deve permanecer estritamente como `crmanalisecontabilidade`.
-2. **Configuração de Link Local**: O arquivo `.vercel/project.json` deve sempre apontar para este projeto:
-   ```json
-   {
-     "projectId": "prj_220e2Zy5N2A8nd2Zyfcc3banRXkP",
-     "orgId": "team_YpwOsHCCiGEX7z3sD44ry5q4",
-     "projectName": "crmanalisecontabilidade"
-   }
-   ```
-3. **Comando de Deploy Otimizado**: Sempre faça deploy utilizando o comando simplificado que garante o empacotamento correto e a associação automática com o domínio oficial:
+### 2. Configurar o Arquivo `.env`
+No novo diretório, copie o arquivo `.env.example` para `.env`:
+```bash
+cp .env.example .env
+```
+Abra o arquivo `.env` e personalize as seguintes configurações:
+- **`VITE_CLIENT_NAME`**: O nome da empresa do cliente (aparecerá em destaque na logo).
+- **`VITE_CLIENT_SUBTITLE`**: O subtítulo/ramo de atuação do cliente.
+- **`KV_BUCKET_ID`**: **Importante!** Altere este ID para qualquer sequência de caracteres única (ex: gere um hash aleatório ou use o nome do cliente sem espaços). Isso isolará o banco de dados de usuários deste cliente dos outros.
+- **`VITE_DEFAULT_ADMIN_NAME`** e **`VITE_DEFAULT_ADMIN_EMAIL`**: Dados do administrador inicial.
+
+### 3. Instalar e Executar Localmente
+Para testar e rodar o projeto localmente:
+```bash
+npm install
+npm run dev
+```
+
+### 4. Deploy no Vercel (Nova Instância)
+Se for publicar o projeto na Vercel para o novo cliente:
+1. Remova a pasta `.vercel` da nova pasta clonada (se existir) para evitar herdar as credenciais do projeto base.
+2. Inicialize o novo projeto rodando:
    ```bash
-   npm run deploy
+   npx vercel
    ```
-
-*(Isso evita a criação de domínios temporários sem correspondência direta e previne o acionamento de bloqueios automáticos do firewall da Vercel).*
+3. Siga as instruções do terminal para criar um **novo projeto** na Vercel associado à sua conta.
+4. Adicione as variáveis de ambiente configuradas no `.env` nas configurações do projeto da Vercel (Dashboard -> Settings -> Environment Variables) para que os deploys de produção também utilizem as informações do cliente.

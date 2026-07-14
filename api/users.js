@@ -1,5 +1,5 @@
 // Serverless endpoint to manage system users globally across all devices
-const BUCKET_ID = "7jm21b72";
+const BUCKET_ID = process.env.KV_BUCKET_ID || "7jm21b72";
 
 const defaultUsers = [
   { id: 'default_u2', name: 'Miguel Suporte', email: 'mqssolucao@gmail.com', role: 'Administrador', status: 'Ativo', password: 'admin' },

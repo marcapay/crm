@@ -7,6 +7,20 @@ export default function ClientLogo({ height = 36, showSubtitles = true, theme = 
   const slateGrayColor = '#596a7d'; // Medium slate from logo
   const darkSlateColor = '#1b2938'; // Dark slate from logo
 
+  const clientName = import.meta.env.VITE_CLIENT_NAME || 'ANÁLISE';
+  const clientSubtitle = import.meta.env.VITE_CLIENT_SUBTITLE || 'Contabilidade & Consultoria';
+
+  const formatTitle = (name) => {
+    if (name === 'ANÁLISE' || name === 'ANÁLI$E') {
+      return (
+        <>
+          ANÁLI<span style={{ color: arrowColor }}>$</span>E
+        </>
+      );
+    }
+    return name;
+  };
+
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', userSelect: 'none' }}>
       {/* SVG Icon of the ascending bars and orange arrow */}
@@ -65,7 +79,7 @@ export default function ClientLogo({ height = 36, showSubtitles = true, theme = 
             display: 'flex',
             alignItems: 'center'
           }}>
-            ANÁLI<span style={{ color: arrowColor }}>$</span>E
+            {formatTitle(clientName)}
           </div>
           <div style={{ 
             fontFamily: 'Inter, sans-serif', 
@@ -77,7 +91,7 @@ export default function ClientLogo({ height = 36, showSubtitles = true, theme = 
             marginTop: '1px',
             whiteSpace: 'nowrap'
           }}>
-            Contabilidade & Consultoria
+            {clientSubtitle}
           </div>
         </div>
       )}
