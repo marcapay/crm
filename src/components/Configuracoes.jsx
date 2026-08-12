@@ -1216,7 +1216,7 @@ Seu cadastro foi realizado com sucesso e seu acesso ao sistema *${clientName}* e
                               </div>
                               
                               {/* Action buttons */}
-                              <div className="wa-action-buttons-row" style={styles.waActionButtonsRow}>
+                              <div className="wa-action-buttons-row" style={{ ...styles.waActionButtonsRow, flexWrap: 'wrap' }}>
                                 <button 
                                   type="button" 
                                   onClick={() => handleConnectWhatsApp(inst.instanceName)}
@@ -1232,44 +1232,36 @@ Seu cadastro foi realizado com sucesso e seu acesso ao sistema *${clientName}* e
                                   <span>{inst.status === 'ONLINE' ? 'WHATSAPP CONECTADO' : 'CONECTAR / GERAR QR'}</span>
                                 </button>
                                 
-                                {inst.status !== 'ONLINE' ? (
+                                {inst.status === 'ONLINE' ? (
                                   <button 
                                     type="button" 
                                     onClick={() => handleDisconnectWhatsApp(inst.instanceName)}
-                                    className="btn btn-danger"
-                                    style={styles.waDisconnectBtn}
-                                    disabled={waLoading}
-                                    title="Limpar e recriar instância do zero"
-                                  >
-                                    <Trash2 size={16} />
-                                    <span>RESTAURAR / RESETAR</span>
-                                  </button>
-                                ) : (
-                                  <button 
-                                    type="button" 
-                                    onClick={() => handleDisconnectWhatsApp(inst.instanceName)}
-                                    className="btn btn-danger"
-                                    style={styles.waDisconnectBtn}
+                                    className="btn btn-secondary"
+                                    style={{ padding: '0.625rem 1rem', fontSize: '0.75rem', fontWeight: '600' }}
                                     disabled={waLoading}
                                   >
-                                    <Trash2 size={16} />
+                                    <LogOut size={16} />
                                     <span>DESCONECTAR</span>
                                   </button>
-                                )}
-                              </div>
+                                ) : null}
 
-                              {inst.id !== 'inst_primary' && (
-                                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.75rem' }}>
-                                  <button
-                                    type="button"
-                                    onClick={() => removeWaInstance(inst.id)}
-                                    style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}
-                                    title="Remover Instância"
-                                  >
-                                    <Trash2 size={13} /> Remover Instância
-                                  </button>
-                                </div>
-                              )}
+                                <button 
+                                  type="button" 
+                                  onClick={() => {
+                                    if (confirm(`Deseja realmente EXCLUIR a instância "${inst.name}"?`)) {
+                                      handleDisconnectWhatsApp(inst.instanceName);
+                                      removeWaInstance(inst.id);
+                                    }
+                                  }}
+                                  className="btn btn-danger"
+                                  style={styles.waDisconnectBtn}
+                                  disabled={waLoading}
+                                  title="Excluir totalmente esta instância de WhatsApp do sistema"
+                                >
+                                  <Trash2 size={16} />
+                                  <span>EXCLUIR INSTÂNCIA</span>
+                                </button>
+                              </div>
                             </div>
                             
                             {/* Right Side: QR Code Container */}
