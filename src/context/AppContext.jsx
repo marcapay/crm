@@ -406,19 +406,19 @@ export const AppProvider = ({ children }) => {
   // Multi-Instance WhatsApp Configuration State
   const [waInstances, setWaInstances] = useState(() => {
     const saved = localStorage.getItem('crmbase_wa_instances');
+    if (saved !== null) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      } catch (e) {}
+    }
     const defaultInst = {
       id: 'inst_primary',
       name: import.meta.env.VITE_EVO_INSTANCE_NAME || import.meta.env.VITE_CLIENT_NAME || 'CRM Base (Principal)',
       instanceName: import.meta.env.VITE_EVO_INSTANCE_NAME || import.meta.env.VITE_CLIENT_NAME || 'CRM Base',
       number: '',
-      status: 'ONLINE'
+      status: 'DISCONNECTED'
     };
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      } catch (e) {}
-    }
     return [defaultInst];
   });
 
