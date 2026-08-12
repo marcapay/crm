@@ -27,10 +27,10 @@ import {
   Maximize2,
   Minimize2,
   ZoomIn,
-  ZoomOut,
   Copy,
   CopyCheck,
-  Plus
+  Plus,
+  LogOut
 } from 'lucide-react';
 
 const clientName = import.meta.env.VITE_CLIENT_NAME || 'CRM Base';
