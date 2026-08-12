@@ -1060,6 +1060,22 @@ Seu cadastro foi realizado com sucesso e seu acesso ao sistema *${clientName}* e
         </div>
 
         <div style={styles.headerActions}>
+          <button
+            type="button"
+            onClick={() => {
+              if (confirm("⚠️ Deseja restaurar o CRM para o modelo limpo inicial?\n\nIsso removerá todas as instâncias do WhatsApp, conversas locais, mensagens salvas e dados de teste armazenados no navegador.")) {
+                localStorage.clear();
+                window.location.reload();
+              }
+            }}
+            className="btn btn-secondary"
+            style={{ borderColor: 'var(--accent-danger)', color: 'var(--accent-danger)', gap: '0.375rem', fontSize: '0.8125rem' }}
+            title="Limpar todos os dados armazenados no navegador para testar o template 100% limpo"
+          >
+            <Trash2 size={14} />
+            <span>Resetar Dados Locais</span>
+          </button>
+
           <div className={`badge ${waStatus === 'ONLINE' ? 'badge-success' : 'badge-danger'}`} style={waStatus === 'ONLINE' ? styles.diagBadge : styles.diagBadgeOffline}>
             {waStatus === 'ONLINE' ? (
               <RefreshCw size={12} className="animate-pulse-glow" style={{ marginRight: '4px' }} />
