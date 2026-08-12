@@ -63,6 +63,25 @@ export const AppProvider = ({ children }) => {
   // Initialize and normalize pipelines and columns in localStorage on mount
   useEffect(() => {
     try {
+      // Automatically purge any unwanted generated pipelines/columns from browser localStorage
+      const savedPipes = localStorage.getItem('crmbase_pipelines');
+      if (savedPipes) {
+        const parsedPipes = safeJsonParse(savedPipes, []);
+        const filteredPipes = parsedPipes.filter(p => p.id !== 'atendimento' && p.id !== 'negociacao' && p.id !== 'vendas');
+        if (filteredPipes.length !== parsedPipes.length || filteredPipes.length === 0) {
+          localStorage.removeItem('crmbase_pipelines');
+        }
+      }
+
+      const savedCols = localStorage.getItem('crmbase_columns');
+      if (savedCols) {
+        const parsedCols = safeJsonParse(savedCols, []);
+        const filteredCols = parsedCols.filter(c => c.pipelineId !== 'atendimento' && c.pipelineId !== 'negociacao' && c.pipelineId !== 'vendas');
+        if (filteredCols.length !== parsedCols.length || filteredCols.length === 0) {
+          localStorage.removeItem('crmbase_columns');
+        }
+      }
+
       // 1. Initialize pipelines if not present
       if (!localStorage.getItem('crmbase_pipelines')) {
         const initialPipes = [
@@ -72,23 +91,6 @@ export const AppProvider = ({ children }) => {
           { id: 'administrativo', name: 'Administrativo' }
         ];
         localStorage.setItem('crmbase_pipelines', JSON.stringify(initialPipes));
-      } else {
-        // Normalize names if already present
-        const saved = localStorage.getItem('crmbase_pipelines');
-        const parsed = safeJsonParse(saved, null);
-        if (parsed) {
-          let changed = false;
-          const updated = parsed.map(p => {
-            if (p.id === 'documentos_fiscais' && p.name !== 'Emissão de Documentos Fiscais') {
-              p.name = 'Emissão de Documentos Fiscais';
-              changed = true;
-            }
-            return p;
-          });
-          if (changed) {
-            localStorage.setItem('crmbase_pipelines', JSON.stringify(updated));
-          }
-        }
       }
 
       // 2. Initialize columns if not present
