@@ -422,6 +422,7 @@ export default function Configuracoes() {
   const [showApiKey, setShowApiKey] = useState(false);
   const [showModelSettings, setShowModelSettings] = useState(false);
   const [copiedInviteMsg, setCopiedInviteMsg] = useState(false);
+  const [testInput, setTestInput] = useState('');
 
   const USER_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4', '#f97316', '#14b8a6'];
 
