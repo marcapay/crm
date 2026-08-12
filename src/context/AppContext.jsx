@@ -2124,7 +2124,7 @@ export const AppProvider = ({ children }) => {
     const cleanPassword = password.trim();
 
     // 1. Check against active profile first
-    const activeEmail = (profile.email || 'mqssolucao@gmail.com').trim().toLowerCase();
+    const activeEmail = (profile.email || 'admin@admin.com').trim().toLowerCase();
     const activePassword = (profile.password || 'admin').trim();
     if (cleanEmail === activeEmail && cleanPassword === activePassword) {
       setIsAuthenticated(true);
