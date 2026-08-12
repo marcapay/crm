@@ -896,12 +896,7 @@ export default function Conversas() {
                         <div style={{ backgroundColor: 'rgba(0, 0, 0, 0.2)' }}>
                           {(() => {
                             const saved = localStorage.getItem('crmbase_pipelines');
-                            const pipelinesList = saved ? JSON.parse(saved) : [
-                              { id: 'pessoal', name: 'Pessoal' },
-                              { id: 'contabil_fiscal', name: 'Contábil/Fiscal' },
-                              { id: 'documentos_fiscais', name: 'Emissão de Documentos Fiscais' },
-                              { id: 'administrativo', name: 'Administrativo' }
-                            ];
+                            const pipelinesList = saved ? JSON.parse(saved) : [];
                             return pipelinesList.map((p) => {
                               const isCurrent = activeClient?.status?.trim().toLowerCase() === p.name.trim().toLowerCase();
                               return (

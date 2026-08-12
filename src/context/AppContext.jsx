@@ -60,63 +60,16 @@ export const AppProvider = ({ children }) => {
   const [activeChatClientId, setActiveChatClientId] = useState(null);
   const isSyncingRef = useRef(false);
 
-  // Initialize and normalize pipelines and columns in localStorage on mount
+  // Initialize pipelines and columns state (do not auto-create any pipeline or column)
   useEffect(() => {
     try {
-      // Automatically purge any unwanted generated pipelines/columns from browser localStorage
-      const savedPipes = localStorage.getItem('crmbase_pipelines');
-      if (savedPipes) {
-        const parsedPipes = safeJsonParse(savedPipes, []);
-        const filteredPipes = parsedPipes.filter(p => p.id !== 'atendimento' && p.id !== 'negociacao' && p.id !== 'vendas');
-        if (filteredPipes.length !== parsedPipes.length || filteredPipes.length === 0) {
-          localStorage.removeItem('crmbase_pipelines');
-        }
-      }
+      // Purge any stored pipelines or columns from browser localStorage to leave it 100% clean
+      localStorage.removeItem('crmbase_pipelines');
+      localStorage.removeItem('crmbase_columns');
+      localStorage.setItem('crmbase_pipelines', JSON.stringify([]));
+      localStorage.setItem('crmbase_columns', JSON.stringify([]));
 
-      const savedCols = localStorage.getItem('crmbase_columns');
-      if (savedCols) {
-        const parsedCols = safeJsonParse(savedCols, []);
-        const filteredCols = parsedCols.filter(c => c.pipelineId !== 'atendimento' && c.pipelineId !== 'negociacao' && c.pipelineId !== 'vendas');
-        if (filteredCols.length !== parsedCols.length || filteredCols.length === 0) {
-          localStorage.removeItem('crmbase_columns');
-        }
-      }
-
-      // 1. Initialize pipelines if not present
-      if (!localStorage.getItem('crmbase_pipelines')) {
-        const initialPipes = [
-          { id: 'pessoal', name: 'Pessoal' },
-          { id: 'contabil_fiscal', name: 'Contábil/Fiscal' },
-          { id: 'documentos_fiscais', name: 'Emissão de Documentos Fiscais' },
-          { id: 'administrativo', name: 'Administrativo' }
-        ];
-        localStorage.setItem('crmbase_pipelines', JSON.stringify(initialPipes));
-      }
-
-      // 2. Initialize columns if not present
-      if (!localStorage.getItem('crmbase_columns')) {
-        const initialCols = [
-          // Pessoal
-          { id: 'pessoal_a_fazer', pipelineId: 'pessoal', name: 'A Fazer', color: '#1fb5e4' },
-          { id: 'pessoal_em_andamento', pipelineId: 'pessoal', name: 'Em Andamento', color: '#f29b11' },
-          { id: 'pessoal_concluido', pipelineId: 'pessoal', name: 'Concluído', color: '#10b981' },
-          // Contábil/Fiscal
-          { id: 'contabil_a_fazer', pipelineId: 'contabil_fiscal', name: 'A Fazer', color: '#1fb5e4' },
-          { id: 'contabil_em_andamento', pipelineId: 'contabil_fiscal', name: 'Em Andamento', color: '#f29b11' },
-          { id: 'contabil_concluido', pipelineId: 'contabil_fiscal', name: 'Concluído', color: '#10b981' },
-          // Emissão de documentos fiscais
-          { id: 'documentos_a_fazer', pipelineId: 'documentos_fiscais', name: 'A Fazer', color: '#1fb5e4' },
-          { id: 'documentos_em_andamento', pipelineId: 'documentos_fiscais', name: 'Em Andamento', color: '#f29b11' },
-          { id: 'documentos_concluido', pipelineId: 'documentos_fiscais', name: 'Concluído', color: '#10b981' },
-          // Administrativo
-          { id: 'admin_a_fazer', pipelineId: 'administrativo', name: 'A Fazer', color: '#1fb5e4' },
-          { id: 'admin_em_andamento', pipelineId: 'administrativo', name: 'Em Andamento', color: '#f29b11' },
-          { id: 'admin_concluido', pipelineId: 'administrativo', name: 'Concluído', color: '#10b981' },
-        ];
-        localStorage.setItem('crmbase_columns', JSON.stringify(initialCols));
-      }
-
-      // 3. Clean up legacy welcome message with hardcoded options
+      // Clean up legacy welcome message with hardcoded options
       const oldWelcome1 = 'Olá, seja bem-vindo! Escolha seu atendimento:\n\n' +
         '1 - Suporte para Corretores e Parceiros\n' +
         '2 - Líder da Secretaria de Vendas\n' +
