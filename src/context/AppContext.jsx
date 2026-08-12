@@ -66,27 +66,50 @@ export const AppProvider = ({ children }) => {
       // 1. Initialize pipelines if not present
       if (!localStorage.getItem('crmbase_pipelines')) {
         const initialPipes = [
-          { id: 'atendimento', name: 'Atendimento Inicial' },
-          { id: 'negociacao', name: 'Em Negociação' },
-          { id: 'vendas', name: 'Vendas e Fechamento' }
+          { id: 'pessoal', name: 'Pessoal' },
+          { id: 'contabil_fiscal', name: 'Contábil/Fiscal' },
+          { id: 'documentos_fiscais', name: 'Emissão de Documentos Fiscais' },
+          { id: 'administrativo', name: 'Administrativo' }
         ];
         localStorage.setItem('crmbase_pipelines', JSON.stringify(initialPipes));
+      } else {
+        // Normalize names if already present
+        const saved = localStorage.getItem('crmbase_pipelines');
+        const parsed = safeJsonParse(saved, null);
+        if (parsed) {
+          let changed = false;
+          const updated = parsed.map(p => {
+            if (p.id === 'documentos_fiscais' && p.name !== 'Emissão de Documentos Fiscais') {
+              p.name = 'Emissão de Documentos Fiscais';
+              changed = true;
+            }
+            return p;
+          });
+          if (changed) {
+            localStorage.setItem('crmbase_pipelines', JSON.stringify(updated));
+          }
+        }
       }
 
       // 2. Initialize columns if not present
       if (!localStorage.getItem('crmbase_columns')) {
         const initialCols = [
-          // Atendimento Inicial
-          { id: 'atendimento_novos', pipelineId: 'atendimento', name: 'Novos Leads', color: '#1fb5e4' },
-          { id: 'atendimento_em_contato', pipelineId: 'atendimento', name: 'Em Contato', color: '#f29b11' },
-          { id: 'atendimento_qualificado', pipelineId: 'atendimento', name: 'Qualificado', color: '#10b981' },
-          // Em Negociação
-          { id: 'negociacao_proposta', pipelineId: 'negociacao', name: 'Proposta Enviada', color: '#1fb5e4' },
-          { id: 'negociacao_revisao', pipelineId: 'negociacao', name: 'Em Análise', color: '#f29b11' },
-          { id: 'negociacao_aceita', pipelineId: 'negociacao', name: 'Proposta Aceita', color: '#10b981' },
-          // Vendas e Fechamento
-          { id: 'vendas_contrato', pipelineId: 'vendas', name: 'Aguardando Contrato', color: '#1fb5e4' },
-          { id: 'vendas_assinado', pipelineId: 'vendas', name: 'Contrato Assinado', color: '#10b981' }
+          // Pessoal
+          { id: 'pessoal_a_fazer', pipelineId: 'pessoal', name: 'A Fazer', color: '#1fb5e4' },
+          { id: 'pessoal_em_andamento', pipelineId: 'pessoal', name: 'Em Andamento', color: '#f29b11' },
+          { id: 'pessoal_concluido', pipelineId: 'pessoal', name: 'Concluído', color: '#10b981' },
+          // Contábil/Fiscal
+          { id: 'contabil_a_fazer', pipelineId: 'contabil_fiscal', name: 'A Fazer', color: '#1fb5e4' },
+          { id: 'contabil_em_andamento', pipelineId: 'contabil_fiscal', name: 'Em Andamento', color: '#f29b11' },
+          { id: 'contabil_concluido', pipelineId: 'contabil_fiscal', name: 'Concluído', color: '#10b981' },
+          // Emissão de documentos fiscais
+          { id: 'documentos_a_fazer', pipelineId: 'documentos_fiscais', name: 'A Fazer', color: '#1fb5e4' },
+          { id: 'documentos_em_andamento', pipelineId: 'documentos_fiscais', name: 'Em Andamento', color: '#f29b11' },
+          { id: 'documentos_concluido', pipelineId: 'documentos_fiscais', name: 'Concluído', color: '#10b981' },
+          // Administrativo
+          { id: 'admin_a_fazer', pipelineId: 'administrativo', name: 'A Fazer', color: '#1fb5e4' },
+          { id: 'admin_em_andamento', pipelineId: 'administrativo', name: 'Em Andamento', color: '#f29b11' },
+          { id: 'admin_concluido', pipelineId: 'administrativo', name: 'Concluído', color: '#10b981' },
         ];
         localStorage.setItem('crmbase_columns', JSON.stringify(initialCols));
       }
