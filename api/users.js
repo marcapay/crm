@@ -1,11 +1,7 @@
 // Serverless endpoint to manage system users globally across all devices
-const BUCKET_ID = process.env.KV_BUCKET_ID || "7jm21b72";
+const BUCKET_ID = process.env.KV_BUCKET_ID || "crm_base_default";
 
-const defaultUsers = [
-  { id: 'default_u2', name: 'Miguel Suporte', email: 'mqssolucao@gmail.com', role: 'Administrador', status: 'Ativo', password: 'admin' },
-  { id: 'default_u3', name: 'Alexandre', email: 'atg.contador@gmail.com', role: 'Administrador', status: 'Ativo', password: 'admin' },
-  { id: 'default_u4', name: 'Miguel', email: 'miguelmr.business@gmail.com', role: 'Administrador', status: 'Ativo', password: 'admin' }
-];
+const defaultUsers = [];
 
 function encodeBase64Url(str) {
   return Buffer.from(str, 'utf-8').toString('base64')

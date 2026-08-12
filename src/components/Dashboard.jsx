@@ -25,14 +25,56 @@ export default function Dashboard() {
   const totalCards = kanbanCards.length;
   const totalChats = Object.keys(chats).length;
   const totalLinks = quickLinks.length;
-  
-  const closedDeals = kanbanCards.filter(c => c.column === 'fechado').length;
-  const proposalDeals = kanbanCards.filter(c => c.column === 'proposta').length;
-  const contactDeals = kanbanCards.filter(c => c.column === 'contato').length;
-  const leadDeals = kanbanCards.filter(c => c.column === 'lead').length;
-
-  // Calculate total messages
   const totalMessages = Object.values(chats).reduce((acc, curr) => acc + curr.length, 0);
+
+  // Generate dynamic chart data based on messages responded (sent by the user/agent) in each week
+  const chartPoints = React.useMemo(() => {
+    const nowSecs = Math.floor(Date.now() / 1000);
+    const ONE_WEEK_SECS = 7 * 24 * 60 * 60;
+    
+    let week1Count = 0;
+    let week2Count = 0;
+    let week3Count = 0;
+    let week4Count = 0;
+    
+    Object.values(chats).forEach((msgList) => {
+      msgList.forEach(msg => {
+        // Count only responded messages (sent by the system user)
+        if (msg.sender !== 'user') return;
+        
+        const msgTime = msg.timestamp; // in seconds
+        if (!msgTime) return;
+        const age = nowSecs - msgTime;
+        
+        if (age < ONE_WEEK_SECS) {
+          week4Count++;
+        } else if (age < 2 * ONE_WEEK_SECS) {
+          week3Count++;
+        } else if (age < 3 * ONE_WEEK_SECS) {
+          week2Count++;
+        } else if (age < 4 * ONE_WEEK_SECS) {
+          week1Count++;
+        }
+      });
+    });
+
+    // Map counts to SVG height (y coordinate: 190 is bottom, 40 is top)
+    // 0 messages = 190px (exactly on the white base line), 20+ messages = 40px.
+    const scaleY = (count) => {
+      const maxCount = 20;
+      const minVal = 190;
+      const maxVal = 40;
+      const ratio = Math.min(count / maxCount, 1);
+      return minVal - ratio * (minVal - maxVal);
+    };
+
+    return [
+      scaleY(week1Count),
+      scaleY(week2Count),
+      scaleY(week3Count),
+      scaleY(week4Count)
+    ];
+  }, [chats]);
 
   // Quick nav helper
   const navigateToChat = (clientId) => {
@@ -121,7 +163,7 @@ export default function Dashboard() {
           </div>
           <div style={styles.chartWrapper}>
             {/* Custom SVG Line Graph */}
-            <svg viewBox="0 0 1000 200" width="100%" height="100%" style={{ overflow: 'visible' }}>
+            <svg viewBox="0 0 1000 220" width="100%" height="100%" style={{ overflow: 'visible' }}>
               <defs>
                 <linearGradient id="line-grad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="var(--accent-primary)" stopOpacity="0.4" />
@@ -141,34 +183,36 @@ export default function Dashboard() {
 
               {/* Area under curve */}
               <path 
-                d="M 0 190 Q 150 160, 240 130 T 480 100 T 720 70 T 1000 40 L 1000 190 Z" 
+                d={`M 0 190 Q 150 ${chartPoints[0]}, 240 ${chartPoints[0]} T 480 ${chartPoints[1]} T 720 ${chartPoints[2]} T 1000 ${chartPoints[3]} L 1000 190 Z`} 
                 fill="url(#line-grad)" 
               />
               
               {/* Curve path */}
               <path 
-                d="M 0 190 Q 150 160, 240 130 T 480 100 T 720 70 T 1000 40" 
+                d={`M 0 190 Q 150 ${chartPoints[0]}, 240 ${chartPoints[0]} T 480 ${chartPoints[1]} T 720 ${chartPoints[2]} T 1000 ${chartPoints[3]}`} 
                 fill="none" 
                 stroke="url(#stroke-grad)" 
                 strokeWidth="3" 
               />
 
               {/* Glowing Dots */}
-              <circle cx="240" cy="130" r="5" fill="var(--accent-primary)" stroke="#ffffff" strokeWidth="1.5" />
-              <circle cx="480" cy="100" r="5" fill="var(--accent-secondary)" stroke="#ffffff" strokeWidth="1.5" />
-              <circle cx="720" cy="70" r="5" fill="var(--accent-cyan)" stroke="#ffffff" strokeWidth="1.5" />
-              <circle cx="1000" cy="40" r="5" fill="var(--accent-success)" stroke="#ffffff" strokeWidth="1.5" />
+              <circle cx="240" cy={chartPoints[0]} r="5" fill="var(--accent-primary)" stroke="#ffffff" strokeWidth="1.5" />
+              <circle cx="480" cy={chartPoints[1]} r="5" fill="var(--accent-secondary)" stroke="#ffffff" strokeWidth="1.5" />
+              <circle cx="720" cy={chartPoints[2]} r="5" fill="var(--accent-cyan)" stroke="#ffffff" strokeWidth="1.5" />
+              <circle cx="1000" cy={chartPoints[3]} r="5" fill="var(--accent-success)" stroke="#ffffff" strokeWidth="1.5" />
 
               {/* Text labels */}
-              <text x="240" y="155" fill="var(--text-secondary)" fontSize="10" textAnchor="middle">Semana 1</text>
-              <text x="480" y="155" fill="var(--text-secondary)" fontSize="10" textAnchor="middle">Semana 2</text>
-              <text x="720" y="155" fill="var(--text-secondary)" fontSize="10" textAnchor="middle">Semana 3</text>
-              <text x="990" y="155" fill="var(--text-secondary)" fontSize="10" textAnchor="end">Semana 4</text>
+              <text x="240" y="210" fill="var(--text-secondary)" fontSize="10" textAnchor="middle">Semana 1</text>
+              <text x="480" y="210" fill="var(--text-secondary)" fontSize="10" textAnchor="middle">Semana 2</text>
+              <text x="720" y="210" fill="var(--text-secondary)" fontSize="10" textAnchor="middle">Semana 3</text>
+              <text x="990" y="210" fill="var(--text-secondary)" fontSize="10" textAnchor="end">Semana 4</text>
             </svg>
           </div>
         </div>
 
       </div>
+
+      {/* Service History Table */}
 
       <div className="grid-cols-12" style={{ marginTop: '1.5rem' }}>
         {/* Recent Conversations shortcuts */}
@@ -190,7 +234,7 @@ export default function Dashboard() {
                 >
                   <div style={styles.convoLeft}>
                     <div style={styles.avatarMini}>
-                      {client.name.split(' ').map(n=>n[0]).join('')}
+                      {client.name ? client.name.split(' ').filter(Boolean).map(n=>n[0]).join('').slice(0, 2).toUpperCase() : '?'}
                     </div>
                     <div>
                       <div style={styles.convoName}>{client.name}</div>

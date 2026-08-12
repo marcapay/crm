@@ -12,13 +12,13 @@ const initialChats = {};
 const initialQuickLinks = [];
 
 const initialProfile = {
-  name: 'Miguel Suporte',
-  email: 'mqssolucao@gmail.com',
+  name: 'Admin User',
+  email: 'admin@admin.com',
   role: 'Administrador',
-  phone: '37998072208',
-  instagram: '@marcelomarques',
-  pix: 'marcelo@crmimoveis.com',
-  paymentAccount: 'Itaú, Ag 0000, Cc 00000-0',
+  phone: '',
+  instagram: '',
+  pix: '',
+  paymentAccount: '',
   avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=face',
   password: 'admin',
   notifications: true,
@@ -26,7 +26,16 @@ const initialProfile = {
   integrations: {
     whatsapp: true,
     webhook: false,
-    databaseSync: true,
+    databaseSync: true,  }
+};
+
+const safeJsonParse = (str, fallback) => {
+  try {
+    if (!str) return fallback;
+    return JSON.parse(str);
+  } catch (e) {
+    console.error("Failed to parse JSON from localStorage:", e);
+    return fallback;
   }
 };
 
@@ -43,6 +52,7 @@ export const AppProvider = ({ children }) => {
     return saved || 'dark';
   });
 
+
   // Current Active Module
   const [activeModule, setActiveModule] = useState('dashboard');
   
@@ -50,23 +60,54 @@ export const AppProvider = ({ children }) => {
   const [activeChatClientId, setActiveChatClientId] = useState(null);
   const isSyncingRef = useRef(false);
 
-  // Normalize pipeline names in localStorage on mount
+  // Initialize and normalize pipelines and columns in localStorage on mount
   useEffect(() => {
     try {
-      const saved = localStorage.getItem('analise_pipelines');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        let changed = false;
-        const updated = parsed.map(p => {
-          if (p.id === 'documentos_fiscais' && p.name !== 'Emissão de Documentos Fiscais') {
-            p.name = 'Emissão de Documentos Fiscais';
-            changed = true;
-          }
-          return p;
-        });
-        if (changed) {
-          localStorage.setItem('analise_pipelines', JSON.stringify(updated));
-        }
+      // 1. Initialize pipelines if not present
+      if (!localStorage.getItem('crmbase_pipelines')) {
+        const initialPipes = [
+          { id: 'atendimento', name: 'Atendimento Inicial' },
+          { id: 'negociacao', name: 'Em Negociação' },
+          { id: 'vendas', name: 'Vendas e Fechamento' }
+        ];
+        localStorage.setItem('crmbase_pipelines', JSON.stringify(initialPipes));
+      }
+
+      // 2. Initialize columns if not present
+      if (!localStorage.getItem('crmbase_columns')) {
+        const initialCols = [
+          // Atendimento Inicial
+          { id: 'atendimento_novos', pipelineId: 'atendimento', name: 'Novos Leads', color: '#1fb5e4' },
+          { id: 'atendimento_em_contato', pipelineId: 'atendimento', name: 'Em Contato', color: '#f29b11' },
+          { id: 'atendimento_qualificado', pipelineId: 'atendimento', name: 'Qualificado', color: '#10b981' },
+          // Em Negociação
+          { id: 'negociacao_proposta', pipelineId: 'negociacao', name: 'Proposta Enviada', color: '#1fb5e4' },
+          { id: 'negociacao_revisao', pipelineId: 'negociacao', name: 'Em Análise', color: '#f29b11' },
+          { id: 'negociacao_aceita', pipelineId: 'negociacao', name: 'Proposta Aceita', color: '#10b981' },
+          // Vendas e Fechamento
+          { id: 'vendas_contrato', pipelineId: 'vendas', name: 'Aguardando Contrato', color: '#1fb5e4' },
+          { id: 'vendas_assinado', pipelineId: 'vendas', name: 'Contrato Assinado', color: '#10b981' }
+        ];
+        localStorage.setItem('crmbase_columns', JSON.stringify(initialCols));
+      }
+
+      // 3. Clean up legacy welcome message with hardcoded options
+      const oldWelcome1 = 'Olá, seja bem-vindo! Escolha seu atendimento:\n\n' +
+        '1 - Suporte para Corretores e Parceiros\n' +
+        '2 - Líder da Secretaria de Vendas\n' +
+        '3 - Pagamentos de Corretores';
+      const oldWelcome2 = 'Olá, seja bem-vindo! Escolha seu atendimento:\n\n' +
+        '1 - Suporte para Corretores e Parceiros\n' +
+        '2 - Lider da Secretaria de Vendas\n' +
+        '3 - Pagamentos de Corretores';
+      const oldWelcome3 = 'Olá! Seja bem-vindo.\n\n' +
+        '1 - Suporte para Corretores e Parceiros\n' +
+        '2 - Líder da Secretaria de Vendas\n' +
+        '3 - Pagamentos de Corretores';
+
+      const currentWelcome = localStorage.getItem('crmbase_sdr_welcome');
+      if (!currentWelcome || currentWelcome === oldWelcome1 || currentWelcome === oldWelcome2 || currentWelcome === oldWelcome3) {
+        localStorage.setItem('crmbase_sdr_welcome', 'Olá, seja bem-vindo! Escolha seu atendimento:');
       }
     } catch (e) {}
   }, []);
@@ -74,7 +115,7 @@ export const AppProvider = ({ children }) => {
   // Core Data Lists
   const [clients, setRawClients] = useState(() => {
     const saved = localStorage.getItem('eloos_clients');
-    const list = saved ? JSON.parse(saved) : initialClients;
+    const list = safeJsonParse(saved, initialClients);
     
     // Ensure all clients have agent fields initialized
     const initialized = list.map(c => ({
@@ -101,7 +142,9 @@ export const AppProvider = ({ children }) => {
       if (!aIsLid && bIsLid) return -1;
       if (a.jid && !b.jid) return -1;
       if (!a.jid && b.jid) return 1;
-      return a.id.localeCompare(b.id);
+      const aId = a.id || '';
+      const bId = b.id || '';
+      return aId.localeCompare(bId);
     });
 
     sorted.forEach(c => {
@@ -131,6 +174,20 @@ export const AppProvider = ({ children }) => {
         unique.push(c);
       }
     });
+    const hasSimulator = unique.some(c => c.id === 'client_teste_agente');
+    if (!hasSimulator) {
+      unique.unshift({
+        id: 'client_teste_agente',
+        name: '🤖 Chat de Teste (Simulador)',
+        phone: '37900000000',
+        email: 'teste@agente.simulador',
+        status: 'Pessoal',
+        empreendimento: 'Todos',
+        situacaoComercial: 'Interessado',
+        createdAt: new Date().toISOString().split('T')[0],
+        isSimulator: true
+      });
+    }
     return unique;
   });
 
@@ -148,7 +205,9 @@ export const AppProvider = ({ children }) => {
         if (!aIsLid && bIsLid) return -1;
         if (a.jid && !b.jid) return -1;
         if (!a.jid && b.jid) return 1;
-        return a.id.localeCompare(b.id);
+        const aId = a.id || '';
+        const bId = b.id || '';
+        return aId.localeCompare(bId);
       });
 
       sorted.forEach(c => {
@@ -178,13 +237,27 @@ export const AppProvider = ({ children }) => {
           unique.push(c);
         }
       });
+      const hasSimulator = unique.some(c => c.id === 'client_teste_agente');
+      if (!hasSimulator) {
+        unique.unshift({
+          id: 'client_teste_agente',
+          name: '🤖 Chat de Teste (Simulador)',
+          phone: '37900000000',
+          email: 'teste@agente.simulador',
+          status: 'Pessoal',
+          empreendimento: 'Todos',
+          situacaoComercial: 'Interessado',
+          createdAt: new Date().toISOString().split('T')[0],
+          isSimulator: true
+        });
+      }
       return unique;
     });
   };
 
   const [kanbanCards, setKanbanCards] = useState(() => {
     const saved = localStorage.getItem('eloos_kanban');
-    let cards = saved ? JSON.parse(saved) : initialKanbanCards;
+    let cards = safeJsonParse(saved, initialKanbanCards);
     cards = cards.map(card => {
       if (card.column === 'pessoal') return { ...card, column: 'pessoal_a_fazer' };
       if (card.column === 'contabil_fiscal') return { ...card, column: 'contabil_a_fazer' };
@@ -208,65 +281,68 @@ export const AppProvider = ({ children }) => {
 
   const [chats, setChats] = useState(() => {
     const saved = localStorage.getItem('eloos_chats');
-    return saved ? JSON.parse(saved) : initialChats;
+    return safeJsonParse(saved, initialChats);
   });
 
   const [chatsClearedTimestamps, setChatsClearedTimestamps] = useState(() => {
     const saved = localStorage.getItem('eloos_chats_cleared_timestamps');
-    return saved ? JSON.parse(saved) : {};
+    return safeJsonParse(saved, {});
   });
 
   const [quickLinks, setQuickLinks] = useState(() => {
     const saved = localStorage.getItem('eloos_quicklinks');
     if (saved) {
-      const parsed = JSON.parse(saved);
-      // Clear legacy default quicklinks l1-l4
-      const containsDefault = parsed.some(link => ['l1', 'l2', 'l3', 'l4'].includes(link.id));
-      if (containsDefault) {
-        return [];
+      const parsed = safeJsonParse(saved, null);
+      if (parsed) {
+        // Clear legacy default quicklinks l1-l4
+        const containsDefault = parsed.some(link => ['l1', 'l2', 'l3', 'l4'].includes(link.id));
+        if (containsDefault) {
+          return [];
+        }
+        return parsed;
       }
-      return parsed;
+    }
+    return [];
+  });
+
+  const [quickReplies, setQuickReplies] = useState(() => {
+    const saved = localStorage.getItem('crmbase_quick_replies');
+    if (saved) {
+      const parsed = safeJsonParse(saved, null);
+      if (Array.isArray(parsed)) return parsed;
     }
     return [];
   });
 
   const [profile, setProfile] = useState(() => {
     const saved = localStorage.getItem('eloos_profile');
-    return saved ? JSON.parse(saved) : initialProfile;
+    return safeJsonParse(saved, initialProfile);
   });
 
   const [systemUsers, setSystemUsersState] = useState(() => {
-    const saved = localStorage.getItem('analise_system_users');
-    const defaultUsers = [
-      { id: 'default_u2', name: 'Miguel Suporte', email: 'mqssolucao@gmail.com', role: 'Administrador', status: 'Ativo', password: 'admin' },
-      { id: 'default_u3', name: 'Alexandre', email: 'atg.contador@gmail.com', role: 'Administrador', status: 'Ativo', password: 'admin' },
-      { id: 'default_u4', name: 'Miguel', email: 'miguelmr.business@gmail.com', role: 'Administrador', status: 'Ativo', password: 'admin' }
-    ];
-
+    const saved = localStorage.getItem('crmbase_system_users');
     if (saved) {
       try {
         let parsed = JSON.parse(saved);
-        // Filter out legacy mock IDs
-        parsed = parsed.filter(u => u.id !== 'u1' && u.id !== 'u3' && u.id !== 'u4');
-        
-        // Ensure all default users exist in the parsed list (merge by email)
-        defaultUsers.forEach(def => {
-          if (!parsed.some(u => (u.email || '').trim().toLowerCase() === def.email.trim().toLowerCase())) {
-            parsed.push(def);
-          }
-        });
+        // Filter out legacy default user accounts
+        parsed = parsed.filter(u => 
+          u.email !== 'mqssolucao@gmail.com' && 
+          u.email !== 'atg.contador@gmail.com' && 
+          u.email !== 'miguelmr.business@gmail.com' &&
+          u.id !== 'default_u2' && u.id !== 'default_u3' && u.id !== 'default_u4' && u.id !== 'u1' && u.id !== 'u3' && u.id !== 'u4'
+        );
         return parsed;
       } catch (e) {
         console.error("Error parsing system users", e);
       }
     }
-    return defaultUsers;
+    return [];
   });
 
   const setSystemUsers = (newUsersOrFn) => {
     setSystemUsersState(prev => {
       const next = typeof newUsersOrFn === 'function' ? newUsersOrFn(prev) : newUsersOrFn;
-      localStorage.setItem('analise_system_users', JSON.stringify(next));
+      localStorage.setItem('crmbase_system_users', JSON.stringify(next));
       fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -299,7 +375,7 @@ export const AppProvider = ({ children }) => {
 
   const [agentRules, setAgentRules] = useState(() => {
     const saved = localStorage.getItem('eloos_lead_agent_rules');
-    return saved ? JSON.parse(saved) : [
+    return safeJsonParse(saved, [
       {
         id: 'rule_1',
         name: 'Novo Lead → Contato Iniciado',
@@ -330,17 +406,17 @@ export const AppProvider = ({ children }) => {
         priority: 3,
         enabled: true
       }
-    ];
+    ]);
   });
 
   const [auditLogs, setAuditLogs] = useState(() => {
     const saved = localStorage.getItem('eloos_lead_agent_audit_logs');
-    return saved ? JSON.parse(saved) : [];
+    return safeJsonParse(saved, []);
   });
 
   const [aiSuggestions, setAiSuggestions] = useState(() => {
     const saved = localStorage.getItem('eloos_lead_agent_suggestions');
-    return saved ? JSON.parse(saved) : [];
+    return safeJsonParse(saved, []);
   });
 
   const [agentSchedule, setAgentSchedule] = useState(() => {
@@ -349,17 +425,92 @@ export const AppProvider = ({ children }) => {
 
   const [manualTriggerCount, setManualTriggerCount] = useState(0);
 
-  // Evolution API credentials configuration
+  // Multi-Instance WhatsApp Configuration State
+  const [waInstances, setWaInstances] = useState(() => {
+    const saved = localStorage.getItem('crmbase_wa_instances');
+    const defaultInst = {
+      id: 'inst_primary',
+      name: import.meta.env.VITE_EVO_INSTANCE_NAME || import.meta.env.VITE_CLIENT_NAME || 'CRM Base (Principal)',
+      instanceName: import.meta.env.VITE_EVO_INSTANCE_NAME || import.meta.env.VITE_CLIENT_NAME || 'CRM Base',
+      number: '',
+      status: 'ONLINE'
+    };
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {}
+    }
+    return [defaultInst];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('crmbase_wa_instances', JSON.stringify(waInstances));
+  }, [waInstances]);
+
+  // Selected WhatsApp Instance Filter for views ('all' or specific instanceName)
+  const [selectedInstanceFilter, setSelectedInstanceFilter] = useState(() => {
+    return localStorage.getItem('crmbase_selected_instance_filter') || 'all';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('crmbase_selected_instance_filter', selectedInstanceFilter);
+  }, [selectedInstanceFilter]);
+
+  const addWaInstance = (instanceName, customLabel = '') => {
+    if (!instanceName.trim()) return;
+    const cleanName = instanceName.trim();
+    const newInst = {
+      id: `inst_${Date.now()}`,
+      name: customLabel.trim() || cleanName,
+      instanceName: cleanName,
+      number: '',
+      status: 'DISCONNECTED'
+    };
+    setWaInstances(prev => {
+      if (prev.some(i => i.instanceName === cleanName)) return prev;
+      return [...prev, newInst];
+    });
+  };
+
+  const removeWaInstance = (instId) => {
+    setWaInstances(prev => prev.filter(i => i.id !== instId));
+    if (selectedInstanceFilter !== 'all') {
+      setSelectedInstanceFilter('all');
+    }
+  };
+
   const EVO_CONFIG = {
-    baseUrl: "https://api.marcasolucoes.com",
-    apiKey: "b49c63d8c361f2a13a28e56c3c3c19f9",
-    tenant: "ff3694a5-c576-4309-8805-3bb7a61d15c7",
-    encodedInstanceName: "An%C3%A1lise"
+    baseUrl: import.meta.env.VITE_EVO_BASE_URL || "",
+    apiKey: import.meta.env.VITE_EVO_API_KEY || "",
+    tenant: import.meta.env.VITE_EVO_TENANT || "",
+    instanceName: import.meta.env.VITE_EVO_INSTANCE_NAME || import.meta.env.VITE_CLIENT_NAME || 'CRM Base',
+    get encodedInstanceName() {
+      return encodeURIComponent(this.instanceName);
+    }
+  };
+
+  const fetchEvolution = async (path, options = {}) => {
+    try {
+      const res = await fetch(`/api/whatsapp?action=proxy`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          path,
+          method: options.method || 'GET',
+          body: options.body ? JSON.parse(options.body) : undefined
+        })
+      });
+      return res;
+    } catch (err) {
+      console.error(`Error proxying Evolution API: ${path}`, err);
+      throw err;
+    }
   };
 
   // WhatsApp Integration status state (shared globally)
   const [waStatus, setWaStatus] = useState(() => {
-    const saved = localStorage.getItem('analise_wa_status');
+    const saved = localStorage.getItem('crmbase_wa_status');
     return saved || 'DISCONNECTED';
   });
 
@@ -369,6 +520,8 @@ export const AppProvider = ({ children }) => {
 
   const waTriageSyncedRef = useRef(false);
   const waTriageSyncFinishedAtRef = useRef(0);
+  const lastSyncTimeRef = useRef(0);
+  const lastActiveChatIdRef = useRef(null);
 
   useEffect(() => {
     waTriageSyncedRef.current = waTriageSynced;
@@ -397,7 +550,7 @@ export const AppProvider = ({ children }) => {
       localStorage.removeItem('eloos_chats');
       localStorage.removeItem('eloos_kanban');
       localStorage.removeItem('eloos_chats_cleared_timestamps');
-      localStorage.removeItem('analise_unread_chats');
+      localStorage.removeItem('crmbase_unread_chats');
       
       // Reset active chat
       setActiveChatClientId(null);
@@ -406,12 +559,12 @@ export const AppProvider = ({ children }) => {
 
   // Unread chats tracking state (empty by default)
   const [unreadChats, setUnreadChats] = useState(() => {
-    const saved = localStorage.getItem('analise_unread_chats');
+    const saved = localStorage.getItem('crmbase_unread_chats');
     return saved ? JSON.parse(saved) : [];
   });
 
   useEffect(() => {
-    localStorage.setItem('analise_unread_chats', JSON.stringify(unreadChats));
+    localStorage.setItem('crmbase_unread_chats', JSON.stringify(unreadChats));
   }, [unreadChats]);
 
   // Keep a ref of activeChatClientId for async sync polling loop
@@ -419,9 +572,29 @@ export const AppProvider = ({ children }) => {
   useEffect(() => {
     activeChatClientIdRef.current = activeChatClientId;
     if (activeChatClientId) {
-      setUnreadChats(prev => prev.filter(id => id !== activeChatClientId));
+      const clientMessages = chats[activeChatClientId] || [];
+      const lastMsg = clientMessages[clientMessages.length - 1];
+      const clientObj = clientsRef.current.find(c => c.id === activeChatClientId);
+      
+      const phone = clientObj?.phone || '';
+      const suffix = phone.replace(/\D/g, '').slice(-8);
+
+      const msgTs = (clientObj && clientObj.lastMessageTimestamp) ? clientObj.lastMessageTimestamp : Math.floor(Date.now() / 1000);
+      const readTs = Math.max(msgTs, Math.floor(Date.now() / 1000));
+
+      localStorage.setItem(`crmbase_read_ts_${activeChatClientId}`, readTs.toString());
+      if (suffix) {
+        localStorage.setItem(`crmbase_read_ts_${suffix}`, readTs.toString());
+      }
+      
+      // Instantly remove from unread list
+      setUnreadChats(prev => {
+        const next = prev.filter(id => id !== activeChatClientId && (suffix ? id !== `c_wa_${suffix}` : true));
+        localStorage.setItem('crmbase_unread_chats', JSON.stringify(next));
+        return next;
+      });
     }
-  }, [activeChatClientId]);
+  }, [activeChatClientId, chats]);
 
   const logToDisk = (message, level = 'INFO') => {
     console.log(`[${level}] ${message}`);
@@ -440,12 +613,7 @@ export const AppProvider = ({ children }) => {
     const checkStatus = async () => {
       try {
         logToDisk("checkStatus: starting status check");
-        const res = await fetch(`${EVO_CONFIG.baseUrl}/instance/connectionState/${EVO_CONFIG.encodedInstanceName}`, {
-          headers: {
-            "apikey": EVO_CONFIG.apiKey,
-            "tenant": EVO_CONFIG.tenant
-          }
-        });
+        const res = await fetch(`/api/whatsapp?action=status&instance=${EVO_CONFIG.encodedInstanceName}`);
         logToDisk("checkStatus: response status=" + res.status + " ok=" + res.ok);
         if (res.ok && active) {
           const data = await res.json();
@@ -529,7 +697,7 @@ export const AppProvider = ({ children }) => {
 
   // Fires n8n triage webhook with selected pipeline info.
   const fireTriageWebhook = (client, pipeline, clientId) => {
-    const webhookUrl = localStorage.getItem('analise_ai_webhook_url') || '';
+    const webhookUrl = localStorage.getItem('crmbase_ai_webhook_url') || '';
     if (!webhookUrl) return;
     fetch(webhookUrl, {
       method: 'POST',
@@ -548,13 +716,22 @@ export const AppProvider = ({ children }) => {
 
   // Sends the local WhatsApp triage greeting menu directly from the CRM
   const triggerTriageGreetingLocal = (phone, jid = null) => {
+    const isSdrEnabled = localStorage.getItem('crmbase_sdr_enabled') === 'true';
+    if (!isSdrEnabled) {
+      logToDisk("triggerTriageGreetingLocal: SDR agent is disabled in settings. Skipping.");
+      return;
+    }
+
+    // In AI routing mode, the AI agent (n8n) handles all greetings and conversations.
+    // The CRM only sends the static menu greeting in 'static' mode.
+    const routeMode = localStorage.getItem('crmbase_sdr_route_mode') || 'disabled';
     if (!waTriageSyncedRef.current) {
       logToDisk("triggerTriageGreetingLocal: Sync not complete. Skipping greeting.");
       return;
     }
     const cleanPhone = phone.replace(/\D/g, '');
     const suffix = cleanPhone.slice(-8);
-    const lastSentTimeStr = localStorage.getItem(`analise_triage_sent_time_${suffix}`);
+    const lastSentTimeStr = localStorage.getItem(`crmbase_triage_sent_time_${suffix}`);
     if (lastSentTimeStr) {
       const lastSentTime = parseInt(lastSentTimeStr, 10) || 0;
       const minutesDiff = (Date.now() - lastSentTime) / (1000 * 60);
@@ -564,8 +741,8 @@ export const AppProvider = ({ children }) => {
       }
     }
 
-    localStorage.setItem(`analise_triage_sent_time_${suffix}`, Date.now().toString());
-    localStorage.setItem(`analise_triage_sent_${cleanPhone}`, '1');
+    localStorage.setItem(`crmbase_triage_sent_time_${suffix}`, Date.now().toString());
+    localStorage.setItem(`crmbase_triage_sent_${cleanPhone}`, '1');
 
     logToDisk(`triggerTriageGreetingLocal: Sending local triage greeting to ${cleanPhone}`);
 
@@ -575,7 +752,44 @@ export const AppProvider = ({ children }) => {
       recipientJid = `${numberOnly}@s.whatsapp.net`;
     }
 
-    const greetingText = `*Para oferecer um atendimento mais rápido e direcionado, com qual departamento você deseja falar?*\n\n1️⃣ Pessoal\n2️⃣ Contábil/Fiscal\n3️⃣ Emissão de Documentos Fiscais\n4️⃣ Administrativo`;
+    let greetingText = localStorage.getItem('crmbase_sdr_welcome') || 'Olá, seja bem-vindo! Escolha seu atendimento:';
+
+    if (routeMode === 'static') {
+      let staticMapping = [];
+      try {
+        const saved = localStorage.getItem('crmbase_sdr_static_mapping');
+        staticMapping = saved ? JSON.parse(saved) : [];
+      } catch (e) {}
+      
+      if (staticMapping.length > 0) {
+        let cols = [];
+        try {
+          const savedCols = localStorage.getItem('crmbase_columns');
+          cols = savedCols ? JSON.parse(savedCols) : [];
+        } catch (e) {}
+
+        let pipes = [];
+        try {
+          const savedPipes = localStorage.getItem('crmbase_pipelines');
+          pipes = savedPipes ? JSON.parse(savedPipes) : [];
+        } catch (e) {}
+        
+        const optionsLines = staticMapping
+          .filter(m => m.key && m.columnId)
+          .map(m => {
+            const col = cols.find(c => c.id === m.columnId);
+            let displayName = m.columnId;
+            if (col) {
+              const pipe = pipes.find(p => p.id === col.pipelineId);
+              displayName = pipe ? pipe.name : col.pipelineId;
+            }
+            return `${m.key} - ${displayName}`;
+          });
+        if (optionsLines.length > 0) {
+          greetingText += '\n\n' + optionsLines.join('\n');
+        }
+      }
+    }
 
     const body = {
       number: recipientJid,
@@ -596,7 +810,7 @@ export const AppProvider = ({ children }) => {
   };
 
   // Sends the local WhatsApp triage confirmation message directly from the CRM
-  const sendTriageConfirmationLocal = (phone, jid = null) => {
+  const sendTriageConfirmationLocal = (phone, jid = null, customText = null) => {
     if (!waTriageSyncedRef.current) {
       logToDisk("sendTriageConfirmationLocal: Sync not complete. Skipping confirmation.");
       return;
@@ -610,7 +824,8 @@ export const AppProvider = ({ children }) => {
       recipientJid = `${numberOnly}@s.whatsapp.net`;
     }
 
-    const confirmationText = `Prezado(a) cliente agradecemos seu contato.\n\nDeixe sua mensagem ou sua demanda que já já será atendido com toda a atenção e carinho de sempre.\n\nE se por preciso, fique à vontade para ligar em nosso WhatsApp que será um prazer falar com você.`;
+    const confirmationText = customText || localStorage.getItem('crmbase_sdr_transfer') || 
+      `Prezado(a) cliente agradecemos seu contato.\n\nDeixe sua mensagem ou sua demanda que já já será atendido com toda a atenção e carinho de sempre.\n\nE se por preciso, fique à vontade para ligar em nosso WhatsApp que será um prazer falar com você.`;
 
     const body = {
       number: recipientJid,
@@ -632,48 +847,121 @@ export const AppProvider = ({ children }) => {
 
   // Parses user message or button replies and routes them to correct pipeline & creates Kanban card.
   const routeClientBasedOnChoice = (clientPhone, choiceText, buttonId, clientId = null, localNewClients = null) => {
-    let newStatus = '';
-    let newTag = '';
+    const isSdrEnabled = localStorage.getItem('crmbase_sdr_enabled') === 'true';
+    if (!isSdrEnabled) return null;
+    
+    const routeMode = localStorage.getItem('crmbase_sdr_route_mode') || 'disabled';
+    if (routeMode === 'disabled') return null;
 
+    let targetColumnId = '';
     const cleanButtonId = buttonId ? buttonId.trim().toLowerCase() : '';
     const cleanChoiceText = choiceText ? choiceText.trim().toLowerCase() : '';
 
-    // Check buttonId or choiceText
-    const isPessoal = cleanButtonId === 'btn_pessoal' || cleanButtonId === '1' || cleanButtonId.includes('pessoal') ||
-                      cleanChoiceText === '1' || cleanChoiceText.includes('pessoal');
-                      
-    const isContabil = cleanButtonId === 'btn_contabil' || cleanButtonId === '2' || cleanButtonId.includes('contabil') || cleanButtonId.includes('fiscal') || cleanButtonId.includes('contábil') ||
-                      cleanChoiceText === '2' || cleanChoiceText.includes('contabil') || cleanChoiceText.includes('contábil') || cleanChoiceText.includes('fiscal');
-                      
-    const isEmissao = cleanButtonId === 'btn_emissao' || cleanButtonId === '3' || cleanButtonId.includes('emissao') || cleanButtonId.includes('emissão') || cleanButtonId.includes('documentos') || cleanButtonId.includes('docs') ||
-                     cleanChoiceText === '3' || cleanChoiceText.includes('emissão') || cleanChoiceText.includes('emissao') || cleanChoiceText.includes('documentos') || cleanChoiceText.includes('docs');
-                     
-    const isAdm = cleanButtonId === 'btn_adm' || cleanButtonId === '4' || cleanButtonId.includes('adm') || cleanButtonId.includes('administrativo') ||
-                  cleanChoiceText === '4' || cleanChoiceText.includes('administrativo') || cleanChoiceText.includes('admin') || cleanChoiceText.includes('adm');
+    let transitionText = '';
 
-    if (isPessoal) {
-      newStatus = 'Pessoal';
-      newTag = 'departamento_pessoal';
-    } else if (isContabil) {
-      newStatus = 'Contábil/Fiscal';
-      newTag = 'contabil_fiscal';
-    } else if (isEmissao) {
-      newStatus = 'Emissão de Documentos Fiscais';
-      newTag = 'documentos_fiscais';
-    } else if (isAdm) {
-      newStatus = 'Administrativo';
-      newTag = 'administrativo';
+    if (routeMode === 'static') {
+      let staticMapping = [];
+      try {
+        const saved = localStorage.getItem('crmbase_sdr_static_mapping');
+        staticMapping = saved ? JSON.parse(saved) : [];
+      } catch (e) {}
+
+      const match = staticMapping.find(m => 
+        (m.key && m.key.trim().toLowerCase() === cleanButtonId) ||
+        (m.key && m.key.trim().toLowerCase() === cleanChoiceText)
+      );
+      if (match) {
+        targetColumnId = match.columnId;
+        transitionText = match.transitionMessage || '';
+      }
+    } else if (routeMode === 'ai') {
+      let aiMapping = [];
+      try {
+        const saved = localStorage.getItem('crmbase_sdr_ai_mapping');
+        aiMapping = saved ? JSON.parse(saved) : [];
+      } catch (e) {}
+
+      const lowWeightWords = ['ajuda', 'suporte', 'duvida', 'preciso', 'quero', 'favor', 'atendimento'];
+
+      let bestMatch = null;
+      let highestScore = -1;
+
+      aiMapping.forEach(m => {
+        if (!m.keywords) return;
+        const keywordsList = m.keywords.split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
+        
+        let maxPositionalScoreForRule = 0;
+        let genericMatchesCount = 0;
+        let specificMatchesCount = 0;
+
+        keywordsList.forEach((kw, posIdx) => {
+          if (!kw) return;
+          // Check if user message contains this keyword (or keyword contains user message for exact single words)
+          const isMatched = cleanChoiceText.includes(kw) || cleanButtonId.includes(kw);
+          if (isMatched) {
+            // Positional weight: 1st keyword = 100, 2nd = 90, 3rd = 80, etc. (minimum 10)
+            const posWeight = Math.max(10, 100 - (posIdx * 10));
+            const isLowWeight = lowWeightWords.includes(kw);
+            
+            // Specific keywords get full positional weight + bonus for length; generic words get 5 points
+            const finalScore = isLowWeight ? 5 : (posWeight + kw.length * 2);
+            
+            if (isLowWeight) {
+              genericMatchesCount++;
+            } else {
+              specificMatchesCount++;
+            }
+
+            if (finalScore > maxPositionalScoreForRule) {
+              maxPositionalScoreForRule = finalScore;
+            }
+          }
+        });
+
+        // Boost score if specific keywords were matched (to prevent generic rules like "ajuda" from overriding "documentos")
+        const totalRuleScore = maxPositionalScoreForRule + (specificMatchesCount * 50) + genericMatchesCount;
+
+        if (totalRuleScore > highestScore && totalRuleScore > 0) {
+          highestScore = totalRuleScore;
+          bestMatch = m;
+        }
+      });
+
+      if (bestMatch && highestScore > 0) {
+        targetColumnId = bestMatch.columnId;
+        transitionText = bestMatch.transitionMessage || '';
+      }
     }
 
-    if (!newStatus) return null;
+    if (!targetColumnId) return null;
+
+    let newStatus = 'Pessoal';
+    let newTag = 'departamento_pessoal';
+
+    try {
+      const savedCols = localStorage.getItem('crmbase_columns');
+      if (savedCols) {
+        const cols = JSON.parse(savedCols);
+        const matchedCol = cols.find(c => c.id === targetColumnId);
+        if (matchedCol) {
+          const savedPipes = localStorage.getItem('crmbase_pipelines');
+          const pipes = savedPipes ? JSON.parse(savedPipes) : [];
+          const matchedPipe = pipes.find(p => p.id === matchedCol.pipelineId);
+          if (matchedPipe) {
+            newStatus = matchedPipe.name;
+            newTag = matchedPipe.id;
+          }
+        }
+      }
+    } catch (e) {}
 
     const cleanPhone = clientPhone.replace(/\D/g, '');
     const suffix = cleanPhone.slice(-8);
     const targetClientId = clientId || `c_wa_${suffix}`;
 
     // Idempotency: Route once in 2 hours to avoid duplicates/loops
-    const lastRouteTimeStr = localStorage.getItem(`analise_triage_routed_time_${targetClientId}`) || 
-                             localStorage.getItem(`analise_triage_routed_time_${suffix}`);
+    const lastRouteTimeStr = localStorage.getItem(`crmbase_triage_routed_time_${targetClientId}`) || 
+                             localStorage.getItem(`crmbase_triage_routed_time_${suffix}`);
     if (lastRouteTimeStr) {
       const lastRouteTime = parseInt(lastRouteTimeStr, 10) || 0;
       const hoursDiff = (Date.now() - lastRouteTime) / (1000 * 60 * 60);
@@ -682,12 +970,12 @@ export const AppProvider = ({ children }) => {
       }
     }
 
-    localStorage.setItem(`analise_triage_routed_time_${targetClientId}`, Date.now().toString());
-    localStorage.setItem(`analise_triage_routed_${targetClientId}`, '1');
-    localStorage.setItem(`analise_triage_routed_time_${suffix}`, Date.now().toString());
-    localStorage.setItem(`analise_triage_routed_${suffix}`, '1');
+    localStorage.setItem(`crmbase_triage_routed_time_${targetClientId}`, Date.now().toString());
+    localStorage.setItem(`crmbase_triage_routed_${targetClientId}`, '1');
+    localStorage.setItem(`crmbase_triage_routed_time_${suffix}`, Date.now().toString());
+    localStorage.setItem(`crmbase_triage_routed_${suffix}`, '1');
 
-    logToDisk(`routeClientBasedOnChoice: Routing ${targetClientId} to ${newStatus}`);
+    logToDisk(`routeClientBasedOnChoice: Routing ${targetClientId} to ${newStatus} on column ${targetColumnId}`);
 
     // Update in-place in localNewClients if passed
     if (localNewClients) {
@@ -721,7 +1009,6 @@ export const AppProvider = ({ children }) => {
         return c;
       });
 
-      // Correctly resolve the client's name even if they are a newly created client in localNewClients
       let clientName = clientPhone;
       if (localNewClients) {
         const found = localNewClients.find(c => c.id === targetClientId || c.phone.replace(/\D/g, '').endsWith(suffix));
@@ -731,7 +1018,7 @@ export const AppProvider = ({ children }) => {
         if (targetClient) clientName = targetClient.name;
       }
 
-      // Create Kanban Card dynamically with all mandatory fields
+      // Create Kanban Card dynamically with mapped columnId
       setKanbanCards(prevCards => {
         const exists = prevCards.some(card => card.clientId === targetClientId);
         if (!exists) {
@@ -739,17 +1026,16 @@ export const AppProvider = ({ children }) => {
             id: `k_wa_${suffix}`,
             clientId: targetClientId,
             title: `${clientName} - Novo Registro`,
-            desc: `Cliente: ${clientName}\nTelefone: ${cleanPhone}\nCriado em: ${new Date().toLocaleString()}\nPipeline: ${newStatus}\nStatus Inicial: ${mapStatusToColumn(newStatus)}\nConversa ID: ${targetClientId}\nResponsável: ${profile?.name || "Miguel Suporte"}\n\n(Roteado via triagem de departamento)`,
-            column: mapStatusToColumn(newStatus),
+            desc: `Cliente: ${clientName}\nTelefone: ${cleanPhone}\nCriado em: ${new Date().toLocaleString()}\nPipeline: ${newStatus}\nStatus Inicial: ${targetColumnId}\nConversa ID: ${targetClientId}\nResponsável: ${profile?.name || "Miguel Suporte"}\n\n(Roteado via triagem de departamento)`,
+            column: targetColumnId,
             priority: "Média",
             date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
             
-            // Explicit Mandatory Fields
             clientName: clientName,
             clientPhone: cleanPhone,
             createdAt: new Date().toISOString(),
             pipeline: newStatus,
-            initialStatus: mapStatusToColumn(newStatus),
+            initialStatus: targetColumnId,
             conversaId: targetClientId,
             responsavel: profile?.name || "Miguel Suporte"
           };
@@ -759,9 +1045,9 @@ export const AppProvider = ({ children }) => {
             if (card.clientId === targetClientId) {
               return { 
                 ...card, 
-                column: mapStatusToColumn(newStatus),
+                column: targetColumnId,
                 pipeline: newStatus,
-                desc: `Cliente: ${clientName}\nTelefone: ${cleanPhone}\nCriado em: ${card.createdAt || new Date().toLocaleString()}\nPipeline: ${newStatus}\nStatus Inicial: ${mapStatusToColumn(newStatus)}\nConversa ID: ${targetClientId}\nResponsável: ${profile?.name || "Miguel Suporte"}\n\n(Roteado via triagem de departamento)`
+                desc: `Cliente: ${clientName}\nTelefone: ${cleanPhone}\nCriado em: ${card.createdAt || new Date().toLocaleString()}\nPipeline: ${newStatus}\nStatus Inicial: ${targetColumnId}\nConversa ID: ${targetClientId}\nResponsável: ${profile?.name || "Miguel Suporte"}\n\n(Roteado via triagem de departamento)`
               };
             }
             return card;
@@ -770,20 +1056,27 @@ export const AppProvider = ({ children }) => {
       });
 
       const targetClient = updated.find(c => c.id === targetClientId || c.phone.replace(/\D/g, '').endsWith(suffix));
-      if (hasChanges && targetClient) {
+      // Only fire the triage webhook in 'static' mode.
+      // In 'ai' mode the routing is silent/organizational — the AI continues the conversation.
+      if (hasChanges && targetClient && routeMode !== 'ai') {
         fireTriageWebhook(targetClient, newStatus, targetClientId);
       }
 
       return updated;
     });
 
-    // Send confirmation once directly from the CRM
-    let clientJid = null;
-    if (localNewClients) {
-      const found = localNewClients.find(c => c.id === targetClientId || c.phone.replace(/\D/g, '').endsWith(suffix));
-      if (found) clientJid = found.jid;
+    // Send confirmation message only in 'static' menu mode.
+    // In 'ai' mode the routing is silent — the AI agent continues the conversation naturally.
+    if (routeMode !== 'ai') {
+      let clientJid = null;
+      if (localNewClients) {
+        const found = localNewClients.find(c => c.id === targetClientId || c.phone.replace(/\D/g, '').endsWith(suffix));
+        if (found) clientJid = found.jid;
+      }
+      sendTriageConfirmationLocal(cleanPhone, clientJid, transitionText);
+    } else {
+      logToDisk(`routeClientBasedOnChoice [ai mode]: Silent routing to ${newStatus}. AI continues the conversation.`);
     }
-    sendTriageConfirmationLocal(cleanPhone, clientJid);
 
     return newStatus;
   };
@@ -792,6 +1085,16 @@ export const AppProvider = ({ children }) => {
 
   // Sync WhatsApp Chats and message histories from the Evolution API
   const syncWhatsAppChats = async () => {
+    const now = Date.now();
+    const activeChatChanged = activeChatClientId !== lastActiveChatIdRef.current;
+    lastActiveChatIdRef.current = activeChatClientId;
+
+    if (!activeChatChanged && (now - lastSyncTimeRef.current < 5000)) {
+      logToDisk("syncWhatsAppChats: throttled, skipping (less than 5s since last sync)");
+      return;
+    }
+    lastSyncTimeRef.current = now;
+
     logToDisk("syncWhatsAppChats: check, waStatus=" + waStatus);
     if (waStatus !== 'ONLINE') return;
     if (isSyncingRef.current) {
@@ -801,15 +1104,7 @@ export const AppProvider = ({ children }) => {
     isSyncingRef.current = true;
     try {
       logToDisk("syncWhatsAppChats: fetching chats...");
-      const res = await fetch(`${EVO_CONFIG.baseUrl}/chat/findChats/${EVO_CONFIG.encodedInstanceName}`, {
-        method: "POST",
-        headers: {
-          "apikey": EVO_CONFIG.apiKey,
-          "tenant": EVO_CONFIG.tenant,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({})
-      });
+      const res = await fetchEvolution(`/chat/findChats/${EVO_CONFIG.encodedInstanceName}`, { method: 'POST', body: JSON.stringify({}) });
       logToDisk("syncWhatsAppChats: findChats res ok=" + res.ok + ", status=" + res.status);
       if (!res.ok) {
         isSyncingRef.current = false;
@@ -870,6 +1165,7 @@ export const AppProvider = ({ children }) => {
 
         let clientJid = chat.remoteJid;
         let clientId;
+        const lastMsgId = chat.lastMessage?.id || chat.lastMessage?.key?.id || null;
 
         // Extract last message info from chat.lastMessage for displaying in list without history fetch
         let lastMsgText = "";
@@ -939,7 +1235,7 @@ export const AppProvider = ({ children }) => {
 
         if (clientIndex === -1) {
           // Check if contact was deleted and should be ignored
-          const deletedTimeStr = localStorage.getItem(`analise_deleted_contact_${cleanJidPhone.slice(-8)}`);
+          const deletedTimeStr = localStorage.getItem(`crmbase_deleted_contact_${cleanJidPhone.slice(-8)}`);
           if (deletedTimeStr) {
             const deletedTime = parseInt(deletedTimeStr, 10) || 0;
             if (lastMsgTimestamp <= deletedTime) {
@@ -947,7 +1243,7 @@ export const AppProvider = ({ children }) => {
               continue;
             } else {
               // They sent a new message! Remove the deleted flag
-              localStorage.removeItem(`analise_deleted_contact_${cleanJidPhone.slice(-8)}`);
+              localStorage.removeItem(`crmbase_deleted_contact_${cleanJidPhone.slice(-8)}`);
             }
           }
 
@@ -960,6 +1256,8 @@ export const AppProvider = ({ children }) => {
           let initialStatus = "Pessoal";
           let initialTag = "WhatsApp";
 
+          let initialProfilePic = chat.profilePicUrl || chat.picture || chat.avatar || chat.profilePictureUrl || localStorage.getItem(`crmbase_pic_${cleanJidPhone}`) || localStorage.getItem(`crmbase_pic_${clientId}`) || "";
+          
           const newClient = {
             id: clientId,
             name: cleanName,
@@ -969,11 +1267,26 @@ export const AppProvider = ({ children }) => {
             tags: [initialTag],
             createdAt: new Date().toISOString().split('T')[0],
             jid: clientJid,
-            profilePicUrl: chat.profilePicUrl || "",
+            profilePicUrl: initialProfilePic,
             lastMessageText: lastMsgText,
             lastMessageTime: lastMsgTime,
             lastMessageTimestamp: lastMsgTimestamp
           };
+
+          if (!initialProfilePic && cleanJidPhone) {
+            fetchEvolution(`/chat/fetchProfilePictureUrl/${EVO_CONFIG.encodedInstanceName}`, {
+              method: 'POST',
+              body: JSON.stringify({ number: cleanJidPhone })
+            }).then(r => r.ok ? r.json() : null).then(data => {
+              const fetchedUrl = data?.profilePictureUrl || data?.picture || data?.url || data?.pictureUrl || data?.profilePicUrl;
+              if (fetchedUrl) {
+                localStorage.setItem(`crmbase_pic_${cleanJidPhone}`, fetchedUrl);
+                localStorage.setItem(`crmbase_pic_${clientId}`, fetchedUrl);
+                setClients(prev => prev.map(c => (c.id === clientId || c.phone?.endsWith(jidSuffix)) ? { ...c, profilePicUrl: fetchedUrl } : c));
+              }
+            }).catch(() => {});
+          }
+
           newClients.push(newClient);
           clientsToAdd.push(newClient);
           clientsUpdated = true;
@@ -1028,9 +1341,31 @@ export const AppProvider = ({ children }) => {
             jidsToUpdate.set(clientId, clientJid);
             clientModified = true;
           }
-          // If client profile picture has changed or wasn't set, update it
-          if (chat.profilePicUrl && updatedClient.profilePicUrl !== chat.profilePicUrl) {
-            updatedClient.profilePicUrl = chat.profilePicUrl;
+          // Extract profile picture from chat object or fetch dynamically from Evolution API
+          let profilePicUrl = chat.profilePicUrl || chat.picture || chat.avatar || chat.profilePictureUrl || "";
+          
+          if (!profilePicUrl) {
+            const cachedPic = localStorage.getItem(`crmbase_pic_${cleanJidPhone}`) || localStorage.getItem(`crmbase_pic_${clientId}`);
+            if (cachedPic) {
+              profilePicUrl = cachedPic;
+            } else if (cleanJidPhone) {
+              // Asynchronously fetch profile picture from Evolution API
+              fetchEvolution(`/chat/fetchProfilePictureUrl/${EVO_CONFIG.encodedInstanceName}`, {
+                method: 'POST',
+                body: JSON.stringify({ number: cleanJidPhone })
+              }).then(r => r.ok ? r.json() : null).then(data => {
+                const fetchedUrl = data?.profilePictureUrl || data?.picture || data?.url || data?.pictureUrl || data?.profilePicUrl;
+                if (fetchedUrl) {
+                  localStorage.setItem(`crmbase_pic_${cleanJidPhone}`, fetchedUrl);
+                  localStorage.setItem(`crmbase_pic_${clientId}`, fetchedUrl);
+                  setClients(prev => prev.map(c => (c.id === clientId || c.phone?.endsWith(jidSuffix)) ? { ...c, profilePicUrl: fetchedUrl } : c));
+                }
+              }).catch(() => {});
+            }
+          }
+
+          if (profilePicUrl && updatedClient.profilePicUrl !== profilePicUrl) {
+            updatedClient.profilePicUrl = profilePicUrl;
             clientModified = true;
           }
           // If client exists but their name is currently their phone number, update it to the pushName if available
@@ -1043,7 +1378,15 @@ export const AppProvider = ({ children }) => {
           }
 
           // Keep last message text, time, and timestamp synced on the client object for instant list display
-          if (updatedClient.lastMessageTimestamp !== lastMsgTimestamp) {
+          const clearedTimeForClient = chatsClearedTimestampsRef.current[clientId] || 0;
+          if (clearedTimeForClient > 0 && lastMsgTimestamp <= clearedTimeForClient) {
+            if (updatedClient.lastMessageText !== '') {
+              updatedClient.lastMessageText = '';
+              updatedClient.lastMessageTime = '';
+              updatedClient.lastMessageTimestamp = 0;
+              clientModified = true;
+            }
+          } else if (updatedClient.lastMessageTimestamp !== lastMsgTimestamp) {
             updatedClient.lastMessageText = lastMsgText;
             updatedClient.lastMessageTime = lastMsgTime;
             updatedClient.lastMessageTimestamp = lastMsgTimestamp;
@@ -1063,14 +1406,14 @@ export const AppProvider = ({ children }) => {
               const suffix = cleanJidPhone.slice(-8);
               logToDisk(`syncWhatsAppChats: Inactivity threshold exceeded for ${cleanJidPhone} (${timeDiff}s > 172800s). Resetting triage flags.`);
               
-              localStorage.removeItem(`analise_triage_routed_${clientId}`);
-              localStorage.removeItem(`analise_triage_routed_${suffix}`);
-              localStorage.removeItem(`analise_triage_routed_time_${clientId}`);
-              localStorage.removeItem(`analise_triage_routed_time_${suffix}`);
-              localStorage.removeItem(`analise_triage_sent_${cleanJidPhone}`);
-              localStorage.removeItem(`analise_triage_sent_${suffix}`);
-              localStorage.removeItem(`analise_triage_sent_time_${suffix}`);
-              localStorage.removeItem(`analise_triage_sent_time_${cleanJidPhone}`);
+              localStorage.removeItem(`crmbase_triage_routed_${clientId}`);
+              localStorage.removeItem(`crmbase_triage_routed_${suffix}`);
+              localStorage.removeItem(`crmbase_triage_routed_time_${clientId}`);
+              localStorage.removeItem(`crmbase_triage_routed_time_${suffix}`);
+              localStorage.removeItem(`crmbase_triage_sent_${cleanJidPhone}`);
+              localStorage.removeItem(`crmbase_triage_sent_${suffix}`);
+              localStorage.removeItem(`crmbase_triage_sent_time_${suffix}`);
+              localStorage.removeItem(`crmbase_triage_sent_time_${cleanJidPhone}`);
             }
           }
         }
@@ -1082,28 +1425,52 @@ export const AppProvider = ({ children }) => {
           const twoDaysInSeconds = 2 * 24 * 60 * 60; // 172800 seconds
           if (lastMsgTimestamp > 0 && timeSinceLastMsg <= twoDaysInSeconds) {
             // Mark as routed to bypass triage greeting
-            localStorage.setItem(`analise_triage_routed_${clientId}`, '1');
-            localStorage.setItem(`analise_triage_routed_${suffix}`, '1');
-            localStorage.setItem(`analise_triage_routed_time_${clientId}`, (lastMsgTimestamp * 1000).toString());
-            localStorage.setItem(`analise_triage_routed_time_${suffix}`, (lastMsgTimestamp * 1000).toString());
+            localStorage.setItem(`crmbase_triage_routed_${clientId}`, '1');
+            localStorage.setItem(`crmbase_triage_routed_${suffix}`, '1');
+            localStorage.setItem(`crmbase_triage_routed_time_${clientId}`, (lastMsgTimestamp * 1000).toString());
+            localStorage.setItem(`crmbase_triage_routed_time_${suffix}`, (lastMsgTimestamp * 1000).toString());
             logToDisk(`syncWhatsAppChats (initial sync): ${cleanJidPhone} is active (last message ${timeSinceLastMsg}s ago). Bypassing triage.`);
           } else {
             // Clear flags for inactive or new chats
-            localStorage.removeItem(`analise_triage_routed_${clientId}`);
-            localStorage.removeItem(`analise_triage_routed_${suffix}`);
-            localStorage.removeItem(`analise_triage_routed_time_${clientId}`);
-            localStorage.removeItem(`analise_triage_routed_time_${suffix}`);
-            localStorage.removeItem(`analise_triage_sent_${cleanJidPhone}`);
-            localStorage.removeItem(`analise_triage_sent_${suffix}`);
-            localStorage.removeItem(`analise_triage_sent_time_${suffix}`);
-            localStorage.removeItem(`analise_triage_sent_time_${cleanJidPhone}`);
+            localStorage.removeItem(`crmbase_triage_routed_${clientId}`);
+            localStorage.removeItem(`crmbase_triage_routed_${suffix}`);
+            localStorage.removeItem(`crmbase_triage_routed_time_${clientId}`);
+            localStorage.removeItem(`crmbase_triage_routed_time_${suffix}`);
+            localStorage.removeItem(`crmbase_triage_sent_${cleanJidPhone}`);
+            localStorage.removeItem(`crmbase_triage_sent_${suffix}`);
+            localStorage.removeItem(`crmbase_triage_sent_time_${suffix}`);
+            localStorage.removeItem(`crmbase_triage_sent_time_${cleanJidPhone}`);
             logToDisk(`syncWhatsAppChats (initial sync): ${cleanJidPhone} is inactive or new. Ready for triage.`);
+          }
+        }
+
+        // Check if human operator sent a message (from platform or outside on phone)
+        if (chat.lastMessage && chat.lastMessage.key?.fromMe) {
+          const isPauseOnHuman = localStorage.getItem('crmbase_sdr_pause_human') === 'true';
+          const isDisableOutside = localStorage.getItem('crmbase_sdr_disable_outside') === 'true';
+          
+          if (isPauseOnHuman || isDisableOutside) {
+            const suffix = cleanJidPhone.slice(-8);
+            localStorage.setItem(`crmbase_triage_routed_${clientId}`, '1');
+            localStorage.setItem(`crmbase_triage_routed_${suffix}`, '1');
+            localStorage.setItem(`crmbase_triage_routed_time_${clientId}`, Date.now().toString());
+            localStorage.setItem(`crmbase_triage_routed_time_${suffix}`, Date.now().toString());
+            logToDisk(`syncWhatsAppChats: Human/Outside message fromMe detected for ${cleanJidPhone}. Pausing agent for this conversation.`);
+          }
+        }
+
+        // Instant Supabase Save for any incoming or outgoing message from WhatsApp sync
+        if (lastMsgText && lastMsgId) {
+          const alreadySavedKey = `crmbase_sp_saved_${lastMsgId}`;
+          if (!localStorage.getItem(alreadySavedKey)) {
+            localStorage.setItem(alreadySavedKey, '1');
+            const isFromMe = chat.lastMessage?.key?.fromMe;
+            saveChatMessageToSupabase(clientId, isFromMe ? 'operador' : 'cliente', lastMsgText);
           }
         }
 
         // Check if lastMessage is a button reply or text choice from the contact
         if (chat.lastMessage && !chat.lastMessage.key?.fromMe) {
-          const lastMsgId = chat.lastMessage?.id;
           const currentChatMsgs = chatsRef.current[clientId] || [];
           const localLastMsg = currentChatMsgs[currentChatMsgs.length - 1];
           const hasNewMessage = lastMsgId && (!localLastMsg || localLastMsg.id !== lastMsgId);
@@ -1125,14 +1492,14 @@ export const AppProvider = ({ children }) => {
             
             // If they don't have an active card in the Kanban, clear their routing flags to allow re-triage!
             if (!hasCard) {
-              localStorage.removeItem(`analise_triage_routed_${identifier}`);
-              localStorage.removeItem(`analise_triage_routed_${suffix}`);
-              localStorage.removeItem(`analise_triage_routed_time_${identifier}`);
-              localStorage.removeItem(`analise_triage_routed_time_${suffix}`);
+              localStorage.removeItem(`crmbase_triage_routed_${identifier}`);
+              localStorage.removeItem(`crmbase_triage_routed_${suffix}`);
+              localStorage.removeItem(`crmbase_triage_routed_time_${identifier}`);
+              localStorage.removeItem(`crmbase_triage_routed_time_${suffix}`);
             }
 
-            const isNotRouted = !localStorage.getItem(`analise_triage_routed_${identifier}`) &&
-                                !localStorage.getItem(`analise_triage_routed_${suffix}`);
+            const isNotRouted = !localStorage.getItem(`crmbase_triage_routed_${identifier}`) &&
+                                !localStorage.getItem(`crmbase_triage_routed_${suffix}`);
             
             if (isNotRouted) {
               const routedStatus = routeClientBasedOnChoice(cleanJidPhone, lastMsgText, buttonId, identifier, newClients);
@@ -1142,45 +1509,118 @@ export const AppProvider = ({ children }) => {
                 triggerTriageGreetingLocal(cleanJidPhone, clientJid);
               }
             }
+
+            // TRIGGER REAL-TIME AGENT RESPONSE ON WHATSAPP CONTACT MESSAGES
+            const isSdrEnabled = localStorage.getItem('crmbase_sdr_enabled') !== 'false';
+            const sdrIgnoreGroups = localStorage.getItem('crmbase_sdr_ignore_groups') !== 'false';
+            const isGroupChat = clientJid.includes('@g.us') || isGroup;
+
+            if (isSdrEnabled && lastMsgText && (!isGroupChat || !sdrIgnoreGroups)) {
+              const lastMsg = chat.lastMessage;
+              let fileObj = null;
+              if (lastMsg?.message?.imageMessage) {
+                fileObj = { name: "Imagem", type: lastMsg.message.imageMessage.mimetype || "image/jpeg", keyId: lastMsgId };
+              } else if (lastMsg?.message?.documentMessage) {
+                fileObj = { name: lastMsg.message.documentMessage.fileName || "Documento.pdf", type: lastMsg.message.documentMessage.mimetype || "application/pdf", keyId: lastMsgId };
+              } else if (lastMsg?.message?.audioMessage) {
+                fileObj = { name: "Áudio", type: lastMsg.message.audioMessage.mimetype || "audio/ogg", keyId: lastMsgId };
+              }
+
+              const isAudioType = lastMsg?.messageType === 'audioMessage' || lastMsgText.includes('🔊 Áudio') || lastMsgText.includes('Áudio');
+              
+              if (isAudioType && lastMsgId) {
+                logToDisk(`syncWhatsAppChats: Incoming audio detected for ${cleanJidPhone}. Attempting Whisper transcription...`);
+                fetchMediaBase64(lastMsgId).then(audioBase64 => {
+                  if (audioBase64) {
+                    // Send to Whisper transcription
+                    const openAiKey = (localStorage.getItem('crmbase_sdr_apikey') || localStorage.getItem('crmbase_openai_api_key') || import.meta.env.VITE_OPENAI_API_KEY || '').trim();
+                    if (openAiKey) {
+                      try {
+                        const pureBase64 = audioBase64.includes(',') ? audioBase64.split(',')[1] : audioBase64;
+                        const byteCharacters = atob(pureBase64);
+                        const byteNumbers = new Array(byteCharacters.length);
+                        for (let i = 0; i < byteCharacters.length; i++) {
+                          byteNumbers[i] = byteCharacters.charCodeAt(i);
+                        }
+                        const byteArray = new Uint8Array(byteNumbers);
+                        const audioBlob = new Blob([byteArray], { type: 'audio/ogg' });
+                        
+                        const formData = new FormData();
+                        formData.append('file', audioBlob, 'audio.ogg');
+                        formData.append('model', 'whisper-1');
+                        formData.append('language', 'pt');
+
+                        fetch('https://api.openai.com/v1/audio/transcriptions', {
+                          method: 'POST',
+                          headers: { 'Authorization': `Bearer ${openAiKey}` },
+                          body: formData
+                        })
+                        .then(r => r.json())
+                        .then(data => {
+                          if (data.text) {
+                            logToDisk(`syncWhatsAppChats: Whisper audio transcription success: "${data.text}"`);
+                            generateSimulatedAiReply(data.text, clientId, fileObj);
+                          } else {
+                            generateSimulatedAiReply(lastMsgText, clientId, fileObj);
+                          }
+                        })
+                        .catch(err => {
+                          logToDisk(`syncWhatsAppChats: Whisper API error: ${err.message}`, "WARN");
+                          generateSimulatedAiReply(lastMsgText, clientId, fileObj);
+                        });
+                      } catch (e) {
+                        logToDisk(`syncWhatsAppChats: Audio blob error: ${e.message}`, "WARN");
+                        generateSimulatedAiReply(lastMsgText, clientId, fileObj);
+                      }
+                    } else {
+                      generateSimulatedAiReply(lastMsgText, clientId, fileObj);
+                    }
+                  } else {
+                    generateSimulatedAiReply(lastMsgText, clientId, fileObj);
+                  }
+                }).catch(() => {
+                  generateSimulatedAiReply(lastMsgText, clientId, fileObj);
+                });
+              } else {
+                logToDisk(`syncWhatsAppChats: Triggering AI Agent reply for WhatsApp contact ${cleanJidPhone} (${clientId}): "${lastMsgText}" (File: ${fileObj?.name || 'N/A'})`);
+                setTimeout(() => {
+                  generateSimulatedAiReply(lastMsgText, clientId, fileObj);
+                }, 1200);
+              }
+            }
           }
         }
 
         // Check message history sync
-        const lastMsgId = chat.lastMessage?.id;
         const currentChatMsgs = chatsRef.current[clientId] || [];
         const localLastMsg = currentChatMsgs[currentChatMsgs.length - 1];
 
-        // WhatsApp unread status synced directly from Evolution API unreadCount
-        if (chat.unreadCount > 0) {
-          if (clientId !== activeChatClientIdRef.current) {
-            setUnreadChats(prev => {
-              if (!prev.includes(clientId)) {
-                return [...prev, clientId];
-              }
-              return prev;
-            });
-          } else {
-            // Mark as read on the server immediately since we are viewing this chat
-            fetch(`${EVO_CONFIG.baseUrl}/chat/markMessageAsRead/${EVO_CONFIG.encodedInstanceName}`, {
-              method: 'POST',
-              headers: {
-                'apikey': EVO_CONFIG.apiKey,
-                'tenant': EVO_CONFIG.tenant,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                readMessages: [
-                  {
-                    remoteJid: clientJid,
-                    fromMe: false,
-                    id: chat.lastMessage?.id || ""
-                  }
-                ]
-              })
-            }).catch(err => console.error("Error marking read:", err));
-          }
+        // WhatsApp unread status: set blue dot ONLY IF incoming message timestamp is strictly NEWER than the stored readTimestamp
+        const isIncoming = chat.lastMessage && !chat.lastMessage.key?.fromMe;
+        const isActiveChat = (clientId === activeChatClientIdRef.current);
+        
+        const readTsStr = localStorage.getItem(`crmbase_read_ts_${clientId}`) || localStorage.getItem(`crmbase_read_ts_${jidSuffix}`) || '0';
+        const readTimestamp = parseInt(readTsStr, 10) || 0;
+
+        // Message is new ONLY if it is incoming AND its timestamp is strictly greater than when the user last read the chat
+        const isNewUnreadIncoming = isIncoming && lastMsgTimestamp > readTimestamp;
+
+        if (isActiveChat) {
+          // Open active chat is always marked read up to the current time / last message
+          const currentTs = Math.max(lastMsgTimestamp || 0, Math.floor(Date.now() / 1000));
+          localStorage.setItem(`crmbase_read_ts_${clientId}`, currentTs.toString());
+          if (jidSuffix) localStorage.setItem(`crmbase_read_ts_${jidSuffix}`, currentTs.toString());
+          setUnreadChats(prev => prev.filter(id => id !== clientId && id !== `c_wa_${jidSuffix}`));
+        } else if (isNewUnreadIncoming) {
+          setUnreadChats(prev => {
+            if (!prev.includes(clientId)) {
+              return [...prev, clientId];
+            }
+            return prev;
+          });
         } else {
-          setUnreadChats(prev => prev.filter(id => id !== clientId));
+          // No new incoming message since last read
+          setUnreadChats(prev => prev.filter(id => id !== clientId && id !== `c_wa_${jidSuffix}`));
         }
 
         // Check if any legacy message placeholder exists (contains "Recebido" or "Recebida") but lacks the parsed file metadata
@@ -1199,31 +1639,20 @@ export const AppProvider = ({ children }) => {
 
         const clearedTime = chatsClearedTimestampsRef.current[clientId] || 0;
 
-        // Se a conversa foi limpa e não há mensagens novas, mantém vazia e pula busca
-        if (clearedTime > 0 && lastMsgTimestamp <= clearedTime) {
-          chatsToUpdate[clientId] = [];
-          continue;
-        }
-
 
 
         // Fetch full message history only for the active chat (to show messages in the chat window)
         // or for unrouted clients to maintain triage logic consistency
         const clientObjForHistory = newClients.find(c => c.id === clientId);
         const needsPollCheck = clientObjForHistory && clientObjForHistory.status === 'Pessoal' &&
-          !localStorage.getItem(`analise_triage_routed_${clientId}`);
+          !localStorage.getItem(`crmbase_triage_routed_${clientId}`);
         const hasNewMessage = lastMsgId && (!localLastMsg || localLastMsg.id !== lastMsgId);
 
         if (lastMsgId && (clientId === activeChatClientIdRef.current || needsPollCheck || hasNewMessage || hasMissingFileInfo)) {
           try {
             logToDisk("syncWhatsAppChats: fetching history for " + clientJid);
-            const msgRes = await fetch(`${EVO_CONFIG.baseUrl}/chat/findMessages/${EVO_CONFIG.encodedInstanceName}`, {
-              method: "POST",
-              headers: {
-                "apikey": EVO_CONFIG.apiKey,
-                "tenant": EVO_CONFIG.tenant,
-                "Content-Type": "application/json"
-              },
+            const msgRes = await fetchEvolution(`/chat/findMessages/${EVO_CONFIG.encodedInstanceName}`, { 
+              method: 'POST', 
               body: JSON.stringify({
                 where: {
                   key: {
@@ -1279,16 +1708,19 @@ export const AppProvider = ({ children }) => {
                   }
                 } else if (msg.messageType === "protocolMessage" || msg.message?.protocolMessage) {
                   const pm = msg.message?.protocolMessage || msg.protocolMessage;
-                  targetMessageId = pm?.key?.id;
-                  if (targetMessageId) {
-                    isEditProtocol = true;
-                    const editedMsg = pm?.editedMessage;
-                    if (editedMsg) {
-                      editedText = editedMsg.conversation || 
-                                   editedMsg.extendedTextMessage?.text || 
-                                   editedMsg.imageMessage?.caption || 
-                                   editedMsg.videoMessage?.caption || 
-                                   "";
+                  // Protocol type 14 is MESSAGE_EDIT in Baileys
+                  if (pm?.type === 14 || pm?.type === 'MESSAGE_EDIT' || pm?.editedMessage || pm?.key?.id) {
+                    targetMessageId = pm?.key?.id;
+                    if (targetMessageId) {
+                      isEditProtocol = true;
+                      const editedMsg = pm?.editedMessage;
+                      if (editedMsg) {
+                        editedText = editedMsg.conversation || 
+                                     editedMsg.extendedTextMessage?.text || 
+                                     editedMsg.imageMessage?.caption || 
+                                     editedMsg.videoMessage?.caption || 
+                                     "";
+                      }
                     }
                   }
                 }
@@ -1346,7 +1778,7 @@ export const AppProvider = ({ children }) => {
                 }
 
                 const formattedMsg = {
-                  id: msg.id || `m_wa_${timestamp}_${Math.random()}`,
+                  id: msg.key?.id || msg.id || `m_wa_${timestamp}_${Math.random()}`,
                   keyId: msg.key?.id,
                   sender: isFromMe ? 'user' : 'contact',
                   text: text,
@@ -1367,28 +1799,80 @@ export const AppProvider = ({ children }) => {
                 }
               });
 
-              // Apply edits to original messages
+              // Apply edits to original messages in formattedMessages and existingMsgs
               edits.forEach(edit => {
-                const originalMsg = formattedMessages.find(m => m.keyId === edit.targetMessageId || m.id === edit.targetMessageId);
-                if (originalMsg) {
-                  originalMsg.isEdited = true;
-                  if (edit.editedText) {
-                    originalMsg.text = edit.editedText;
-                  }
+                const targetKey = edit.targetMessageId;
+                if (!targetKey) return;
+
+                if (edit.editedText) {
+                  editedMessageTextsRef.current[targetKey] = edit.editedText;
+                }
+
+                const orig = formattedMessages.find(m => m.keyId === targetKey || m.id === targetKey);
+                if (orig) {
+                  orig.isEdited = true;
+                  if (edit.editedText) orig.text = edit.editedText;
+                }
+                const existing = (chatsToUpdate[clientId] || chatsRef.current[clientId] || []).find(m => m.keyId === targetKey || m.id === targetKey);
+                if (existing) {
+                  existing.isEdited = true;
+                  if (edit.editedText) existing.text = edit.editedText;
                 }
               });
 
-              const filteredMessages = formattedMessages.filter(msg => msg.timestamp > clearedTime);
+              const filteredMessages = formattedMessages.filter(msg => {
+                if (clearedTime > 0 && msg.timestamp <= clearedTime) return false;
+                const msgKey = msg.keyId || msg.id;
+                if (deletedMessageKeysRef.current[msgKey] || deletedMessageKeysRef.current[msg.id]) return false;
+                return true;
+              });
 
               // Merge, sort ascending by timestamp and keep last 35 messages to protect local storage quota
-              const existingMsgs = chatsToUpdate[clientId] || chatsRef.current[clientId] || [];
+              const rawExistingMsgs = chatsToUpdate[clientId] || chatsRef.current[clientId] || [];
+              const existingMsgs = rawExistingMsgs.filter(msg => {
+                if (clearedTime > 0 && msg.timestamp <= clearedTime) return false;
+                const msgKey = msg.keyId || msg.id;
+                if (deletedMessageKeysRef.current[msgKey] || deletedMessageKeysRef.current[msg.id]) return false;
+                return true;
+              });
               const combined = [...existingMsgs, ...filteredMessages];
               const uniqueMsgsMap = new Map();
+
               combined.forEach(m => {
                 const key = m.keyId || m.id;
+                if (deletedMessageKeysRef.current[key] || deletedMessageKeysRef.current[m.id]) return;
+
+                // Check if this server message matches a temporary local optimistic message (id starting with m_u_)
+                if (m.keyId && !m.id.startsWith('m_u_')) {
+                  const serverCleanText = (m.text || '').replace(/^\*[^*]+:\*\s*/, '').trim();
+                  for (const [existingKey, existingItem] of uniqueMsgsMap.entries()) {
+                    if (existingItem.id && existingItem.id.startsWith('m_u_')) {
+                      const localCleanText = (existingItem.text || '').replace(/^\*[^*]+:\*\s*/, '').trim();
+                      const sameSender = existingItem.sender === m.sender;
+                      const sameText = localCleanText === serverCleanText || (m.text || '').includes(localCleanText);
+                      const timeDiff = Math.abs((existingItem.timestamp || 0) - (m.timestamp || 0));
+                      if (sameSender && (sameText || timeDiff <= 15)) {
+                        if (existingItem.keyId && !m.keyId) {
+                          m.keyId = existingItem.keyId;
+                        }
+                        uniqueMsgsMap.delete(existingKey);
+                        break;
+                      }
+                    }
+                  }
+                }
+
                 uniqueMsgsMap.set(key, m);
               });
-              const merged = Array.from(uniqueMsgsMap.values());
+
+              const merged = Array.from(uniqueMsgsMap.values()).map(msg => {
+                const msgKey = msg.keyId || msg.id;
+                const savedEditedText = editedMessageTextsRef.current[msgKey] || editedMessageTextsRef.current[msg.id] || editedMessageTextsRef.current[msg.keyId];
+                if (savedEditedText) {
+                  return { ...msg, text: savedEditedText, isEdited: true };
+                }
+                return msg;
+              });
               merged.sort((a, b) => a.timestamp - b.timestamp);
               chatsToUpdate[clientId] = merged.slice(-35);
               
@@ -1403,10 +1887,23 @@ export const AppProvider = ({ children }) => {
                   logToDisk("syncWhatsAppChats: updating name to " + foundName + " for existing client " + clientId + " from message history");
                 }
               }
-
-
-
-            }
+              // Persist newly synced messages from WhatsApp to the user's configured Supabase chat table
+              formattedMessages.forEach(m => {
+                if ((m.text && m.text.trim()) || m.file) {
+                  const alreadySavedKey = `crmbase_sp_saved_${m.id || m.keyId}`;
+                  if (!localStorage.getItem(alreadySavedKey)) {
+                    localStorage.setItem(alreadySavedKey, '1');
+                    saveChatMessageToSupabase(
+                      clientId, 
+                      m.sender === 'user' ? 'operador' : 'cliente', 
+                      m.text, 
+                      m.file, 
+                      m.senderName, 
+                      m.timestamp
+                    );
+                  }
+                }
+              });            }
           } catch (err) {
             logToDisk("syncWhatsAppChats error fetching messages for " + clientJid + ": " + err.message, "ERROR");
             console.error(`Erro ao buscar mensagens para ${clientJid}:`, err);
@@ -1513,34 +2010,37 @@ export const AppProvider = ({ children }) => {
 
   // One-time cleanup to make previously deleted contacts reappear
   useEffect(() => {
-    if (!localStorage.getItem('analise_restored_deleted_v3')) {
+    if (!localStorage.getItem('crmbase_restored_deleted_v3')) {
       logToDisk("One-time cleanup: clearing deleted contact filters to restore them");
       const keysToRemove = [];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && (key.startsWith('analise_deleted_contact_') || key === 'analise_permanently_deleted_contacts')) {
+        if (key && (key.startsWith('crmbase_deleted_contact_') || key === 'crmbase_permanently_deleted_contacts')) {
           keysToRemove.push(key);
         }
       }
       keysToRemove.forEach(key => localStorage.removeItem(key));
-      localStorage.setItem('analise_restored_deleted_v3', 'true');
+      localStorage.setItem('crmbase_restored_deleted_v3', 'true');
     }
   }, []);
 
-  // WhatsApp Poll Effect every 6 seconds when ONLINE
+  // WhatsApp Poll Effect every 2.5 seconds when ONLINE for ultra-fast response
   useEffect(() => {
     let interval;
+    logToDisk("useEffect [waStatus] triggered. waStatus=" + waStatus);
     if (waStatus === 'ONLINE') {
       syncWhatsAppChats();
-      interval = setInterval(syncWhatsAppChats, 6000);
+      interval = setInterval(syncWhatsAppChats, 2500);
     }
     return () => {
+      logToDisk("useEffect [waStatus] cleanup. waStatus=" + waStatus);
       if (interval) clearInterval(interval);
     };
   }, [waStatus]);
 
   // Trigger sync immediately when active chat changes to load history instantly
   useEffect(() => {
+    logToDisk("useEffect [activeChatClientId, waStatus] triggered. activeChatClientId=" + activeChatClientId + ", waStatus=" + waStatus);
     if (waStatus === 'ONLINE' && activeChatClientId) {
       syncWhatsAppChats();
     }
@@ -1608,11 +2108,15 @@ export const AppProvider = ({ children }) => {
   }, [quickLinks]);
 
   useEffect(() => {
+    localStorage.setItem('crmbase_quick_replies', JSON.stringify(quickReplies));
+  }, [quickReplies]);
+
+  useEffect(() => {
     localStorage.setItem('eloos_profile', JSON.stringify(profile));
   }, [profile]);
 
   useEffect(() => {
-    localStorage.setItem('analise_wa_status', waStatus);
+    localStorage.setItem('crmbase_wa_status', waStatus);
   }, [waStatus]);
 
   const login = (email, password) => {
@@ -1703,7 +2207,7 @@ export const AppProvider = ({ children }) => {
     if (client.phone) {
       const cleanPhone = client.phone.replace(/\D/g, '');
       const suffix = cleanPhone.slice(-8);
-      localStorage.removeItem(`analise_deleted_contact_${suffix}`);
+      localStorage.removeItem(`crmbase_deleted_contact_${suffix}`);
     }
 
     setClients(prev => [...prev, newClient]);
@@ -1747,7 +2251,7 @@ export const AppProvider = ({ children }) => {
       return 'admin_a_fazer';
     }
 
-    const saved = localStorage.getItem('analise_pipelines');
+    const saved = localStorage.getItem('crmbase_pipelines');
     const pipelines = saved ? JSON.parse(saved) : [
       { id: 'pessoal', name: 'Pessoal' },
       { id: 'contabil_fiscal', name: 'Contábil/Fiscal' },
@@ -1770,17 +2274,36 @@ export const AppProvider = ({ children }) => {
   const updateClient = (updatedClient) => {
     setClients(prev => prev.map(c => c.id === updatedClient.id ? updatedClient : c));
     
-    // Update client column on Kanban cards linked to this client
-    setKanbanCards(prev => prev.map(card => {
-      if (card.clientId === updatedClient.id) {
-        return {
-          ...card,
-          title: card.title.replace(/.* - /, `${updatedClient.name} - `),
-          column: mapStatusToColumn(updatedClient.status)
+    // Update or create client card on Kanban
+    setKanbanCards(prev => {
+      const targetColumn = mapStatusToColumn(updatedClient.status);
+      const hasCard = prev.some(card => card.clientId === updatedClient.id);
+      
+      if (hasCard) {
+        return prev.map(card => {
+          if (card.clientId === updatedClient.id) {
+            return {
+              ...card,
+              title: card.title.includes(' - ') ? card.title.replace(/.* - /, `${updatedClient.name} - `) : `${updatedClient.name} - Negócio`,
+              column: targetColumn,
+              priority: updatedClient.priority || card.priority || 'Média'
+            };
+          }
+          return card;
+        });
+      } else {
+        const newCard = {
+          id: `k_${Date.now()}`,
+          clientId: updatedClient.id,
+          title: `${updatedClient.name} - Negócio`,
+          desc: `Acompanhamento do cliente ${updatedClient.name}. Contato: ${updatedClient.phone || updatedClient.email || ''}`,
+          column: targetColumn,
+          priority: updatedClient.priority || 'Média',
+          date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
         };
+        return [...prev, newCard];
       }
-      return card;
-    }));
+    });
   };
 
   const deleteClient = (id) => {
@@ -1805,15 +2328,15 @@ export const AppProvider = ({ children }) => {
 
     // Passo 4: Executar a exclusão na ordem correta respeitando relacionamentos
     // 1. Definir o timestamp de exclusão e remover flags de triagem
-    localStorage.setItem(`analise_deleted_contact_${suffix}`, lastMsgTimestamp.toString());
-    localStorage.removeItem(`analise_triage_sent_${cleanPhone}`);
-    localStorage.removeItem(`analise_triage_sent_${suffix}`);
-    localStorage.removeItem(`analise_triage_sent_time_${suffix}`);
-    localStorage.removeItem(`analise_triage_sent_time_${cleanPhone}`);
-    localStorage.removeItem(`analise_triage_routed_${id}`);
-    localStorage.removeItem(`analise_triage_routed_${suffix}`);
-    localStorage.removeItem(`analise_triage_routed_time_${id}`);
-    localStorage.removeItem(`analise_triage_routed_time_${suffix}`);
+    localStorage.setItem(`crmbase_deleted_contact_${suffix}`, lastMsgTimestamp.toString());
+    localStorage.removeItem(`crmbase_triage_sent_${cleanPhone}`);
+    localStorage.removeItem(`crmbase_triage_sent_${suffix}`);
+    localStorage.removeItem(`crmbase_triage_sent_time_${suffix}`);
+    localStorage.removeItem(`crmbase_triage_sent_time_${cleanPhone}`);
+    localStorage.removeItem(`crmbase_triage_routed_${id}`);
+    localStorage.removeItem(`crmbase_triage_routed_${suffix}`);
+    localStorage.removeItem(`crmbase_triage_routed_time_${id}`);
+    localStorage.removeItem(`crmbase_triage_routed_time_${suffix}`);
 
     logToDisk(`deleteClient: Deletion timestamp updated for phone suffix "${suffix}"`);
 
@@ -1855,7 +2378,7 @@ export const AppProvider = ({ children }) => {
     });
 
     // Passo 7: Garantir que o contato não seja reidratado ou recriado automaticamente
-    // (Garantido pelo filtro 'analise_deleted_contact_suffix' em syncWhatsAppChats)
+    // (Garantido pelo filtro 'crmbase_deleted_contact_suffix' em syncWhatsAppChats)
     logToDisk(`deleteClient: Deletion process completed successfully for ${client.name}`);
   };
 
@@ -1866,7 +2389,7 @@ export const AppProvider = ({ children }) => {
       
       // Wipe localStorage triage flags for Miguel's potential phone suffix
       Object.keys(localStorage).forEach(key => {
-        if (key.includes("triage") || key.startsWith("analise_poll_handled_")) {
+        if (key.includes("triage") || key.startsWith("crmbase_poll_handled_")) {
           localStorage.removeItem(key);
           console.log(`Cleared flag: ${key}`);
         }
@@ -1891,13 +2414,13 @@ export const AppProvider = ({ children }) => {
         'eloos_kanban',
         'eloos_chats',
         'eloos_chats_cleared_timestamps',
-        'analise_unread_chats'
+        'crmbase_unread_chats'
       ];
       keysToClear.forEach(k => localStorage.removeItem(k));
       
       // Wipe triage tags/polls sent
       Object.keys(localStorage).forEach(key => {
-        if (key.includes("triage") || key.startsWith("analise_poll_handled_")) {
+        if (key.includes("triage") || key.startsWith("crmbase_poll_handled_")) {
           localStorage.removeItem(key);
         }
       });
@@ -1912,33 +2435,811 @@ export const AppProvider = ({ children }) => {
       console.log("All caches wiped! The system is now completely clean.");
     };
 
+    // Clear legacy mock default quick replies if present
+    const savedQuickReplies = localStorage.getItem('crmbase_quick_replies');
+    if (savedQuickReplies) {
+      const parsed = safeJsonParse(savedQuickReplies, []);
+      if (Array.isArray(parsed) && parsed.some(r => ['qr_1', 'qr_2', 'qr_3'].includes(r.id))) {
+        const cleaned = parsed.filter(r => !['qr_1', 'qr_2', 'qr_3'].includes(r.id));
+        localStorage.setItem('crmbase_quick_replies', JSON.stringify(cleaned));
+        setQuickReplies(cleaned);
+      }
+    }
+
     // Auto-wipe old local caches on first run to clean up previous sessions for the user
-    if (!localStorage.getItem('analise_clean_final_delivery')) {
-      localStorage.setItem('analise_clean_final_delivery', '1');
+    if (!localStorage.getItem('crmbase_clean_final_delivery')) {
+      localStorage.setItem('crmbase_clean_final_delivery', '1');
       window.clearAllCaches();
     }
   }, []);
 
   const clearChat = (clientId) => {
-    const client = clients.find(c => c.id === clientId);
-    const lastMsgTimestamp = client?.lastMessageTimestamp || 0;
+    if (clientId === 'client_teste_agente') {
+      localStorage.removeItem('crmbase_triage_routed_client_teste_agente');
+      setKanbanCards(prev => prev.filter(c => c.clientId !== 'client_teste_agente'));
+      setRawClients(prev => prev.map(c => c.id === 'client_teste_agente' ? { ...c, status: 'Pessoal' } : c));
+    }
+
     const nowUnix = Math.floor(Date.now() / 1000);
-    const clearedTime = Math.max(nowUnix, lastMsgTimestamp) + 2;
+    const clearedTime = nowUnix;
+
+    setClients(prev => prev.map(c => c.id === clientId ? {
+      ...c,
+      lastMessageText: '',
+      lastMessageTime: '',
+      lastMessageTimestamp: 0
+    } : c));
 
     setChatsClearedTimestamps(prev => ({
       ...prev,
       [clientId]: clearedTime
     }));
+
     setChats(prev => ({
       ...prev,
       [clientId]: []
     }));
   };
 
+  const generateSimulatedAiReply = async (userPrompt, targetClientId = 'client_teste_agente', fileData = null) => {
+    const sdrBehavior = localStorage.getItem('crmbase_sdr_behavior') || 'Você é um assistente virtual SDR atencioso, inteligente e prestativo.';
+    const welcomeMsg = localStorage.getItem('crmbase_sdr_welcome') || '';
+    let processedPrompt = (userPrompt || '').toLowerCase().trim();
+
+    // Check if an image or document file was uploaded in simulator
+    let userMessageContent = processedPrompt || cleanPrompt || 'Anexo enviado pelo cliente';
+
+    if (fileData && fileData.url) {
+      if (fileData.type && fileData.type.includes('audio')) {
+        const openAiKey = (localStorage.getItem('crmbase_sdr_apikey') || localStorage.getItem('crmbase_openai_api_key') || import.meta.env.VITE_OPENAI_API_KEY || '').trim();
+        if (openAiKey) {
+          try {
+            const pureBase64 = fileData.url.includes(',') ? fileData.url.split(',')[1] : fileData.url;
+            const byteCharacters = atob(pureBase64);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+              byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const audioBlob = new Blob([byteArray], { type: fileData.type || 'audio/webm' });
+
+            const formData = new FormData();
+            formData.append('file', audioBlob, 'audio.webm');
+            formData.append('model', 'whisper-1');
+            formData.append('language', 'pt');
+
+            const xhrWhisper = new XMLHttpRequest();
+            xhrWhisper.open('POST', 'https://api.openai.com/v1/audio/transcriptions', false);
+            xhrWhisper.setRequestHeader('Authorization', `Bearer ${openAiKey}`);
+            xhrWhisper.send(formData);
+
+            if (xhrWhisper.status === 200) {
+              const whisperRes = JSON.parse(xhrWhisper.responseText);
+              if (whisperRes.text) {
+                processedPrompt = whisperRes.text.toLowerCase().trim();
+                userMessageContent = processedPrompt;
+                console.log("Whisper transcription result in simulator:", whisperRes.text);
+              }
+            }
+          } catch (e) {
+            console.warn("Simulator Whisper audio transcription error:", e);
+          }
+        }
+      } else if (fileData.type && fileData.type.startsWith('image/')) {
+        // OpenAI Vision multimodal input format
+        userMessageContent = [
+          { type: 'text', text: processedPrompt && !processedPrompt.startsWith('📷') ? processedPrompt : 'Por favor, analise e descreva a imagem enviada pelo cliente e responda a qualquer dúvida contida nela.' },
+          { type: 'image_url', image_url: { url: fileData.url } }
+        ];
+      } else if (fileData.type && (fileData.type.includes('text') || fileData.type.includes('pdf') || fileData.type.includes('document'))) {
+        const docText = fileData.textContent || '';
+        userMessageContent = `[DOCUMENTO/TABELA ANEXADO PELO CLIENTE: ${fileData.name}]\n${docText ? `Conteúdo Extraído do Documento:\n${docText}\n\n` : ''}Pergunta/Dúvida do cliente: ${processedPrompt || 'Analise este documento e responda com base no seu conteúdo real.'}`;
+      }
+    }
+
+    const cleanPrompt = typeof userMessageContent === 'string' ? userMessageContent : (processedPrompt || '');
+
+    // Retrieve Knowledge Base Files & Sources
+    let knowledgeFiles = [];
+    try {
+      const savedFiles = localStorage.getItem('crmbase_sdr_knowledge_files');
+      knowledgeFiles = savedFiles ? JSON.parse(savedFiles) : [];
+    } catch (e) {}
+
+    // Include attached document content in knowledge text if available
+    let attachedDocContent = '';
+    if (fileData && (fileData.textContent || fileData.name)) {
+      attachedDocContent = `\n[DOCUMENTO ATUALMENTE ANEXADO NA MENSAGEM: ${fileData.name}]\n${fileData.textContent || ''}\n`;
+    }
+
+    // Get current message history in simulator or real WhatsApp chat for multi-turn context
+    const currentMsgs = chatsRef.current[targetClientId] || [];
+    const recentHistory = currentMsgs.slice(-15);
+    const isFirstMsg = currentMsgs.length <= 2;
+    const historyText = currentMsgs.map(m => m.text || '').join(' ').toLowerCase();
+    let allKnowledgeText = attachedDocContent;
+    let extractedChunks = [];
+
+    // 1. Fetch from Supabase knowledge_base
+    const supabaseUrl = (localStorage.getItem('crmbase_supabase_url') || '').trim();
+    const supabaseAnonKey = (localStorage.getItem('crmbase_supabase_anon_key') || '').trim();
+    if (supabaseUrl && supabaseAnonKey) {
+      try {
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', `${supabaseUrl.replace(/\/$/, '')}/rest/v1/knowledge_base?select=file_name,content&limit=20`, false);
+        xhr.setRequestHeader('apikey', supabaseAnonKey);
+        xhr.setRequestHeader('Authorization', `Bearer ${supabaseAnonKey}`);
+        xhr.send();
+        if (xhr.status === 200) {
+          const data = JSON.parse(xhr.responseText);
+          if (Array.isArray(data)) {
+            data.forEach(item => {
+              if (item.content) {
+                allKnowledgeText += ' ' + item.content;
+                extractedChunks.push(...item.content.split(/[\r\n]+/).map(s => s.trim()).filter(Boolean));
+              }
+            });
+          }
+        }
+      } catch (e) {}
+    }
+
+    // 2. Fetch from Local Knowledge Files
+    if (knowledgeFiles.length > 0) {
+      knowledgeFiles.forEach(f => {
+        if (f.textContent) {
+          allKnowledgeText += ' ' + f.textContent;
+          extractedChunks.push(...f.textContent.split(/[\r\n]+/).map(s => s.trim()).filter(Boolean));
+        }
+      });
+    }
+
+    // 3. Fetch from External Knowledge Source Links (URLs, Google Sheets, APIs)
+    let knowledgeSources = [];
+    try {
+      const savedSources = localStorage.getItem('crmbase_sdr_knowledge_sources');
+      knowledgeSources = savedSources ? JSON.parse(savedSources) : [];
+    } catch (e) {}
+
+    if (knowledgeSources.length > 0) {
+      knowledgeSources.forEach((src, idx) => {
+        if (src.url && src.url.trim().startsWith('http')) {
+          try {
+            const cleanUrl = src.url.trim();
+            const cacheKey = `crmbase_url_cache_${cleanUrl}`;
+            let cachedContent = localStorage.getItem(cacheKey);
+
+            if (!cachedContent) {
+              const xhrUrl = new XMLHttpRequest();
+              xhrUrl.open('GET', `/api/fetch-url?url=${encodeURIComponent(cleanUrl)}`, false);
+              xhrUrl.send();
+              if (xhrUrl.status === 200) {
+                const resData = JSON.parse(xhrUrl.responseText);
+                if (resData.text) {
+                  cachedContent = resData.text;
+                  localStorage.setItem(cacheKey, cachedContent);
+                }
+              }
+            }
+
+            if (cachedContent) {
+              allKnowledgeText += `\n[CONTEÚDO DA FONTE DE LINK EXTERNO: ${src.name || `Fonte ${idx+1}`} (${cleanUrl})]\n${cachedContent}\n`;
+              extractedChunks.push(...cachedContent.split(/[\r\n]+/).map(s => s.trim()).filter(Boolean));
+              logToDisk(`generateSimulatedAiReply: Successfully loaded live link content from ${cleanUrl} (${cachedContent.length} chars)`);
+            }
+          } catch (errSrc) {
+            console.warn(`Error fetching knowledge source link (${src.url}):`, errSrc);
+          }
+        }
+      });
+    }
+
+    // Include recent chat messages context
+    const chatHistoryText = recentHistory.map(m => m.text || '').join(' ');
+    const fullSearchContext = (chatHistoryText + ' ' + allKnowledgeText).replace(/\s+/g, ' ');
+
+    // Greetings check
+    const isGreeting = ['oi', 'olá', 'ola', 'bom dia', 'boa tarde', 'boa noite'].some(g => cleanPrompt.toLowerCase().trim() === g);
+    if (isGreeting) {
+      setChats(prev => ({
+        ...prev,
+        [targetClientId]: [...(prev[targetClientId] || []), {
+          id: `m_sim_ai_${Date.now()}`,
+          sender: 'user',
+          text: welcomeMsg || `Olá! Seja bem-vindo ao nosso atendimento. Como posso te ajudar hoje?`,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }]
+      }));
+      return;
+    }
+
+    // Check for explicit Full Summary request
+    const isSummaryRequest = ['resum', 'resuma', 'mostre os dados', 'dados completos', 'resumo do atendimento', 'todas as informações', 'listar todas'].some(k => cleanPrompt.toLowerCase().includes(k));
+
+    let responseText = '';
+
+    if (isSummaryRequest) {
+      if (allKnowledgeText.trim()) {
+        const lines = extractedChunks.slice(0, 8).map(l => `• ${l}`).join('\n');
+        responseText = `Resumo:\n\n${lines}`;
+      } else {
+        responseText = `Não encontrei dados cadastrados para gerar o resumo no momento.`;
+      }
+    } else {
+      // UNIVERSAL DYNAMIC INTENT & CONTEXT EXTRACTOR ENGINE
+      const textContext = fullSearchContext.replace(/\s+/g, ' ');
+      
+      const stopWords = ['quais', 'quaisquer', 'são', 'como', 'onde', 'para', 'sobre', 'dele', 'dela', 'esse', 'essa', 'este', 'esta', 'dos', 'das', 'com', 'você', 'voce', 'tem', 'ter', 'qual', 'quem', 'saber', 'dizer', 'me', 'informar', 'mostrar', 'onde', 'quando', 'quanto'];
+      const userTokens = typeof cleanPrompt === 'string' ? cleanPrompt
+        .toLowerCase()
+        .replace(/[^\w\sà-ú]/gi, '')
+        .split(/\s+/)
+        .filter(w => w.length >= 2 && !stopWords.includes(w)) : [];
+
+      let matchedSnippet = null;
+
+      if (userTokens.length > 0) {
+        const fieldMap = [
+          { labels: ['preferência', 'preferencia', 'preferências', 'preferencias', 'gosta', 'procura'], pattern: /Preferências[:\s]+([^•\n\r]+?)(?=\s+(?:Origem|Interesse|Entrada|Financiamento|Informações|$))/i, prefix: 'As preferências do cliente são:' },
+          { labels: ['origem', 'veio', 'onde veio', 'canal'], pattern: /Origem[:\s]+([^•\n\r]+?)(?=\s+(?:Preferências|Interesse|Entrada|Financiamento|Informações|$))/i, prefix: 'A origem do cliente é:' },
+          { labels: ['interesse', 'imóvel', 'imovel', 'tipo'], pattern: /Interesse[:\s]+([^•\n\r]+?)(?=\s+(?:Preferências|Origem|Entrada|Financiamento|Informações|$))/i, prefix: 'O interesse cadastrado é:' },
+          { labels: ['entrada', 'recursos', 'dinheiro'], pattern: /Entrada[:\s]+([^•\n\r]+?)(?=\s+(?:Preferências|Origem|Interesse|Financiamento|Informações|$))/i, prefix: 'Valor de entrada:' },
+          { labels: ['financiamento', 'banco', 'crédito', 'credito'], pattern: /Financiamento[:\s]+([^•\n\r]+?)(?=\s+(?:Preferências|Origem|Interesse|Entrada|Informações|$))/i, prefix: 'Informação de financiamento:' },
+          { labels: ['informação', 'informacao', 'informações', 'informacoes', 'observação', 'obs'], pattern: /Informações[:\s]+([^•\n\r]+?)(?=\s+(?:Preferências|Origem|Interesse|Entrada|Financiamento|$))/i, prefix: 'Informações cadastradas:' }
+        ];
+
+        for (const item of fieldMap) {
+          if (item.labels.some(lbl => userTokens.includes(lbl))) {
+            const match = textContext.match(item.pattern);
+            if (match && match[1]) {
+              const val = match[1].trim();
+              if (val.length > 1) {
+                matchedSnippet = `${item.prefix} ${val}`;
+                break;
+              }
+            }
+          }
+        }
+      }
+
+      if (!matchedSnippet && userTokens.length > 0) {
+        const sentences = textContext.split(/(?<=[.!?•\n])\s+/);
+        let bestScore = 0;
+        let bestClause = null;
+
+        sentences.forEach(sentence => {
+          const lowerS = sentence.toLowerCase();
+          const matchCount = userTokens.reduce((acc, token) => acc + (lowerS.includes(token) ? 1 : 0), 0);
+          
+          if (matchCount > bestScore) {
+            bestScore = matchCount;
+            bestClause = sentence.replace(/^(?:Campo|Valor|Dados|Informações|Ficha)[:\s-]+/i, '').trim();
+          }
+        });
+
+        if (bestScore > 0 && bestClause) {
+          if (bestClause.length > 130) {
+            const shortMatch = bestClause.match(/([^.!?•]{10,120}[.!?•]?)/);
+            matchedSnippet = shortMatch ? shortMatch[1].trim() : bestClause.substring(0, 120) + '...';
+          } else {
+            matchedSnippet = bestClause;
+          }
+        }
+      }
+    }
+
+    // Check if the incoming message involves Media (Audio, Image, Document/PDF)
+    const lastMsgObj = currentMsgs.length > 0 ? currentMsgs[currentMsgs.length - 1] : null;
+    const activeFile = fileData || lastMsgObj?.file || (currentMsgs.slice(-2).find(m => m.file)?.file);
+    const mediaKeyId = activeFile?.keyId || lastMsgObj?.keyId;
+
+    // Retrieve OpenAI API Key and System Instructions
+    const openAiApiKey = (localStorage.getItem('crmbase_sdr_apikey') || localStorage.getItem('crmbase_openai_api_key') || import.meta.env.VITE_OPENAI_API_KEY || '').trim();
+    const openAiModel = (localStorage.getItem('crmbase_sdr_model') || 'gpt-4o-mini').trim();
+    const sdrBehaviorPrompt = localStorage.getItem('crmbase_sdr_behavior') || 'Você é o agente SDR de atendimento.';
+
+    // AUTOMATIC EVOLUTION API MEDIA & WHISPER / VISION EXTRACTION ENGINE
+    let extractedMediaBase64 = activeFile?.url || null;
+    let isVisionImage = false;
+    let visionImageUrl = null;
+
+    if (openAiApiKey && (openAiApiKey.startsWith('sk-') || openAiApiKey.length > 20)) {
+      // 1. Fetch Base64 from Evolution API if keyId is present and no URL exists
+      if (mediaKeyId && (!extractedMediaBase64 || !extractedMediaBase64.startsWith('data:'))) {
+        try {
+          logToDisk(`generateSimulatedAiReply: Fetching media base64 from Evolution API for keyId ${mediaKeyId}...`);
+          const b64 = await fetchMediaBase64(mediaKeyId);
+          if (b64 && typeof b64 === 'string') {
+            extractedMediaBase64 = b64.startsWith('data:') ? b64 : `data:${activeFile?.type || 'image/jpeg'};base64,${b64}`;
+            logToDisk(`generateSimulatedAiReply: Base64 media fetched successfully for keyId ${mediaKeyId}`);
+          }
+        } catch (eB64) {
+          console.warn('Error fetching media Base64 from Evolution API:', eB64);
+        }
+      }
+
+      // 2. Audio Processing via Whisper
+      const isAudio = (activeFile?.type && activeFile.type.includes('audio')) || 
+                      (cleanPrompt && (cleanPrompt.includes('áudio') || cleanPrompt.includes('audio')));
+
+      if (isAudio && extractedMediaBase64) {
+        try {
+          const rawClean = extractedMediaBase64.includes('base64,') ? extractedMediaBase64.split('base64,')[1] : extractedMediaBase64;
+          const cleanBase64 = rawClean.replace(/[^A-Za-z0-9+/=]/g, '').trim();
+          if (cleanBase64.length > 0) {
+            const byteCharacters = atob(cleanBase64);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+              byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const audioBlob = new Blob([byteArray], { type: activeFile?.type || 'audio/ogg' });
+            
+            const formData = new FormData();
+            formData.append('file', audioBlob, 'audio.ogg');
+            formData.append('model', 'whisper-1');
+            formData.append('language', 'pt');
+
+            const xhrWhisper = new XMLHttpRequest();
+            xhrWhisper.open('POST', 'https://api.openai.com/v1/audio/transcriptions', false);
+            xhrWhisper.setRequestHeader('Authorization', `Bearer ${openAiApiKey}`);
+            xhrWhisper.send(formData);
+
+            if (xhrWhisper.status === 200) {
+              const whisperData = JSON.parse(xhrWhisper.responseText);
+              if (whisperData.text) {
+                processedPrompt = whisperData.text;
+                userMessageContent = processedPrompt;
+                logToDisk(`generateSimulatedAiReply: Whisper transcribed audio successfully: "${processedPrompt}"`);
+              }
+            }
+          }
+        } catch (errWhisper) {
+          console.warn('Whisper Transcription Error:', errWhisper);
+        }
+      }
+
+      // 3. Image & Document Processing via Multimodal Vision (GPT-4o)
+      const isImg = (activeFile?.type && (activeFile.type.startsWith('image/') || activeFile.type.includes('pdf'))) ||
+                    (activeFile?.name && activeFile.name.match(/\.(jpg|jpeg|png|webp|gif|pdf)$/i));
+
+      if (isImg && extractedMediaBase64) {
+        isVisionImage = true;
+        visionImageUrl = extractedMediaBase64;
+      }
+    }
+
+    // Check if OpenAI API Key is available for Real LLM Generation
+    if (openAiApiKey && (openAiApiKey.startsWith('sk-') || openAiApiKey.length > 20)) {
+      try {
+        const docInfoSnippet = activeFile ? `\nDOCUMENTO/IMAGEM ENVIADA PELO CLIENTE: "${activeFile.name}". VOCÊ JÁ RECEBEU O ARQUIVO EM ANEXO. NUNCA PEÇA PARA O CLIENTE ENVIAR O ARQUIVO NOVAMENTE!\n` : '';
+        const systemPrompt = `${sdrBehaviorPrompt}
+
+Sua regra fundamental é responder ao cliente de forma EXTREMAMENTE OBJETIVA, DIRETA, EMPÁTICA e CORDIAL.
+
+REGRAS CRÍTICAS E OBRIGATÓRIAS:
+1. O CLIENTE JÁ TE ENVIOU O DOCUMENTO, IMAGEM OU PDF. VOCÊ JÁ TEM ACESSO AO CONTEÚDO DELE. JAMAIS diga "Por favor, envie o documento" ou "Não recebi o arquivo".
+2. Analise a IMAGEM, PDF OU DOCUMENTO ENVIADO (${activeFile ? activeFile.name : 'anexo'}), leia todas as informações e dados contidos nele e responda de acordo com a pergunta do cliente.
+3. Se o cliente perguntar "pode verificar se esses dados do documento coincidem" ou algo semelhante, compare os dados contidos no documento/imagem em anexo com os dados do cliente no contexto e responda confirmando ou apontando o resultado claramente.
+4. Seja direto e responda em no máximo 1 ou 2 frases curtas. Não faça apresentações longas nem peça confirmação do que já foi enviado.
+5. Se a informação específica solicitada pelo lead NÃO constar no contexto ou no arquivo, diga educadamente: "Não encontrei essa informação específica no documento no momento. Vou transferir o seu atendimento para um especialista humano!"
+${docInfoSnippet}
+[CONTEXTO DA BASE DE CONHECIMENTO DO SUPABASE E HISTÓRICO]:
+${fullSearchContext.substring(0, 4000)}
+`;
+
+        // Format user message content (multimodal array if Vision image, or text string)
+        let formattedUserContent = userMessageContent;
+        if (isVisionImage && visionImageUrl) {
+          const userPromptText = (typeof userMessageContent === 'string' && !userMessageContent.startsWith('📷')) 
+            ? userMessageContent 
+            : 'Por favor, analise a imagem/documento em anexo e responda com base em todo o texto, tabela e informações contidas nela.';
+          
+          formattedUserContent = [
+            { type: 'text', text: userPromptText },
+            { type: 'image_url', image_url: { url: visionImageUrl } }
+          ];
+        }
+
+        const xhrAi = new XMLHttpRequest();
+        xhrAi.open('POST', 'https://api.openai.com/v1/chat/completions', false);
+        xhrAi.setRequestHeader('Content-Type', 'application/json');
+        xhrAi.setRequestHeader('Authorization', `Bearer ${openAiApiKey}`);
+        
+        const payload = {
+          model: openAiModel,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: formattedUserContent }
+          ],
+          temperature: 0.2,
+          max_tokens: 300
+        };
+
+        xhrAi.send(JSON.stringify(payload));
+        if (xhrAi.status === 200) {
+          const aiResponseData = JSON.parse(xhrAi.responseText);
+          const aiText = aiResponseData.choices?.[0]?.message?.content?.trim();
+          if (aiText) {
+            responseText = aiText;
+            dispatchAiReply(targetClientId, responseText);
+            return;
+          }
+        }
+      } catch (errAi) {
+        console.warn('OpenAI Direct API Call Exception:', errAi);
+      }
+    }
+
+    // FALLBACK PRECISION EXTRACTOR (When API key is not typed yet)
+    if (fileData) {
+      responseText = `Recebi o documento "${fileData.name}". Como posso te ajudar com as informações deste arquivo?`;
+    } else if (matchedSnippet) {
+      const cleanSnippet = matchedSnippet.replace(/^[:\s-]+/, '').trim();
+      responseText = cleanSnippet.charAt(0).toUpperCase() + cleanSnippet.slice(1);
+    } else {
+      responseText = `Não encontrei essa informação específica na nossa base de conhecimento no momento. Vou transferir o seu atendimento para um especialista humano para te ajudar melhor!`;
+    }
+
+    dispatchAiReply(targetClientId, responseText);
+  };
+
+  const saveChatMessageToSupabase = (clientId, sender, text, file = null, senderName = null, timestampOverride = null) => {
+    const rawText = text || '';
+    if (!rawText.trim() && !file) return;
+
+    let supabaseUrl = (localStorage.getItem('crmbase_supabase_url') || '').trim();
+    const supabaseAnonKey = (localStorage.getItem('crmbase_supabase_anon_key') || '').trim();
+    const rawTable = (localStorage.getItem('crmbase_supabase_table') || 'mensagens_de_bate_papo').trim();
+
+    if (!supabaseUrl || !supabaseAnonKey) return;
+
+    try {
+      supabaseUrl = supabaseUrl.replace(/\/rest\/v1\/?$/i, '').replace(/\/+$/, '');
+      const client = clientsRef.current.find(c => c.id === clientId);
+      const idCliente = client ? (client.phone || client.name || clientId) : clientId;
+      const cleanTableName = rawTable.replace(/^\/+|\/+$/g, '').trim();
+      const endpoint = `${supabaseUrl}/rest/v1/${encodeURIComponent(cleanTableName)}`;
+
+      const ts = timestampOverride || Math.floor(Date.now() / 1000);
+      const dateObj = new Date(ts * 1000);
+      
+      const dataEnvio = dateObj.toLocaleDateString('pt-BR'); // ex: 04/08/2026
+      const horaEnvio = dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); // ex: 09:35
+
+      let tipoMidia = 'texto';
+      let documentoUrl = null;
+      let documentoNome = null;
+      let imagemUrl = null;
+      let audioUrl = null;
+      let audioTranscricao = null;
+
+      if (file) {
+        const fileType = file.type || file.mimetype || '';
+        const fileName = file.name || 'arquivo';
+
+        if (fileType.startsWith('image/')) {
+          tipoMidia = 'imagem';
+          imagemUrl = file.url || null;
+        } else if (fileType.startsWith('audio/')) {
+          tipoMidia = 'audio';
+          audioUrl = file.url || null;
+          audioTranscricao = rawText.trim() ? rawText.trim() : '🔊 [Áudio Recebido]';
+        } else {
+          tipoMidia = 'documento';
+          documentoUrl = file.url || null;
+          documentoNome = fileName;
+        }
+      }
+
+      const nomeRemetente = senderName || (sender === 'operador' ? 'Você' : sender === 'agente_ia' ? 'Agente IA' : (client?.name || 'Cliente'));
+      const textoMensagem = rawText.trim() || (file ? `[${tipoMidia.toUpperCase()}]: ${file.name || 'Arquivo'}` : '');
+
+      // Unified Payload with both Portuguese and English field aliases for max compatibility
+      const fullPayload = {
+        id_do_cliente: idCliente,
+        client_id: idCliente,
+        remetente: sender,
+        sender: sender,
+        nome_do_remetente: nomeRemetente,
+        sender_name: nomeRemetente,
+        texto: textoMensagem,
+        text: textoMensagem,
+        data_envio: dataEnvio,
+        hora_envio: horaEnvio,
+        tipo_midia: tipoMidia,
+        media_type: tipoMidia,
+        documento_url: documentoUrl,
+        documento_nome: documentoNome,
+        imagem_url: imagemUrl,
+        audio_url: audioUrl,
+        audio_transcricao: audioTranscricao,
+        carimbo_de_data_hora: ts,
+        timestamp: ts
+      };
+
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', endpoint, true);
+      xhr.setRequestHeader('Content-Type', 'application/json');
+      xhr.setRequestHeader('apikey', supabaseAnonKey);
+      xhr.setRequestHeader('Authorization', `Bearer ${supabaseAnonKey}`);
+      xhr.setRequestHeader('Prefer', 'return=minimal');
+
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4) {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            logToDisk(`saveChatMessageToSupabase: Successfully saved message to '${rawTable}' (${xhr.status})`);
+          } else if (xhr.status === 400 || xhr.status === 406 || xhr.status === 422) {
+            logToDisk(`saveChatMessageToSupabase: Schema warning (${xhr.status}). Attempting simplified fallback insert for '${rawTable}'...`, 'WARN');
+            
+            // Clean Portuguese schema fallback
+            const ptXhr = new XMLHttpRequest();
+            ptXhr.open('POST', endpoint, true);
+            ptXhr.setRequestHeader('Content-Type', 'application/json');
+            ptXhr.setRequestHeader('apikey', supabaseAnonKey);
+            ptXhr.setRequestHeader('Authorization', `Bearer ${supabaseAnonKey}`);
+            ptXhr.setRequestHeader('Prefer', 'return=minimal');
+            ptXhr.send(JSON.stringify({
+              id_do_cliente: idCliente,
+              remetente: sender,
+              nome_do_remetente: nomeRemetente,
+              texto: textoMensagem,
+              data_envio: dataEnvio,
+              hora_envio: horaEnvio,
+              tipo_midia: tipoMidia,
+              documento_url: documentoUrl,
+              documento_nome: documentoNome,
+              imagem_url: imagemUrl,
+              audio_url: audioUrl,
+              audio_transcricao: audioTranscricao,
+              carimbo_de_data_hora: ts
+            }));
+          } else {
+            console.warn(`saveChatMessageToSupabase failed (${xhr.status}):`, xhr.responseText);
+          }
+        }
+      };
+
+      xhr.send(JSON.stringify(fullPayload));
+    } catch (e) {
+      console.warn('Error saving message history to Supabase:', e);
+    }
+  };
+
+  const dispatchAiReply = (targetClientId, text) => {
+    if (!text || !text.trim()) return;
+
+    const isSplitEnabled = localStorage.getItem('crmbase_sdr_split_responses') === 'true';
+    const textBlocks = isSplitEnabled 
+      ? text.split(/\n\s*\n|\n/).map(b => b.trim()).filter(Boolean)
+      : [text.trim()];
+
+    textBlocks.forEach((blockText, blockIdx) => {
+      setTimeout(() => {
+        const aiMsgObj = {
+          id: `m_sim_ai_${Date.now()}_${blockIdx}`,
+          sender: 'user',
+          text: blockText,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          timestamp: Math.floor(Date.now() / 1000)
+        };
+
+        setChats(prev => ({
+          ...prev,
+          [targetClientId]: [...(prev[targetClientId] || []), aiMsgObj]
+        }));
+
+        // Save AI reply to Supabase chat history table
+        saveChatMessageToSupabase(targetClientId, 'agente_ia', blockText);
+
+        // If this is a real WhatsApp contact (not the simulator), send the message via Evolution API
+        if (targetClientId && targetClientId !== 'client_teste_agente') {
+          const client = clientsRef.current.find(c => c.id === targetClientId);
+          if (client && client.jid) {
+            fetchEvolution(`/message/sendText/${EVO_CONFIG.encodedInstanceName}`, {
+              method: 'POST',
+              body: JSON.stringify({
+                number: client.jid,
+                text: blockText
+              })
+            }).catch(err => console.error("Error sending WhatsApp AI reply:", err));
+          }
+        }
+      }, blockIdx * 800);
+    });
+  };
+
+  const simulateAgentResponse = (inputText, fileData = null) => {
+    const isSdrEnabled = localStorage.getItem('crmbase_sdr_enabled') !== 'false';
+    if (!isSdrEnabled) return;
+
+    const routeMode = localStorage.getItem('crmbase_sdr_route_mode') || 'ai';
+
+    const triageRoutedKey = `crmbase_triage_routed_client_teste_agente`;
+    const isRouted = localStorage.getItem(triageRoutedKey) === '1';
+
+    // Simulate standard WhatsApp network delay (1 second)
+    setTimeout(() => {
+      if (routeMode === 'ai' || routeMode === 'disabled') {
+        if (!isRouted) {
+          let aiMapping = [];
+          try {
+            const saved = localStorage.getItem('crmbase_sdr_ai_mapping');
+            aiMapping = saved ? JSON.parse(saved) : [];
+          } catch (e) {}
+
+          const lowWeightWords = ['ajuda', 'suporte', 'duvida', 'preciso', 'quero', 'favor', 'atendimento'];
+          let bestMatch = null;
+          let highestScore = -1;
+
+          const cleanChoiceText = inputText.trim().toLowerCase();
+          aiMapping.forEach(m => {
+            if (!m.keywords) return;
+            const keywordsList = m.keywords.split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
+            
+            let maxPositionalScoreForRule = 0;
+            let genericMatchesCount = 0;
+            let specificMatchesCount = 0;
+
+            keywordsList.forEach((kw, posIdx) => {
+              if (!kw) return;
+              if (cleanChoiceText.includes(kw)) {
+                const posWeight = Math.max(10, 100 - (posIdx * 10));
+                const isLowWeight = lowWeightWords.includes(kw);
+                const finalScore = isLowWeight ? 5 : (posWeight + kw.length * 2);
+
+                if (isLowWeight) {
+                  genericMatchesCount++;
+                } else {
+                  specificMatchesCount++;
+                }
+
+                if (finalScore > maxPositionalScoreForRule) {
+                  maxPositionalScoreForRule = finalScore;
+                }
+              }
+            });
+
+            const totalRuleScore = maxPositionalScoreForRule + (specificMatchesCount * 50) + genericMatchesCount;
+
+            if (totalRuleScore > highestScore && totalRuleScore > 0) {
+              highestScore = totalRuleScore;
+              bestMatch = m;
+            }
+          });
+
+          if (bestMatch && highestScore > 0) {
+            localStorage.setItem(triageRoutedKey, '1');
+            let newStatus = 'Pessoal';
+            try {
+              const savedCols = localStorage.getItem('crmbase_columns');
+              if (savedCols) {
+                const cols = JSON.parse(savedCols);
+                const matchedCol = cols.find(c => c.id === bestMatch.columnId);
+                if (matchedCol) {
+                  const savedPipes = localStorage.getItem('crmbase_pipelines');
+                  const pipes = savedPipes ? JSON.parse(savedPipes) : [];
+                  const matchedPipe = pipes.find(p => p.id === matchedCol.pipelineId);
+                  if (matchedPipe) newStatus = matchedPipe.name;
+                }
+              }
+            } catch (e) {}
+
+            setRawClients(prev => prev.map(c => c.id === 'client_teste_agente' ? { ...c, status: newStatus } : c));
+            setKanbanCards(prevCards => {
+              const exists = prevCards.some(card => card.clientId === 'client_teste_agente');
+              if (!exists) {
+                return [...prevCards, {
+                  id: 'k_wa_teste_simulador',
+                  clientId: 'client_teste_agente',
+                  title: '🤖 Chat de Teste (Simulador) - Novo Registro',
+                  desc: 'Cliente de teste do agente simulador.\n\n(Roteado via triagem de departamento)',
+                  column: bestMatch.columnId,
+                  priority: 'Média',
+                  date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+                }];
+              } else {
+                return prevCards.map(card => card.clientId === 'client_teste_agente' ? { ...card, column: bestMatch.columnId } : card);
+              }
+            });
+          }
+        }
+        // ALWAYS generate AI agent response for every message in AI mode!
+        generateSimulatedAiReply(inputText, 'client_teste_agente', fileData);
+      } else if (!isRouted) {
+        let targetColumnId = '';
+        const cleanChoiceText = inputText.trim().toLowerCase();
+
+        if (routeMode === 'static') {
+          let staticMapping = [];
+          try {
+            const saved = localStorage.getItem('crmbase_sdr_static_mapping');
+            staticMapping = saved ? JSON.parse(saved) : [];
+          } catch (e) {}
+
+          const match = staticMapping.find(m => m.key && m.key.trim().toLowerCase() === cleanChoiceText);
+          if (match) {
+            targetColumnId = match.columnId;
+          }
+        }
+
+        if (targetColumnId) {
+          localStorage.setItem(triageRoutedKey, '1');
+          let newStatus = 'Pessoal';
+          try {
+            const savedCols = localStorage.getItem('crmbase_columns');
+            if (savedCols) {
+              const cols = JSON.parse(savedCols);
+              const matchedCol = cols.find(c => c.id === targetColumnId);
+              if (matchedCol) {
+                const savedPipes = localStorage.getItem('crmbase_pipelines');
+                const pipes = savedPipes ? JSON.parse(savedPipes) : [];
+                const matchedPipe = pipes.find(p => p.id === matchedCol.pipelineId);
+                if (matchedPipe) newStatus = matchedPipe.name;
+              }
+            }
+          } catch (e) {}
+
+          setRawClients(prev => prev.map(c => c.id === 'client_teste_agente' ? { ...c, status: newStatus } : c));
+          setKanbanCards(prevCards => {
+            const exists = prevCards.some(card => card.clientId === 'client_teste_agente');
+            if (!exists) {
+              return [...prevCards, {
+                id: 'k_wa_teste_simulador',
+                clientId: 'client_teste_agente',
+                title: '🤖 Chat de Teste (Simulador) - Novo Registro',
+                desc: 'Cliente de teste do agente simulador.',
+                column: targetColumnId,
+                priority: 'Média',
+                date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+              }];
+            } else {
+              return prevCards.map(card => card.clientId === 'client_teste_agente' ? { ...card, column: targetColumnId } : card);
+            }
+          });
+        } else if (routeMode === 'static') {
+          let welcomeMessage = localStorage.getItem('crmbase_sdr_welcome') || 'Olá! Seja bem-vindo.';
+          setChats(prev => ({
+            ...prev,
+            client_teste_agente: [...(prev.client_teste_agente || []), {
+              id: `m_sim_response_${Date.now()}`,
+              sender: 'user',
+              text: welcomeMessage,
+              time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              timestamp: Math.floor(Date.now() / 1000)
+            }]
+          }));
+        }
+      }
+    }, 1000);
+  };
+
   const sendMessage = (clientId, text, file = null, senderName = null, quotedMessage = null) => {
     if (!text.trim() && !file) return;
     
     const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    
+    if (clientId === 'client_teste_agente') {
+      const customerMsg = {
+        id: `m_c_${Date.now()}`,
+        sender: 'contact',
+        text,
+        time: timeNow,
+        file,
+        senderName: 'Simulador',
+        timestamp: Math.floor(Date.now() / 1000),
+        quotedMessage
+      };
+
+      setChats(prev => ({
+        ...prev,
+        client_teste_agente: [...(prev.client_teste_agente || []), customerMsg]
+      }));
+
+      simulateAgentResponse(text, file);
+      return;
+    }
+
     const userMsg = {
       id: `m_u_${Date.now()}`,
       sender: 'user',
@@ -1954,6 +3255,9 @@ export const AppProvider = ({ children }) => {
       ...prev,
       [clientId]: [...(prev[clientId] || []), userMsg]
     }));
+
+    // Save operator message to Supabase chat history table
+    saveChatMessageToSupabase(clientId, 'operador', text || (file ? file.name : ''), file, senderName);
 
     // Sincroniza envio de mensagens e arquivos com o WhatsApp real (apenas para mensagens não geradas pelo sistema)
     if (waStatus === 'ONLINE' && senderName !== 'Sistema') {
@@ -1994,17 +3298,17 @@ export const AppProvider = ({ children }) => {
                   }
                 };
               }
-              fetch(`${EVO_CONFIG.baseUrl}/message/sendWhatsAppAudio/${EVO_CONFIG.encodedInstanceName}`, {
-                method: "POST",
-                headers: {
-                  "apikey": EVO_CONFIG.apiKey,
-                  "tenant": EVO_CONFIG.tenant,
-                  "Content-Type": "application/json"
-                },
-                body: JSON.stringify(body)
-              }).then(res => {
-                if (!res.ok) console.error("Erro ao enviar áudio pelo WhatsApp:", res.statusText);
-              }).catch(err => console.error("Erro de rede ao enviar áudio pelo WhatsApp:", err));
+              fetchEvolution(`/message/sendWhatsAppAudio/${EVO_CONFIG.encodedInstanceName}`, { method: 'POST', body: JSON.stringify(body) })
+                .then(res => res.json())
+                .then(data => {
+                  if (data && data.key && data.key.id) {
+                    setChats(prev => ({
+                      ...prev,
+                      [clientId]: (prev[clientId] || []).map(m => m.id === userMsg.id ? { ...m, keyId: data.key.id } : m)
+                    }));
+                  }
+                })
+                .catch(err => console.error("Erro de rede ao enviar áudio pelo WhatsApp:", err));
             } else {
               const captionToSend = senderName && text ? `*${senderName}:*\n${text}` : (text || "");
               const body = {
@@ -2027,17 +3331,17 @@ export const AppProvider = ({ children }) => {
                   }
                 };
               }
-              fetch(`${EVO_CONFIG.baseUrl}/message/sendMedia/${EVO_CONFIG.encodedInstanceName}`, {
-                method: "POST",
-                headers: {
-                  "apikey": EVO_CONFIG.apiKey,
-                  "tenant": EVO_CONFIG.tenant,
-                  "Content-Type": "application/json"
-                },
-                body: JSON.stringify(body)
-              }).then(res => {
-                if (!res.ok) console.error("Erro ao enviar mídia pelo WhatsApp:", res.statusText);
-              }).catch(err => console.error("Erro ao enviar mídia pelo WhatsApp:", err));
+              fetchEvolution(`/message/sendMedia/${EVO_CONFIG.encodedInstanceName}`, { method: 'POST', body: JSON.stringify(body) })
+                .then(res => res.json())
+                .then(data => {
+                  if (data && data.key && data.key.id) {
+                    setChats(prev => ({
+                      ...prev,
+                      [clientId]: (prev[clientId] || []).map(m => m.id === userMsg.id ? { ...m, keyId: data.key.id } : m)
+                    }));
+                  }
+                })
+                .catch(err => console.error("Erro ao enviar mídia pelo WhatsApp:", err));
             }
           }
         } else {
@@ -2058,17 +3362,20 @@ export const AppProvider = ({ children }) => {
               }
             };
           }
-          fetch(`${EVO_CONFIG.baseUrl}/message/sendText/${EVO_CONFIG.encodedInstanceName}`, {
-            method: "POST",
-            headers: {
-              "apikey": EVO_CONFIG.apiKey,
-              "tenant": EVO_CONFIG.tenant,
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify(body)
-          }).then(res => {
-            if (!res.ok) console.error("Erro ao enviar texto pelo WhatsApp:", res.statusText);
-          }).catch(err => console.error("Erro de rede ao enviar pelo WhatsApp:", err));
+          fetchEvolution(`/message/sendText/${EVO_CONFIG.encodedInstanceName}`, { method: 'POST', body: JSON.stringify(body) })
+            .then(res => res.json())
+            .then(data => {
+              const returnedKeyId = data?.key?.id || data?.id || data?.keyId;
+              if (returnedKeyId) {
+                userMsg.keyId = returnedKeyId;
+                setChats(prev => {
+                  const msgs = prev[clientId] || [];
+                  const updated = msgs.map(m => m.id === userMsg.id ? { ...m, keyId: returnedKeyId } : m);
+                  return { ...prev, [clientId]: updated };
+                });
+              }
+            })
+            .catch(err => console.error("Erro de rede ao enviar pelo WhatsApp:", err));
         }
       }
     }
@@ -2111,11 +3418,173 @@ export const AppProvider = ({ children }) => {
     });
   };
 
+  const [deletedMessageKeys, setDeletedMessageKeys] = useState({});
+  const deletedMessageKeysRef = useRef(deletedMessageKeys);
+  useEffect(() => {
+    deletedMessageKeysRef.current = deletedMessageKeys;
+  }, [deletedMessageKeys]);
+
+  const [editedMessageTexts, setEditedMessageTexts] = useState({});
+  const editedMessageTextsRef = useRef(editedMessageTexts);
+  useEffect(() => {
+    editedMessageTextsRef.current = editedMessageTexts;
+  }, [editedMessageTexts]);
+
+  const editMessage = (clientId, messageId, newText) => {
+    if (!newText || !newText.trim()) return;
+    const cleanNewText = newText.trim().replace(/^\*[^*]+:\*\s*/, '');
+
+    const clientMsgs = chatsRef.current[clientId] || [];
+    let targetMsg = clientMsgs.find(m => m.id === messageId || m.keyId === messageId);
+    if (!targetMsg && messageId) {
+      targetMsg = clientMsgs.find(m => m.id.includes(messageId) || (m.keyId && messageId.includes(m.keyId)));
+    }
+
+    const targetId = targetMsg?.id || messageId;
+    let realKeyId = targetMsg?.keyId || (targetMsg?.id && !targetMsg.id.startsWith('m_u_') ? targetMsg.id : messageId);
+    if (!realKeyId || realKeyId.startsWith('m_u_')) {
+      const lastUserMsgWithKey = [...clientMsgs].reverse().find(m => m.sender === 'user' && m.keyId && !m.keyId.startsWith('m_u_'));
+      if (lastUserMsgWithKey) {
+        realKeyId = lastUserMsgWithKey.keyId;
+      }
+    }
+    const isFromMe = targetMsg ? targetMsg.sender === 'user' : true;
+
+    // Check if the original message had a signature like *miguel:*
+    const matchSig = (targetMsg?.text || '').match(/^(\*[^*]+:\*\s*)/);
+    const textToStore = matchSig ? `${matchSig[1]}${cleanNewText}` : cleanNewText;
+
+    // Persist edited text in ref state so syncWhatsAppChats won't revert it
+    setEditedMessageTexts(prev => ({
+      ...prev,
+      [messageId]: textToStore,
+      [targetId]: textToStore,
+      [realKeyId]: textToStore
+    }));
+
+    setChats(prev => {
+      const msgs = prev[clientId] || [];
+      const updated = msgs.map(m => {
+        if (m.id === messageId || m.id === targetId || (m.keyId && (m.keyId === messageId || m.keyId === realKeyId))) {
+          return { ...m, text: textToStore, isEdited: true };
+        }
+        return m;
+      });
+      return { ...prev, [clientId]: updated };
+    });
+
+    if (waStatus === 'ONLINE' && clientId !== 'client_teste_agente') {
+      const client = clientsRef.current.find(c => c.id === clientId);
+      if (client && client.jid) {
+        fetchEvolution(`/message/edit/${EVO_CONFIG.encodedInstanceName}`, {
+          method: 'POST',
+          body: JSON.stringify({
+            number: client.jid,
+            text: textToStore,
+            messageId: realKeyId,
+            key: {
+              id: realKeyId,
+              fromMe: isFromMe,
+              remoteJid: client.jid
+            }
+          })
+        })
+        .then(res => res.json())
+        .then(data => logToDisk("Evolution editMessage response: " + JSON.stringify(data)))
+        .catch(err => console.error("Erro ao editar mensagem no WhatsApp:", err));
+      }
+    }
+  };
+
+  const deleteSingleMessage = (clientId, messageId) => {
+    const clientMsgs = chatsRef.current[clientId] || [];
+    let targetMsg = clientMsgs.find(m => m.id === messageId || m.keyId === messageId);
+    if (!targetMsg && messageId) {
+      targetMsg = clientMsgs.find(m => m.id.includes(messageId) || (m.keyId && messageId.includes(m.keyId)));
+    }
+
+    // Security & Rule Check 1: Only user-sent messages can be deleted from WhatsApp
+    if (targetMsg && targetMsg.sender !== 'user') {
+      alert("Apenas mensagens enviadas por você (CRM) podem ser solicitadas para exclusão no WhatsApp.");
+      return;
+    }
+
+    // Security & Rule Check 2: Require valid Baileys WhatsApp keyId
+    let realKeyId = targetMsg?.keyId || (targetMsg?.id && !targetMsg.id.startsWith('m_u_') ? targetMsg.id : null);
+    if (!realKeyId || realKeyId.startsWith('m_u_')) {
+      // Look up keyId from userMsg state or latest user message with valid key
+      const lastUserMsgWithKey = [...clientMsgs].reverse().find(m => m.sender === 'user' && m.keyId && !m.keyId.startsWith('m_u_'));
+      if (lastUserMsgWithKey) {
+        realKeyId = lastUserMsgWithKey.keyId;
+      }
+    }
+
+    if (!realKeyId || realKeyId.startsWith('m_u_')) {
+      alert("Não foi possível localizar o identificador oficial do WhatsApp (wamid/keyId) para esta mensagem. A exclusão não pode ser realizada.");
+      logToDisk("deleteSingleMessage FALHA: wamid nao localizado para messageId=" + messageId, "WARN");
+      return;
+    }
+
+    const isFromMe = true;
+
+    // Record both internal ID and WhatsApp keyId in deleted keys filter
+    setDeletedMessageKeys(prev => ({
+      ...prev,
+      [messageId]: true,
+      [realKeyId]: true
+    }));
+
+    setChats(prev => {
+      const msgs = prev[clientId] || [];
+      const updated = msgs.filter(m => m.id !== messageId && m.keyId !== messageId && m.keyId !== realKeyId);
+      return { ...prev, [clientId]: updated };
+    });
+
+    if (waStatus === 'ONLINE' && clientId !== 'client_teste_agente') {
+      const client = clientsRef.current.find(c => c.id === clientId);
+      if (client && client.jid) {
+        logToDisk("deleteSingleMessage: sending delete request for keyId: " + realKeyId + " jid: " + client.jid);
+        
+        const payload = {
+          number: client.jid,
+          messageId: realKeyId,
+          id: realKeyId,
+          key: {
+            id: realKeyId,
+            fromMe: isFromMe,
+            remoteJid: client.jid
+          }
+        };
+
+        // Send DELETE request first
+        fetchEvolution(`/message/deleteMessageForEveryone/${EVO_CONFIG.encodedInstanceName}`, {
+          method: 'DELETE',
+          body: JSON.stringify(payload)
+        })
+        .then(res => res.json().catch(() => ({})))
+        .then(data => {
+          logToDisk("Evolution DELETE deleteMessageForEveryone response: " + JSON.stringify(data));
+          if (data && (data.error || data.statusCode >= 400 || data.status === 404)) {
+            // Fallback to POST method if DELETE is rejected by API route
+            fetchEvolution(`/message/deleteMessageForEveryone/${EVO_CONFIG.encodedInstanceName}`, {
+              method: 'POST',
+              body: JSON.stringify(payload)
+            })
+            .then(res => res.json().catch(() => ({})))
+            .then(postData => logToDisk("Evolution POST deleteMessageForEveryone response: " + JSON.stringify(postData)))
+            .catch(err => console.error("Erro no fallback POST ao apagar no WhatsApp:", err));
+          }
+        })
+        .catch(err => console.error("Erro ao apagar mensagem no WhatsApp:", err));
+      }
+    }
+  };
+
   // Kanban operations
   const moveKanbanCard = (cardId, targetColumn) => {
     setKanbanCards(prev => prev.map(card => {
       if (card.id === cardId) {
-        const saved = localStorage.getItem('analise_pipelines');
+        const saved = localStorage.getItem('crmbase_pipelines');
         const pipelines = saved ? JSON.parse(saved) : [
           { id: 'pessoal', name: 'Pessoal' },
           { id: 'contabil_fiscal', name: 'Contábil/Fiscal' },
@@ -2164,14 +3633,14 @@ export const AppProvider = ({ children }) => {
       const suffix = cleanPhone ? cleanPhone.slice(-8) : '';
       
       logToDisk(`deleteKanbanCard: Clearing triage flags for card client ${id} (phone suffix: ${suffix})`);
-      localStorage.removeItem(`analise_triage_routed_${id}`);
-      localStorage.removeItem(`analise_triage_routed_${suffix}`);
-      localStorage.removeItem(`analise_triage_routed_time_${id}`);
-      localStorage.removeItem(`analise_triage_routed_time_${suffix}`);
-      localStorage.removeItem(`analise_triage_sent_${cleanPhone}`);
-      localStorage.removeItem(`analise_triage_sent_${suffix}`);
-      localStorage.removeItem(`analise_triage_sent_time_${suffix}`);
-      localStorage.removeItem(`analise_triage_sent_time_${cleanPhone}`);
+      localStorage.removeItem(`crmbase_triage_routed_${id}`);
+      localStorage.removeItem(`crmbase_triage_routed_${suffix}`);
+      localStorage.removeItem(`crmbase_triage_routed_time_${id}`);
+      localStorage.removeItem(`crmbase_triage_routed_time_${suffix}`);
+      localStorage.removeItem(`crmbase_triage_sent_${cleanPhone}`);
+      localStorage.removeItem(`crmbase_triage_sent_${suffix}`);
+      localStorage.removeItem(`crmbase_triage_sent_time_${suffix}`);
+      localStorage.removeItem(`crmbase_triage_sent_time_${cleanPhone}`);
     }
     setKanbanCards(prev => prev.filter(c => c.id !== cardId));
   };
@@ -2192,6 +3661,32 @@ export const AppProvider = ({ children }) => {
 
   const clickLink = (linkId) => {
     setQuickLinks(prev => prev.map(l => l.id === linkId ? { ...l, clicks: l.clicks + 1 } : l));
+  };
+
+  // Quick Replies (Respostas Rápidas) operations
+  const addQuickReply = (reply) => {
+    const cleanShortcut = (reply.shortcut || '').replace(/^\/+/, '').trim();
+    const newReply = {
+      id: `qr_${Date.now()}`,
+      shortcut: cleanShortcut,
+      title: reply.title.trim(),
+      content: reply.content.trim()
+    };
+    setQuickReplies(prev => [...prev, newReply]);
+  };
+
+  const deleteQuickReply = (replyId) => {
+    setQuickReplies(prev => prev.filter(r => r.id !== replyId));
+  };
+
+  const updateQuickReply = (updatedReply) => {
+    const cleanShortcut = (updatedReply.shortcut || '').replace(/^\/+/, '').trim();
+    setQuickReplies(prev => prev.map(r => r.id === updatedReply.id ? {
+      ...updatedReply,
+      shortcut: cleanShortcut,
+      title: updatedReply.title.trim(),
+      content: updatedReply.content.trim()
+    } : r));
   };
 
   // Profile operations
@@ -2216,20 +3711,14 @@ export const AppProvider = ({ children }) => {
 
   const fetchMediaBase64 = async (messageId) => {
     try {
-      const res = await fetch(`${EVO_CONFIG.baseUrl}/chat/getBase64FromMediaMessage/${EVO_CONFIG.encodedInstanceName}`, {
-        method: "POST",
-        headers: {
-          "apikey": EVO_CONFIG.apiKey,
-          "tenant": EVO_CONFIG.tenant,
-          "Content-Type": "application/json"
-        },
+      const res = await fetchEvolution(`/chat/getBase64FromMediaMessage/${EVO_CONFIG.encodedInstanceName}`, { 
+        method: 'POST', 
         body: JSON.stringify({
           message: {
             key: {
               id: messageId
             }
-          },
-          convertToMp4: false
+          }
         })
       });
       if (!res.ok) {
@@ -2248,7 +3737,7 @@ export const AppProvider = ({ children }) => {
   useEffect(() => {
     const pollPipelineUpdates = async () => {
       try {
-        const lastPoll = localStorage.getItem('analise_last_pipeline_poll') || '0';
+        const lastPoll = localStorage.getItem('crmbase_last_pipeline_poll') || '0';
         const res = await fetch(`/api/webhook?since=${lastPoll}`);
         if (res.ok) {
           const data = await res.json();
@@ -2304,7 +3793,7 @@ export const AppProvider = ({ children }) => {
               return prevClients;
             });
           }
-          localStorage.setItem('analise_last_pipeline_poll', Date.now().toString());
+          localStorage.setItem('crmbase_last_pipeline_poll', Date.now().toString());
         }
       } catch (err) {
         console.error("Error polling pipeline updates:", err);
@@ -2343,6 +3832,8 @@ export const AppProvider = ({ children }) => {
       clearChat,
       sendMessage,
       reactToMessage,
+      editMessage,
+      deleteSingleMessage,
       moveKanbanCard,
       addKanbanCard,
       updateKanbanCard,
@@ -2350,9 +3841,19 @@ export const AppProvider = ({ children }) => {
       addQuickLink,
       deleteQuickLink,
       clickLink,
+      quickReplies,
+      addQuickReply,
+      deleteQuickReply,
+      updateQuickReply,
       updateProfile,
       waStatus,
       setWaStatus,
+      waInstances,
+      setWaInstances,
+      selectedInstanceFilter,
+      setSelectedInstanceFilter,
+      addWaInstance,
+      removeWaInstance,
       unreadChats,
       setUnreadChats,
       fetchMediaBase64,

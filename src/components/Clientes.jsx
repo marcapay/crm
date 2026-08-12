@@ -19,13 +19,16 @@ export default function Clientes() {
     updateClient, 
     deleteClient, 
     setActiveModule, 
-    setActiveChatClientId 
+    setActiveChatClientId,
+    waInstances,
+    selectedInstanceFilter,
+    setSelectedInstanceFilter
   } = useApp();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('Todos');
 
-  const savedPipelines = localStorage.getItem('analise_pipelines');
+  const savedPipelines = localStorage.getItem('crmbase_pipelines');
   const pipelinesList = savedPipelines ? JSON.parse(savedPipelines) : [
     { id: 'pessoal', name: 'Pessoal' },
     { id: 'contabil_fiscal', name: 'Contábil/Fiscal' },
@@ -51,7 +54,8 @@ export default function Clientes() {
                           c.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           c.phone.includes(searchQuery);
     const matchesStatus = statusFilter === 'Todos' || c.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesInstance = selectedInstanceFilter === 'all' || c.instanceName === selectedInstanceFilter || !c.instanceName;
+    return matchesSearch && matchesStatus && matchesInstance;
   });
 
   // Open Modals
@@ -130,7 +134,7 @@ export default function Clientes() {
   };
 
   return (
-    <div style={styles.container}>
+    <div className="clientes-container" style={styles.container}>
       <header className="module-header clientes-header" style={styles.header}>
         <div>
           <h1 className="title-gradient" style={styles.title}>Clientes</h1>
@@ -158,7 +162,22 @@ export default function Clientes() {
 
         <div style={styles.statusFilterArea}>
           <Filter size={14} style={{ color: 'var(--text-secondary)' }} />
-          <span style={styles.filterLabel}>Estágio:</span>
+          <span style={styles.filterLabel}>Instância:</span>
+          <select 
+            className="input-field" 
+            style={{ ...styles.filterSelect, color: 'var(--accent-cyan)', fontWeight: '600' }}
+            value={selectedInstanceFilter}
+            onChange={e => setSelectedInstanceFilter(e.target.value)}
+          >
+            <option value="all" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>Todas as Instâncias ({waInstances.length})</option>
+            {waInstances.map(inst => (
+              <option key={inst.id} value={inst.instanceName} style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
+                {inst.name} ({inst.instanceName})
+              </option>
+            ))}
+          </select>
+
+          <span style={{ ...styles.filterLabel, marginLeft: '0.5rem' }}>Estágio:</span>
           {['Todos', ...pipelinesList.map(p => p.name)].map(st => (
             <button
               key={st}
@@ -196,7 +215,7 @@ export default function Clientes() {
                   <td style={styles.td}>
                     <div style={styles.clientCell}>
                       <div style={styles.avatarMini}>
-                        {client.name.split(' ').map(n=>n[0]).join('')}
+                        {client.name ? client.name.split(' ').filter(Boolean).map(n=>n[0]).join('').slice(0, 2).toUpperCase() : '?'}
                       </div>
                       <div>
                         <div style={styles.clientName}>{client.name}</div>

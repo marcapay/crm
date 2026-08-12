@@ -142,49 +142,47 @@ export default function Kanban() {
     reactToMessage,
     profile,
     fetchMediaBase64,
-    updateClient
+    updateClient,
+    waInstances,
+    selectedInstanceFilter,
+    setSelectedInstanceFilter,
+    systemUsers = []
   } = useApp();
 
   // Kanban Columns State grouped by Pipeline
   const [columns, setColumns] = useState(() => {
-    const saved = localStorage.getItem('analise_columns');
+    const saved = localStorage.getItem('crmbase_columns');
     return saved ? JSON.parse(saved) : [
-      // Pessoal
-      { id: 'pessoal_a_fazer', pipelineId: 'pessoal', name: 'A Fazer', color: '#1fb5e4' },
-      { id: 'pessoal_em_andamento', pipelineId: 'pessoal', name: 'Em Andamento', color: '#f29b11' },
-      { id: 'pessoal_concluido', pipelineId: 'pessoal', name: 'Concluído', color: '#10b981' },
-      // Contábil/Fiscal
-      { id: 'contabil_a_fazer', pipelineId: 'contabil_fiscal', name: 'A Fazer', color: '#1fb5e4' },
-      { id: 'contabil_em_andamento', pipelineId: 'contabil_fiscal', name: 'Em Andamento', color: '#f29b11' },
-      { id: 'contabil_concluido', pipelineId: 'contabil_fiscal', name: 'Concluído', color: '#10b981' },
-      // Emissão de documentos fiscais
-      { id: 'documentos_a_fazer', pipelineId: 'documentos_fiscais', name: 'A Fazer', color: '#1fb5e4' },
-      { id: 'documentos_em_andamento', pipelineId: 'documentos_fiscais', name: 'Em Andamento', color: '#f29b11' },
-      { id: 'documentos_concluido', pipelineId: 'documentos_fiscais', name: 'Concluído', color: '#10b981' },
-      // Administrativo
-      { id: 'admin_a_fazer', pipelineId: 'administrativo', name: 'A Fazer', color: '#1fb5e4' },
-      { id: 'admin_em_andamento', pipelineId: 'administrativo', name: 'Em Andamento', color: '#f29b11' },
-      { id: 'admin_concluido', pipelineId: 'administrativo', name: 'Concluído', color: '#10b981' },
+      // Atendimento Inicial
+      { id: 'atendimento_novos', pipelineId: 'atendimento', name: 'Novos Leads', color: '#1fb5e4' },
+      { id: 'atendimento_em_contato', pipelineId: 'atendimento', name: 'Em Contato', color: '#f29b11' },
+      { id: 'atendimento_qualificado', pipelineId: 'atendimento', name: 'Qualificado', color: '#10b981' },
+      // Em Negociação
+      { id: 'negociacao_proposta', pipelineId: 'negociacao', name: 'Proposta Enviada', color: '#1fb5e4' },
+      { id: 'negociacao_revisao', pipelineId: 'negociacao', name: 'Em Análise', color: '#f29b11' },
+      { id: 'negociacao_aceita', pipelineId: 'negociacao', name: 'Proposta Aceita', color: '#10b981' },
+      // Vendas e Fechamento
+      { id: 'vendas_contrato', pipelineId: 'vendas', name: 'Aguardando Contrato', color: '#1fb5e4' },
+      { id: 'vendas_assinado', pipelineId: 'vendas', name: 'Contrato Assinado', color: '#10b981' }
     ];
   });
 
   const [pipelines, setPipelines] = useState(() => {
-    const saved = localStorage.getItem('analise_pipelines');
+    const saved = localStorage.getItem('crmbase_pipelines');
     return saved ? JSON.parse(saved) : [
-      { id: 'pessoal', name: 'Pessoal' },
-      { id: 'contabil_fiscal', name: 'Contábil/Fiscal' },
-      { id: 'documentos_fiscais', name: 'Emissão de Documentos Fiscais' },
-      { id: 'administrativo', name: 'Administrativo' }
+      { id: 'atendimento', name: 'Atendimento Inicial' },
+      { id: 'negociacao', name: 'Em Negociação' },
+      { id: 'vendas', name: 'Vendas e Fechamento' }
     ];
   });
 
   // Sync to localStorage
   useEffect(() => {
-    localStorage.setItem('analise_columns', JSON.stringify(columns));
+    localStorage.setItem('crmbase_columns', JSON.stringify(columns));
   }, [columns]);
 
   useEffect(() => {
-    localStorage.setItem('analise_pipelines', JSON.stringify(pipelines));
+    localStorage.setItem('crmbase_pipelines', JSON.stringify(pipelines));
   }, [pipelines]);
 
   // Filters State
@@ -250,7 +248,16 @@ export default function Kanban() {
   // Filter Cards list
   const filteredCards = kanbanCards.filter(card => {
     const matchesPriority = priorityFilter === 'Todos' || card.priority === priorityFilter;
-    return matchesPriority;
+    if (!matchesPriority) return false;
+
+    if (selectedInstanceFilter !== 'all') {
+      const cardClient = clients.find(c => c.id === card.clientId);
+      if (cardClient && cardClient.instanceName && cardClient.instanceName !== selectedInstanceFilter) {
+        return false;
+      }
+    }
+
+    return true;
   });
 
   // Reset Filters
@@ -614,7 +621,24 @@ export default function Kanban() {
     <div style={styles.container}>
       <header className="module-header kanban-header" style={styles.header}>
         {/* Filters and Search Hub */}
-        <div style={styles.filterHub}>
+        <div className="kanban-filter-hub" style={styles.filterHub}>
+          {/* Instance Filter */}
+          <div style={styles.filterSelectWrapper}>
+            <Filter size={14} style={styles.filterIcon} />
+            <select 
+              value={selectedInstanceFilter} 
+              onChange={e => setSelectedInstanceFilter(e.target.value)}
+              style={{ ...styles.filterSelect, color: 'var(--accent-cyan)', fontWeight: '600' }}
+            >
+              <option value="all" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>Todas as Instâncias ({waInstances.length})</option>
+              {waInstances.map(inst => (
+                <option key={inst.id} value={inst.instanceName} style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
+                  {inst.name} ({inst.instanceName})
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* Priority filter */}
           <div style={styles.filterSelectWrapper}>
             <Filter size={14} style={styles.filterIcon} />
@@ -623,7 +647,7 @@ export default function Kanban() {
               onChange={e => setPriorityFilter(e.target.value)}
               style={styles.filterSelect}
             >
-              <option value="Todos">Status</option>
+              <option value="Todos">Todas as Prioridades</option>
               <option value="Alta">Prioridade Alta</option>
               <option value="Média">Prioridade Média</option>
               <option value="Baixa">Prioridade Baixa</option>
@@ -657,7 +681,7 @@ export default function Kanban() {
         </div>
 
         {/* Create Buttons */}
-        <div style={styles.headerActions}>
+        <div className="kanban-header-actions" style={styles.headerActions}>
           <button onClick={() => setIsAddPipelineOpen(true)} style={styles.addColumnBtn}>
             <Plus size={14} />
             <span>Novo Pipeline</span>
@@ -725,7 +749,7 @@ export default function Kanban() {
               <div style={styles.cardsList}>
                 {colCards.map(card => {
                   const cardClient = clients.find(c => c.id === card.clientId);
-                  const initials = cardClient ? cardClient.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase() : 'TA';
+                  const initials = cardClient && cardClient.name ? cardClient.name.split(' ').filter(Boolean).map(n=>n[0]).join('').slice(0,2).toUpperCase() : 'TA';
                   
                   // Circle color based on client index to look like the screen
                   const avatarColors = ['#a855f7', '#1fb5e4', '#f29b11', '#00a2e0', '#10b981'];
@@ -753,6 +777,28 @@ export default function Kanban() {
                               <span style={styles.cardPhone}>{cardClient.phone || 'Sem fone'}</span>
                             </div>
                           )}
+                          {cardClient && cardClient.assignedUser && (() => {
+                            const assigned = systemUsers.find(u => u.name === cardClient.assignedUser);
+                            const userColor = assigned?.color || '#3b82f6';
+                            return (
+                              <div style={{ marginTop: '0.25rem' }}>
+                                <span style={{ 
+                                  backgroundColor: userColor + '22',
+                                  color: userColor,
+                                  border: `1px solid ${userColor}55`,
+                                  fontSize: '0.625rem',
+                                  padding: '1px 6px',
+                                  borderRadius: '10px',
+                                  fontWeight: '600',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '3px'
+                                }}>
+                                  👤 {cardClient.assignedUser}
+                                </span>
+                              </div>
+                            );
+                          })()}
                         </div>
                       </div>
 

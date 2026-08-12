@@ -73,7 +73,7 @@ export default function App() {
           </svg>
         </button>
         <span style={{ fontFamily: 'var(--font-heading)', fontWeight: '700', fontSize: '1.125rem', letterSpacing: '-0.02em', background: 'linear-gradient(135deg, #ffffff 40%, var(--accent-cyan) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-          ANÁLISE
+          {import.meta.env.VITE_CLIENT_NAME || 'CRM Base'}
         </span>
         <div style={{ width: '44px' }}></div>
       </div>

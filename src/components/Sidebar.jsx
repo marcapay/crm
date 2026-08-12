@@ -11,7 +11,8 @@ import {
   LogOut, 
   Sun, 
   Moon,
-  User
+  User,
+  Bell
 } from 'lucide-react';
 
 export default function Sidebar({ isOpen, onClose }) {
@@ -21,11 +22,14 @@ export default function Sidebar({ isOpen, onClose }) {
     profile, 
     logout, 
     theme, 
-    setTheme 
+    setTheme,
+    unreadChats = []
   } = useApp();
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const menuRef = useRef(null);
+
+  const hasUnreadMessages = unreadChats && unreadChats.length > 0;
 
   // Click outside listener to close dropdown
   useEffect(() => {
@@ -43,7 +47,7 @@ export default function Sidebar({ isOpen, onClose }) {
     { id: 'kanban', name: 'Kanban', icon: Columns },
     { id: 'conversas', name: 'Conversas', icon: MessageSquare },
     { id: 'clientes', name: 'Clientes', icon: Users },
-    { id: 'links-rapidos', name: 'Links Rápidos', icon: Link2 },
+    { id: 'links-rapidos', name: 'Atalhos Rápidos', icon: Link2 },
     { id: 'configuracoes', name: 'Configurações', icon: Settings },
   ];
 
@@ -107,6 +111,33 @@ export default function Sidebar({ isOpen, onClose }) {
           <div style={styles.profileInfo}>
             <span style={styles.profileName}>{profile.name}</span>
             <span style={styles.profileRole}>{profile.role}</span>
+          </div>
+
+          {/* Notification Bell Icon on Far Right */}
+          <div 
+            style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px', cursor: 'pointer', marginLeft: 'auto' }}
+            onClick={(e) => {
+              e.stopPropagation();
+              setActiveModule('conversas');
+              if (onClose) onClose();
+            }}
+            title={hasUnreadMessages ? `${unreadChats.length} nova(s) mensagem(ns) não lida(s)` : 'Sem novas mensagens'}
+          >
+            <Bell size={16} style={{ color: 'var(--text-tertiary)' }} />
+            {hasUnreadMessages && (
+              <span 
+                style={{
+                  position: 'absolute',
+                  top: '2px',
+                  right: '2px',
+                  width: '7px',
+                  height: '7px',
+                  backgroundColor: '#ef4444',
+                  borderRadius: '50%',
+                  boxShadow: '0 0 6px #ef4444'
+                }}
+              />
+            )}
           </div>
         </div>
 
