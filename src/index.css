@@ -1,32 +1,28 @@
 /* CRM BASE - Monochrome Design System */
 
 :root {
-  /* Dark Mode (Default Theme) - Monochrome Black & Grey */
-  --bg-primary: #0a0a0a; /* Neutral 950 */
-  --bg-secondary: #171717; /* Neutral 900 */
-  --bg-tertiary: #262626; /* Neutral 800 */
-  --glass-bg: rgba(23, 23, 23, 0.75);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-highlight: rgba(255, 255, 255, 0.02);
+  /* Dark Mode (Default Theme) - Araújo Imóveis Monochrome Charcoal & Silver Palette */
+  --bg-primary: #08090d; 
+  --bg-secondary: #101218; 
+  --bg-tertiary: #181b24; 
+  --glass-bg: rgba(16, 18, 24, 0.88);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-highlight: rgba(255, 255, 255, 0.04);
   
   --text-primary: #ffffff;
-  --text-secondary: #d4d4d4; /* High Contrast Neutral 300 */
-  --text-tertiary: #a3a3a3; /* High Contrast Neutral 400 */
+  --text-secondary: #d1d5db; 
+  --text-tertiary: #9ca3af; 
   
-  --accent-primary: #f5f5f5; 
-  --accent-secondary: #d4d4d4; 
-  --accent-cyan: #a3a3a3; 
+  --accent-primary: #f8fafc; /* Pure Silver White */
+  --accent-secondary: #94a3b8; /* Metallic Slate */
+  --accent-cyan: #cbd5e1; /* Platinum Silver */
   --accent-success: #10b981; 
   --accent-warning: #f59e0b;
   --accent-danger: #ef4444;
   
-  --glass-bg: rgba(23, 23, 23, 0.85);
-  --glass-border: rgba(255, 255, 255, 0.15);
-  --glass-highlight: rgba(255, 255, 255, 0.05);
-  
-  --accent-glow: rgba(255, 255, 255, 0.05);
-  --accent-glow-cyan: rgba(255, 255, 255, 0.03);
-  --card-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.7);
+  --accent-glow: rgba(255, 255, 255, 0.14);
+  --accent-glow-cyan: rgba(255, 255, 255, 0.08);
+  --card-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.85);
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --font-heading: 'Outfit', var(--font-sans);
   
@@ -37,27 +33,27 @@
 }
 
 :root[data-theme="light"] {
-  --bg-primary: #fafafa; /* Neutral 50 */
+  --bg-primary: #f8fafc; 
   --bg-secondary: #ffffff;
-  --bg-tertiary: #f5f5f5; /* Neutral 100 */
-  --glass-bg: rgba(255, 255, 255, 0.75);
-  --glass-border: rgba(0, 0, 0, 0.08);
-  --glass-highlight: rgba(0, 0, 0, 0.01);
+  --bg-tertiary: #f1f5f9; 
+  --glass-bg: rgba(255, 255, 255, 0.94);
+  --glass-border: rgba(15, 23, 42, 0.12);
+  --glass-highlight: rgba(15, 23, 42, 0.03);
   
-  --text-primary: #0a0a0a; /* Neutral 950 */
-  --text-secondary: #525252; /* Neutral 600 */
-  --text-tertiary: #a3a3a3; /* Neutral 400 */
+  --text-primary: #0f172a; 
+  --text-secondary: #475569; 
+  --text-tertiary: #64748b; 
   
-  --accent-primary: #171717; /* Neutral 900 */
-  --accent-secondary: #404040; /* Neutral 700 */
-  --accent-cyan: #737373; /* Neutral 500 */
+  --accent-primary: #1e293b; 
+  --accent-secondary: #475569; 
+  --accent-cyan: #64748b; 
   --accent-success: #059669;
   --accent-warning: #d97706;
   --accent-danger: #dc2626;
   
-  --accent-glow: rgba(0, 0, 0, 0.06);
-  --accent-glow-cyan: rgba(0, 0, 0, 0.04);
-  --card-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.04);
+  --accent-glow: rgba(0, 0, 0, 0.08);
+  --accent-glow-cyan: rgba(0, 0, 0, 0.05);
+  --card-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.06);
 }
 
 * {
@@ -109,8 +105,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .glass-panel-hover:hover {
-  border-color: rgba(99, 102, 241, 0.3);
-  box-shadow: 0 8px 32px 0 rgba(99, 102, 241, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 12px 36px 0 rgba(0, 0, 0, 0.6);
   transform: translateY(-2px);
 }
 
@@ -123,8 +119,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .glass-card-hover:hover {
-  border-color: rgba(99, 102, 241, 0.2);
-  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.03);
 }
 
 /* App Layout */
@@ -133,6 +129,22 @@ h1, h2, h3, h4, h5, h6 {
   min-height: 100vh;
   position: relative;
   overflow: hidden;
+  background-color: var(--bg-primary);
+}
+
+/* Desaturated Monochrome Background Image Overlay (Zero Blue Tint) */
+.app-container::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('/araujo-bg.jpg') center/cover no-repeat fixed;
+  filter: grayscale(100%) contrast(1.15) brightness(0.35);
+  opacity: 0.75;
+  z-index: 0;
+  pointer-events: none;
 }
 
 .main-content {

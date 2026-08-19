@@ -149,15 +149,47 @@ export default function Kanban() {
     systemUsers = []
   } = useApp();
 
+  const defaultPipelines = [
+    { id: 'pipe_novo_lead', name: 'Novo Lead / Qualificação' },
+    { id: 'pipe_interesse', name: 'Interesse / Oportunidade' },
+    { id: 'pipe_negociacao', name: 'Negociação / Fechamento' }
+  ];
+
+  const defaultColumns = [
+    { id: 'col_novo_lead', pipelineId: 'pipe_novo_lead', name: 'Novos Leads', color: '#38bdf8' },
+    { id: 'col_em_qualificacao', pipelineId: 'pipe_novo_lead', name: 'Em Qualificação', color: '#f59e0b' },
+    { id: 'col_qualificado', pipelineId: 'pipe_novo_lead', name: 'Qualificado / Agendado', color: '#10b981' },
+
+    { id: 'col_imoveis_selecionados', pipelineId: 'pipe_interesse', name: 'Imóveis Selecionados', color: '#a855f7' },
+    { id: 'col_visita_agendada', pipelineId: 'pipe_interesse', name: 'Visita Agendada / Realizada', color: '#38bdf8' },
+    { id: 'col_proposta_enviada', pipelineId: 'pipe_interesse', name: 'Proposta Enviada', color: '#f59e0b' },
+
+    { id: 'col_em_negociacao', pipelineId: 'pipe_negociacao', name: 'Em Negociação', color: '#3b82f6' },
+    { id: 'col_documentacao', pipelineId: 'pipe_negociacao', name: 'Documentação & Análise', color: '#8b5cf6' },
+    { id: 'col_contrato_fechado', pipelineId: 'pipe_negociacao', name: 'Contrato Assinado / Fechado', color: '#10b981' }
+  ];
+
   // Kanban Columns State grouped by Pipeline
   const [columns, setColumns] = useState(() => {
     const saved = localStorage.getItem('crmbase_columns');
-    return saved ? JSON.parse(saved) : [];
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {}
+    }
+    return defaultColumns;
   });
 
   const [pipelines, setPipelines] = useState(() => {
     const saved = localStorage.getItem('crmbase_pipelines');
-    return saved ? JSON.parse(saved) : [];
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {}
+    }
+    return defaultPipelines;
   });
 
   // Sync to localStorage
@@ -173,7 +205,7 @@ export default function Kanban() {
   const [priorityFilter, setPriorityFilter] = useState('Todos');
   const [pipelineFilter, setPipelineFilter] = useState('Todos');
 
-  const activePipelineId = pipelineFilter === 'Todos' ? 'pessoal' : pipelineFilter;
+  const activePipelineId = pipelineFilter === 'Todos' ? (pipelines[0]?.id || 'pipe_novo_lead') : pipelineFilter;
 
   // Drag and Drop States
   const [activeDragId, setActiveDragId] = useState(null);

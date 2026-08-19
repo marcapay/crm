@@ -9,12 +9,28 @@ import Clientes from './components/Clientes';
 import LinksRapidos from './components/LinksRapidos';
 import Configuracoes from './components/Configuracoes';
 import Perfil from './components/Perfil';
+import AreaProprietario from './components/AreaProprietario';
+import AreaInquilino from './components/AreaInquilino';
+import PainelGestaoPortais from './components/PainelGestaoPortais';
 
 export default function App() {
-  const { isAuthenticated, activeModule } = useApp();
+  const { isAuthenticated, profile, activeModule } = useApp();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // Route modules
+  if (!isAuthenticated) {
+    return <Auth />;
+  }
+
+  // 1. Role-based Portal Isolation
+  if (profile?.role === 'proprietario') {
+    return <AreaProprietario />;
+  }
+
+  if (profile?.role === 'inquilino') {
+    return <AreaInquilino />;
+  }
+
+  // 2. Admin / Imobiliária View
   const renderActiveModule = () => {
     switch (activeModule) {
       case 'dashboard':
@@ -25,6 +41,8 @@ export default function App() {
         return <Conversas />;
       case 'clientes':
         return <Clientes />;
+      case 'gestao-portais':
+        return <PainelGestaoPortais />;
       case 'links-rapidos':
         return <LinksRapidos />;
       case 'configuracoes':
@@ -36,28 +54,9 @@ export default function App() {
     }
   };
 
-  if (!isAuthenticated) {
-    return <Auth />;
-  }
-
   return (
     <div className="app-container">
-      {/* Visual Connected Nodes (Eloos Theme Background) */}
-      <svg className="eloos-bg" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
-        {/* Connection pathways */}
-        <line x1="15%" y1="25%" x2="40%" y2="55%" stroke="var(--glass-border)" strokeWidth="1" />
-        <line x1="40%" y1="55%" x2="75%" y2="35%" stroke="var(--glass-border)" strokeWidth="1" />
-        <line x1="75%" y1="35%" x2="90%" y2="75%" stroke="var(--glass-border)" strokeWidth="1" />
-        <line x1="40%" y1="55%" x2="60%" y2="85%" stroke="var(--glass-border)" strokeWidth="1" />
-        <line x1="15%" y1="25%" x2="60%" y2="85%" stroke="var(--glass-border)" strokeWidth="1" strokeDasharray="3 3" />
-        
-        {/* Pulsing Nodes */}
-        <circle cx="15%" cy="25%" r="6" fill="var(--accent-primary)" className="animate-pulse-glow" style={{ animationDelay: '0s' }} />
-        <circle cx="40%" cy="55%" r="8" fill="var(--accent-cyan)" className="animate-pulse-glow" style={{ animationDelay: '1.2s' }} />
-        <circle cx="75%" cy="35%" r="6" fill="var(--accent-secondary)" className="animate-pulse-glow" style={{ animationDelay: '2.4s' }} />
-        <circle cx="90%" cy="75%" r="9" fill="var(--accent-success)" className="animate-pulse-glow" style={{ animationDelay: '0.6s' }} />
-        <circle cx="60%" cy="85%" r="7" fill="var(--accent-warning)" className="animate-pulse-glow" style={{ animationDelay: '1.8s' }} />
-      </svg>
+
 
       {/* Mobile Top Header */}
       <div className="mobile-header">

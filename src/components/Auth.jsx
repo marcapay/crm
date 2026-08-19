@@ -4,7 +4,7 @@ import ClientLogo from './ClientLogo';
 import { Mail, Lock, LogIn, Key, HelpCircle, User, ArrowRight, CheckCircle2, ShieldAlert, Eye, EyeOff } from 'lucide-react';
 
 export default function Auth() {
-  const { login, register } = useApp();
+  const { login, register, quickLoginPortal } = useApp();
   const [mode, setMode] = useState('login'); // 'login', 'register', 'recover'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -61,11 +61,8 @@ export default function Auth() {
 
   return (
     <div style={styles.container}>
-      {/* Dynamic connecting nodes in the background */}
-      <div style={styles.gridOverlay}></div>
-
       <div className="glass-panel auth-card" style={styles.card}>
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
           <ClientLogo height={42} theme="dark" />
         </div>
 
@@ -75,10 +72,43 @@ export default function Auth() {
           {mode === 'recover' && 'Recuperar Senha'}
         </h2>
         <p style={styles.subtitle}>
-          {mode === 'login' && 'Gerencie seus contatos, conversas e negócios de forma analítica e estratégica.'}
-          {mode === 'register' && 'Cadastre-se para começar a gerenciar seus atendimentos.'}
-          {mode === 'recover' && 'Informe o seu e-mail cadastrado para redefinir as credenciais.'}
+          Portal de relacionamento e gestão de locações da <strong>Araújo Imóveis</strong>.
         </p>
+
+        {/* Quick Demo Access Buttons */}
+        {mode === 'login' && (
+          <div style={styles.quickAccessSection}>
+            <span style={styles.quickAccessTitle}>Acesso Rápido de Demonstração:</span>
+            <div style={styles.quickAccessGrid}>
+              <button 
+                type="button" 
+                style={styles.quickAccessBtnProp} 
+                onClick={() => quickLoginPortal('proprietario')}
+              >
+                🏠 Proprietário
+              </button>
+
+              <button 
+                type="button" 
+                style={styles.quickAccessBtnTen} 
+                onClick={() => quickLoginPortal('inquilino')}
+              >
+                🔑 Inquilino
+              </button>
+
+              <button 
+                type="button" 
+                style={styles.quickAccessBtnAdmin} 
+                onClick={() => quickLoginPortal('admin')}
+              >
+                🏢 Imobiliária
+              </button>
+            </div>
+            <div style={styles.quickDivider}>
+              <span>ou entre com seu e-mail</span>
+            </div>
+          </div>
+        )}
 
         {error && (
           <div style={styles.alertError}>
@@ -228,7 +258,7 @@ const styles = {
     alignItems: 'center',
     width: '100vw',
     minHeight: '100vh',
-    background: 'radial-gradient(circle at 50% 50%, #182333 0%, #0c121d 100%)',
+    background: `linear-gradient(135deg, rgba(8, 12, 20, 0.88) 0%, rgba(15, 23, 42, 0.80) 100%), url('/araujo-bg.jpg') center/cover no-repeat fixed`,
     position: 'relative',
     padding: '1.5rem',
   },
@@ -238,8 +268,8 @@ const styles = {
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundImage: `radial-gradient(rgba(31, 181, 228, 0.08) 1px, transparent 1px)`,
-    backgroundSize: '24px 24px',
+    backgroundImage: `radial-gradient(rgba(0, 212, 255, 0.12) 1px, transparent 1px)`,
+    backgroundSize: '28px 28px',
     pointerEvents: 'none',
   },
   card: {
@@ -370,5 +400,61 @@ const styles = {
     fontSize: '0.75rem',
     color: 'var(--text-secondary)',
     lineHeight: '1.5',
+  },
+  quickAccessSection: {
+    marginBottom: '1.25rem',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.5rem',
+  },
+  quickAccessTitle: {
+    fontSize: '0.75rem',
+    color: 'var(--text-tertiary)',
+    fontWeight: '600',
+  },
+  quickAccessGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr 1fr',
+    gap: '0.5rem',
+  },
+  quickAccessBtnProp: {
+    padding: '0.5rem 0.25rem',
+    fontSize: '0.75rem',
+    fontWeight: '700',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    border: '1px solid rgba(255, 255, 255, 0.2)',
+    color: '#ffffff',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    textAlign: 'center',
+  },
+  quickAccessBtnTen: {
+    padding: '0.5rem 0.25rem',
+    fontSize: '0.75rem',
+    fontWeight: '700',
+    backgroundColor: 'rgba(56, 189, 248, 0.12)',
+    border: '1px solid rgba(56, 189, 248, 0.3)',
+    color: '#38bdf8',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    textAlign: 'center',
+  },
+  quickAccessBtnAdmin: {
+    padding: '0.5rem 0.25rem',
+    fontSize: '0.75rem',
+    fontWeight: '700',
+    backgroundColor: 'rgba(16, 185, 129, 0.12)',
+    border: '1px solid rgba(16, 185, 129, 0.3)',
+    color: '#34d399',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    textAlign: 'center',
+  },
+  quickDivider: {
+    textAlign: 'center',
+    fontSize: '0.75rem',
+    color: 'var(--text-tertiary)',
+    marginTop: '0.5rem',
+    position: 'relative',
   }
 };

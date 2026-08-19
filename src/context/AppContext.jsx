@@ -29,6 +29,261 @@ const initialProfile = {
     databaseSync: true,  }
 };
 
+// Portal Initial Mock Data (Araújo Imóveis Seed Data)
+const initialPortalUsers = [
+  {
+    id: 'user_proprietario_1',
+    name: 'Carlos Eduardo Silva',
+    email: 'proprietario@araujo.com',
+    role: 'proprietario',
+    phone: '(37) 99911-2233',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&h=120&fit=crop&crop=face',
+    password: '123456'
+  },
+  {
+    id: 'user_inquilino_1',
+    name: 'Mariana Oliveira Costa',
+    email: 'inquilino@araujo.com',
+    role: 'inquilino',
+    phone: '(37) 99888-4455',
+    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&h=120&fit=crop&crop=face',
+    password: '123456'
+  }
+];
+
+const initialProperties = [
+  {
+    id: 'prop_1',
+    title: 'Apartamento 302 - Edifício Horizonte',
+    address: 'Rua dos Inconfidentes, 450 - Centro, Divinópolis/MG',
+    shortAddress: 'Rua dos Inconfidentes, 450 - Apt 302',
+    photo: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=600&auto=format&fit=crop',
+    status: 'Alugado',
+    ownerId: 'user_proprietario_1',
+    ownerName: 'Carlos Eduardo Silva',
+    currentTenantId: 'user_inquilino_1',
+    currentTenantName: 'Mariana Oliveira Costa',
+    rentValue: 2000.00,
+    admFeePercent: 10,
+    netEstimate: 1800.00
+  },
+  {
+    id: 'prop_2',
+    title: 'Casa Residencial - Jardim Candelária',
+    address: 'Av. Gabriel Passos, 1200 - Divinópolis/MG',
+    shortAddress: 'Av. Gabriel Passos, 1200',
+    photo: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=600&auto=format&fit=crop',
+    status: 'Disponível',
+    ownerId: 'user_proprietario_1',
+    ownerName: 'Carlos Eduardo Silva',
+    currentTenantId: null,
+    currentTenantName: null,
+    rentValue: 3500.00,
+    admFeePercent: 10,
+    netEstimate: 3150.00
+  }
+];
+
+const initialContracts = [
+  {
+    id: 'cnt_001',
+    propertyId: 'prop_1',
+    propertyName: 'Apartamento 302 - Edifício Horizonte',
+    ownerId: 'user_proprietario_1',
+    ownerName: 'Carlos Eduardo Silva',
+    tenantId: 'user_inquilino_1',
+    tenantName: 'Mariana Oliveira Costa',
+    startDate: '2024-09-10',
+    endDate: '2026-09-10',
+    rentValue: 2000.00,
+    admFeePercent: 10,
+    adjustmentIndex: 'IGP-M Anual',
+    dueDateDay: 10,
+    status: 'Ativo',
+    documents: [
+      { id: 'doc_1', title: 'Contrato de Locação Assinado.pdf', type: 'Locação', date: '10/09/2024', size: '2.4 MB', url: '#' },
+      { id: 'doc_2', title: 'Vistoria de Entrada com Fotos.pdf', type: 'Vistoria', date: '08/09/2024', size: '14.8 MB', url: '#' },
+      { id: 'doc_3', title: 'Contrato de Administração Imobiliária.pdf', type: 'Administração', date: '01/09/2024', size: '1.8 MB', url: '#' }
+    ]
+  }
+];
+
+const initialFinancialRecords = [
+  {
+    id: 'fin_202609',
+    contractId: 'cnt_001',
+    propertyId: 'prop_1',
+    propertyName: 'Apartamento 302 - Edifício Horizonte',
+    ownerId: 'user_proprietario_1',
+    tenantId: 'user_inquilino_1',
+    competence: 'Setembro / 2026',
+    dueDate: '10/09/2026',
+    grossRent: 2000.00,
+    admFee: 200.00,
+    maintenanceDeductions: 0.00,
+    maintenanceReason: null,
+    netRepasse: 1800.00,
+    predictedRepasseDate: '15/09/2026',
+    effectiveRepasseDate: null,
+    payoutAccount: 'Banco Itaú - Ag 1234 C/C 56789-0 (PIX: carlos.silva@email.com)',
+    tenantStatus: 'Aguardando pagamento',
+    tenantPaymentDate: null,
+    ownerStatus: 'Pendente',
+    receiptUrl: null,
+    boletoBarCode: '34191.79001 01043.510047 91020.150008 5 98120000200000',
+    pixKey: '00020126580014BR.GOV.BCB.PIX0136123e4567-e89b-12d3-a456-42661417400052040000530398654052000.005802BR5920Araujo Imoveis Ltda6011Divinopolis62070503***6304E2D1'
+  },
+  {
+    id: 'fin_202608',
+    contractId: 'cnt_001',
+    propertyId: 'prop_1',
+    propertyName: 'Apartamento 302 - Edifício Horizonte',
+    ownerId: 'user_proprietario_1',
+    tenantId: 'user_inquilino_1',
+    competence: 'Agosto / 2026',
+    dueDate: '10/08/2026',
+    grossRent: 2000.00,
+    admFee: 200.00,
+    maintenanceDeductions: 150.00,
+    maintenanceReason: 'Manutenção autorizada (Troca da torneira do banheiro)',
+    netRepasse: 1650.00,
+    predictedRepasseDate: '15/08/2026',
+    effectiveRepasseDate: '15/08/2026',
+    payoutAccount: 'Banco Itaú - Ag 1234 C/C 56789-0 (PIX: carlos.silva@email.com)',
+    tenantStatus: 'Pago',
+    tenantPaymentDate: '09/08/2026',
+    ownerStatus: 'Pago',
+    receiptUrl: '#',
+    boletoBarCode: '34191.79001 01043.510047 91020.150008 5 98120000200000',
+    pixKey: '00020126580014BR.GOV.BCB.PIX0136123e4567-e89b-12d3-a456-42661417400052040000530398654052000.005802BR5920Araujo Imoveis Ltda6011Divinopolis62070503***6304E2D1'
+  },
+  {
+    id: 'fin_202607',
+    contractId: 'cnt_001',
+    propertyId: 'prop_1',
+    propertyName: 'Apartamento 302 - Edifício Horizonte',
+    ownerId: 'user_proprietario_1',
+    tenantId: 'user_inquilino_1',
+    competence: 'Julho / 2026',
+    dueDate: '10/07/2026',
+    grossRent: 2000.00,
+    admFee: 200.00,
+    maintenanceDeductions: 0.00,
+    maintenanceReason: null,
+    netRepasse: 1800.00,
+    predictedRepasseDate: '15/07/2026',
+    effectiveRepasseDate: '15/07/2026',
+    payoutAccount: 'Banco Itaú - Ag 1234 C/C 56789-0',
+    tenantStatus: 'Pago',
+    tenantPaymentDate: '10/07/2026',
+    ownerStatus: 'Pago',
+    receiptUrl: '#'
+  },
+  {
+    id: 'fin_202606',
+    contractId: 'cnt_001',
+    propertyId: 'prop_1',
+    propertyName: 'Apartamento 302 - Edifício Horizonte',
+    ownerId: 'user_proprietario_1',
+    tenantId: 'user_inquilino_1',
+    competence: 'Junho / 2026',
+    dueDate: '10/06/2026',
+    grossRent: 2000.00,
+    admFee: 200.00,
+    maintenanceDeductions: 0.00,
+    maintenanceReason: null,
+    netRepasse: 1800.00,
+    predictedRepasseDate: '15/06/2026',
+    effectiveRepasseDate: '15/06/2026',
+    payoutAccount: 'Banco Itaú - Ag 1234 C/C 56789-0',
+    tenantStatus: 'Pago',
+    tenantPaymentDate: '08/06/2026',
+    ownerStatus: 'Pago',
+    receiptUrl: '#'
+  }
+];
+
+const initialMaintenanceRequests = [
+  {
+    id: 'maint_001',
+    protocol: 'MAN-000342',
+    propertyId: 'prop_1',
+    propertyName: 'Apartamento 302 - Edifício Horizonte',
+    tenantId: 'user_inquilino_1',
+    tenantName: 'Mariana Oliveira Costa',
+    ownerId: 'user_proprietario_1',
+    ownerName: 'Carlos Eduardo Silva',
+    title: 'Vazamento na pia da cozinha',
+    category: 'Hidráulica',
+    description: 'Percebi um gotejamento constante no sifão embaixo da pia da cozinha que está molhando o armário de madeira.',
+    requestDate: '12/08/2026 14:20',
+    status: 'Aguardando proprietário',
+    budgetValue: 350.00,
+    budgetSupplier: 'José Serviços Hidráulicos',
+    budgetDetails: 'Troca do sifão flexível e reparo no engate rápido com fornecimento de peças.',
+    decision: null,
+    decisionDate: null,
+    scheduledDate: '21/08/2026',
+    scheduledTime: '14h às 16h',
+    attachments: [
+      { name: 'foto_vazamento_1.jpg', type: 'image', url: 'https://images.unsplash.com/photo-1585704032915-c3400ca199e7?w=500&auto=format&fit=crop' }
+    ]
+  },
+  {
+    id: 'maint_002',
+    protocol: 'MAN-000289',
+    propertyId: 'prop_1',
+    propertyName: 'Apartamento 302 - Edifício Horizonte',
+    tenantId: 'user_inquilino_1',
+    tenantName: 'Mariana Oliveira Costa',
+    ownerId: 'user_proprietario_1',
+    ownerName: 'Carlos Eduardo Silva',
+    title: 'Troca da torneira do banheiro',
+    category: 'Hidráulica',
+    description: 'Torneira espanada com vazamento.',
+    requestDate: '15/07/2026 09:10',
+    status: 'Concluído',
+    budgetValue: 150.00,
+    budgetSupplier: 'José Serviços',
+    decision: 'AUTORIZADO',
+    decisionDate: '15/07/2026 11:30',
+    scheduledDate: '17/07/2026',
+    scheduledTime: '10h',
+    attachments: []
+  }
+];
+
+const initialPortalMessages = [
+  {
+    id: 'msg_1',
+    senderRole: 'imobiliaria',
+    senderName: 'Equipe Araújo Imóveis',
+    recipientRole: 'proprietario',
+    recipientId: 'user_proprietario_1',
+    subject: 'Solicitação de Autorização de Manutenção',
+    body: 'Prezado Carlos, identificamos uma solicitação de manutenção para o Apt 302 (Vazamento na cozinha). O orçamento do prestador é R$ 350,00. Por favor, acesse a aba de Manutenções para Autorizar ou Recusar.',
+    date: '12/08/2026 14:35',
+    read: false
+  },
+  {
+    id: 'msg_2',
+    senderRole: 'imobiliaria',
+    senderName: 'Equipe Araújo Imóveis',
+    recipientRole: 'inquilino',
+    recipientId: 'user_inquilino_1',
+    subject: 'Acompanhamento do Chamado MAN-000342',
+    body: 'Olá Mariana! Sua solicitação de manutenção foi recebida e encaminhada ao proprietário para validação do orçamento. Manteremos você informada por aqui.',
+    date: '12/08/2026 14:30',
+    read: true
+  }
+];
+
+const initialActivityLogs = [
+  { id: 'act_1', timestamp: '19/08/2026 09:20', userName: 'Carlos Eduardo (Proprietário)', action: 'Visualizou o demonstrativo financeiro de Agosto/2026' },
+  { id: 'act_2', timestamp: '15/08/2026 10:15', userName: 'Mariana Costa (Inquilino)', action: 'Visualizou o boleto com vencimento em 10/09/2026' },
+  { id: 'act_3', timestamp: '12/08/2026 14:20', userName: 'Mariana Costa (Inquilino)', action: 'Abriu solicitação de manutenção MAN-000342 (Vazamento na cozinha)' }
+];
+
 const safeJsonParse = (str, fallback) => {
   try {
     if (!str) return fallback;
@@ -60,14 +315,38 @@ export const AppProvider = ({ children }) => {
   const [activeChatClientId, setActiveChatClientId] = useState(null);
   const isSyncingRef = useRef(false);
 
-  // Initialize pipelines and columns state (do not auto-create any pipeline or column)
+  // Initialize pipelines and columns state with Araújo Imóveis defaults
   useEffect(() => {
     try {
-      // Purge any stored pipelines or columns from browser localStorage to leave it 100% clean
-      localStorage.removeItem('crmbase_pipelines');
-      localStorage.removeItem('crmbase_columns');
-      localStorage.setItem('crmbase_pipelines', JSON.stringify([]));
-      localStorage.setItem('crmbase_columns', JSON.stringify([]));
+      const defaultPipelines = [
+        { id: 'pipe_novo_lead', name: 'Novo Lead / Qualificação' },
+        { id: 'pipe_interesse', name: 'Interesse / Oportunidade' },
+        { id: 'pipe_negociacao', name: 'Negociação / Fechamento' }
+      ];
+
+      const defaultColumns = [
+        { id: 'col_novo_lead', pipelineId: 'pipe_novo_lead', name: 'Novos Leads', color: '#38bdf8' },
+        { id: 'col_em_qualificacao', pipelineId: 'pipe_novo_lead', name: 'Em Qualificação', color: '#f59e0b' },
+        { id: 'col_qualificado', pipelineId: 'pipe_novo_lead', name: 'Qualificado / Agendado', color: '#10b981' },
+
+        { id: 'col_imoveis_selecionados', pipelineId: 'pipe_interesse', name: 'Imóveis Selecionados', color: '#a855f7' },
+        { id: 'col_visita_agendada', pipelineId: 'pipe_interesse', name: 'Visita Agendada / Realizada', color: '#38bdf8' },
+        { id: 'col_proposta_enviada', pipelineId: 'pipe_interesse', name: 'Proposta Enviada', color: '#f59e0b' },
+
+        { id: 'col_em_negociacao', pipelineId: 'pipe_negociacao', name: 'Em Negociação', color: '#3b82f6' },
+        { id: 'col_documentacao', pipelineId: 'pipe_negociacao', name: 'Documentação & Análise', color: '#8b5cf6' },
+        { id: 'col_contrato_fechado', pipelineId: 'pipe_negociacao', name: 'Contrato Assinado / Fechado', color: '#10b981' }
+      ];
+
+      const savedPipes = localStorage.getItem('crmbase_pipelines');
+      if (!savedPipes || JSON.parse(savedPipes).length === 0) {
+        localStorage.setItem('crmbase_pipelines', JSON.stringify(defaultPipelines));
+      }
+
+      const savedCols = localStorage.getItem('crmbase_columns');
+      if (!savedCols || JSON.parse(savedCols).length === 0) {
+        localStorage.setItem('crmbase_columns', JSON.stringify(defaultColumns));
+      }
 
       // Clean up legacy welcome message with hardcoded options
       const oldWelcome1 = 'Olá, seja bem-vindo! Escolha seu atendimento:\n\n' +
@@ -296,6 +575,221 @@ export const AppProvider = ({ children }) => {
     const saved = localStorage.getItem('eloos_profile');
     return safeJsonParse(saved, initialProfile);
   });
+
+  // Portal State Declarations
+  const [portalUsers, setPortalUsers] = useState(() => {
+    const saved = localStorage.getItem('araujo_portal_users');
+    return safeJsonParse(saved, initialPortalUsers);
+  });
+
+  const [properties, setProperties] = useState(() => {
+    const saved = localStorage.getItem('araujo_portal_properties');
+    return safeJsonParse(saved, initialProperties);
+  });
+
+  const [contracts, setContracts] = useState(() => {
+    const saved = localStorage.getItem('araujo_portal_contracts');
+    return safeJsonParse(saved, initialContracts);
+  });
+
+  const [financialRecords, setFinancialRecords] = useState(() => {
+    const saved = localStorage.getItem('araujo_portal_financial_records');
+    return safeJsonParse(saved, initialFinancialRecords);
+  });
+
+  const [maintenanceRequests, setMaintenanceRequests] = useState(() => {
+    const saved = localStorage.getItem('araujo_portal_maintenance_requests');
+    return safeJsonParse(saved, initialMaintenanceRequests);
+  });
+
+  const [portalMessages, setPortalMessages] = useState(() => {
+    const saved = localStorage.getItem('araujo_portal_messages');
+    return safeJsonParse(saved, initialPortalMessages);
+  });
+
+  const [activityLogs, setActivityLogs] = useState(() => {
+    const saved = localStorage.getItem('araujo_portal_activity_logs');
+    return safeJsonParse(saved, initialActivityLogs);
+  });
+
+  useEffect(() => { localStorage.setItem('araujo_portal_users', JSON.stringify(portalUsers)); }, [portalUsers]);
+  useEffect(() => { localStorage.setItem('araujo_portal_properties', JSON.stringify(properties)); }, [properties]);
+  useEffect(() => { localStorage.setItem('araujo_portal_contracts', JSON.stringify(contracts)); }, [contracts]);
+  useEffect(() => { localStorage.setItem('araujo_portal_financial_records', JSON.stringify(financialRecords)); }, [financialRecords]);
+  useEffect(() => { localStorage.setItem('araujo_portal_maintenance_requests', JSON.stringify(maintenanceRequests)); }, [maintenanceRequests]);
+  useEffect(() => { localStorage.setItem('araujo_portal_messages', JSON.stringify(portalMessages)); }, [portalMessages]);
+  useEffect(() => { localStorage.setItem('araujo_portal_activity_logs', JSON.stringify(activityLogs)); }, [activityLogs]);
+
+  const registerActivityLog = (userName, actionText) => {
+    const newLog = {
+      id: 'act_' + Date.now(),
+      timestamp: new Date().toLocaleString('pt-BR'),
+      userName: userName || profile?.name || 'Usuário',
+      action: actionText
+    };
+    setActivityLogs(prev => [newLog, ...prev]);
+  };
+
+  const login = (email, password) => {
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = password.trim();
+
+    // 1. Check against Portal Users (Proprietário / Inquilino)
+    const matchedPortal = portalUsers.find(u =>
+      (u.email || '').trim().toLowerCase() === cleanEmail &&
+      (u.password || '').trim() === cleanPassword
+    );
+    if (matchedPortal) {
+      setProfile({
+        id: matchedPortal.id,
+        name: matchedPortal.name,
+        email: matchedPortal.email,
+        role: matchedPortal.role,
+        phone: matchedPortal.phone || '',
+        avatar: matchedPortal.avatar || '',
+        password: matchedPortal.password
+      });
+      setIsAuthenticated(true);
+      localStorage.setItem('eloos_auth', 'true');
+      registerActivityLog(`${matchedPortal.name} (${matchedPortal.role === 'proprietario' ? 'Proprietário' : 'Inquilino'})`, 'Fez login no portal');
+      return { success: true };
+    }
+
+    // 2. Check against active profile first
+    const activeEmail = (profile?.email || 'admin@admin.com').trim().toLowerCase();
+    const activePassword = (profile?.password || 'admin').trim();
+    if (cleanEmail === activeEmail && cleanPassword === activePassword) {
+      setIsAuthenticated(true);
+      localStorage.setItem('eloos_auth', 'true');
+      registerActivityLog('Admin User (Administrador)', 'Fez login na plataforma CRM');
+      return { success: true };
+    }
+
+    // 3. Check against global systemUsers list
+    const matched = systemUsers.find(u =>
+      (u.email || '').trim().toLowerCase() === cleanEmail &&
+      (u.password || '').trim() === cleanPassword
+    );
+    if (matched) {
+      const newProfile = {
+        id: matched.id,
+        name: matched.name,
+        email: matched.email,
+        role: matched.role || 'Administrador',
+        phone: matched.phone || '',
+        avatar: matched.avatar || '',
+        password: matched.password
+      };
+      setProfile(newProfile);
+      setIsAuthenticated(true);
+      localStorage.setItem('eloos_auth', 'true');
+      registerActivityLog(matched.name, 'Fez login na plataforma');
+      return { success: true };
+    }
+
+    return { success: false, message: 'Credenciais inválidas. Verifique seu e-mail e senha.' };
+  };
+
+  const quickLoginPortal = (role) => {
+    if (role === 'proprietario') {
+      const user = portalUsers.find(u => u.role === 'proprietario') || initialPortalUsers[0];
+      setProfile(user);
+      setIsAuthenticated(true);
+      localStorage.setItem('eloos_auth', 'true');
+      registerActivityLog(`${user.name} (Proprietário)`, 'Fez login rápido no Portal do Proprietário');
+    } else if (role === 'inquilino') {
+      const user = portalUsers.find(u => u.role === 'inquilino') || initialPortalUsers[1];
+      setProfile(user);
+      setIsAuthenticated(true);
+      localStorage.setItem('eloos_auth', 'true');
+      registerActivityLog(`${user.name} (Inquilino)`, 'Fez login rápido no Portal do Inquilino');
+    } else {
+      setProfile(initialProfile);
+      setIsAuthenticated(true);
+      localStorage.setItem('eloos_auth', 'true');
+      registerActivityLog('Admin User (Administrador)', 'Fez login rápido no CRM Interno');
+    }
+  };
+
+  const authorizeMaintenance = (requestId, decision, note) => {
+    setMaintenanceRequests(prev => prev.map(req => {
+      if (req.id === requestId) {
+        const newStatus = decision === 'AUTORIZADO' ? 'Autorizado' : (decision === 'RECUSADO' ? 'Orçamento Recusado' : 'Aguardando Informações');
+        return {
+          ...req,
+          status: newStatus,
+          decision: decision,
+          decisionDate: new Date().toLocaleString('pt-BR'),
+          decisionNote: note || ''
+        };
+      }
+      return req;
+    }));
+    registerActivityLog(profile?.name || 'Proprietário', `${decision === 'AUTORIZADO' ? 'Autorizou' : 'Recusou/Questionou'} a manutenção (${requestId})`);
+  };
+
+  const createMaintenanceRequest = (data) => {
+    const nextProtocolNum = maintenanceRequests.length + 343;
+    const protocolStr = `MAN-${String(nextProtocolNum).padStart(6, '0')}`;
+    const newReq = {
+      id: 'maint_' + Date.now(),
+      protocol: protocolStr,
+      propertyId: data.propertyId || 'prop_1',
+      propertyName: data.propertyName || 'Apartamento 302 - Edifício Horizonte',
+      tenantId: profile?.id || 'user_inquilino_1',
+      tenantName: profile?.name || 'Mariana Oliveira Costa',
+      ownerId: 'user_proprietario_1',
+      ownerName: 'Carlos Eduardo Silva',
+      title: data.title || 'Solicitação de Reparo',
+      category: data.category || 'Geral',
+      description: data.description || '',
+      requestDate: new Date().toLocaleString('pt-BR'),
+      status: 'Solicitado',
+      budgetValue: null,
+      budgetSupplier: null,
+      decision: null,
+      decisionDate: null,
+      scheduledDate: null,
+      scheduledTime: null,
+      attachments: data.attachments || []
+    };
+    setMaintenanceRequests(prev => [newReq, ...prev]);
+    registerActivityLog(profile?.name || 'Inquilino', `Abriu chamada de manutenção protocolo ${protocolStr}`);
+    return newReq;
+  };
+
+  const sendPortalMessage = (msg) => {
+    const newMsg = {
+      id: 'msg_' + Date.now(),
+      senderRole: msg.senderRole || profile?.role || 'inquilino',
+      senderName: msg.senderName || profile?.name || 'Usuário',
+      recipientRole: msg.recipientRole || 'imobiliaria',
+      recipientId: msg.recipientId || 'admin',
+      subject: msg.subject || 'Mensagem do Portal',
+      body: msg.body || '',
+      date: new Date().toLocaleString('pt-BR'),
+      read: false
+    };
+    setPortalMessages(prev => [newMsg, ...prev]);
+    registerActivityLog(profile?.name || 'Usuário', `Enviou mensagem no portal: "${newMsg.subject}"`);
+  };
+
+  const updateMaintenanceStatus = (requestId, newStatus, budgetValue, budgetSupplier, scheduledDate, scheduledTime) => {
+    setMaintenanceRequests(prev => prev.map(req => {
+      if (req.id === requestId) {
+        return {
+          ...req,
+          status: newStatus || req.status,
+          budgetValue: budgetValue !== undefined ? budgetValue : req.budgetValue,
+          budgetSupplier: budgetSupplier !== undefined ? budgetSupplier : req.budgetSupplier,
+          scheduledDate: scheduledDate !== undefined ? scheduledDate : req.scheduledDate,
+          scheduledTime: scheduledTime !== undefined ? scheduledTime : req.scheduledTime
+        };
+      }
+      return req;
+    }));
+    registerActivityLog(profile?.name || 'Imobiliária', `Atualizou status da manutenção ${requestId} para "${newStatus}"`);
+  };
 
   const [systemUsers, setSystemUsersState] = useState(() => {
     const saved = localStorage.getItem('crmbase_system_users');
@@ -2097,49 +2591,7 @@ export const AppProvider = ({ children }) => {
     localStorage.setItem('crmbase_wa_status', waStatus);
   }, [waStatus]);
 
-  const login = (email, password) => {
-    const cleanEmail = email.trim().toLowerCase();
-    const cleanPassword = password.trim();
 
-    // 1. Check against active profile first
-    const activeEmail = (profile.email || 'admin@admin.com').trim().toLowerCase();
-    const activePassword = (profile.password || 'admin').trim();
-    if (cleanEmail === activeEmail && cleanPassword === activePassword) {
-      setIsAuthenticated(true);
-      localStorage.setItem('eloos_auth', 'true');
-      return { success: true };
-    }
-
-    // 2. Check against global systemUsers list
-    const matched = systemUsers.find(u => 
-      (u.email || '').trim().toLowerCase() === cleanEmail && 
-      (u.password || '').trim() === cleanPassword
-    );
-    if (matched) {
-      // Update active profile state to match logged in user
-      const newProfile = {
-        name: matched.name,
-        email: matched.email,
-        role: matched.role || 'Administrador',
-        phone: matched.phone || '37998072208',
-        avatar: matched.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=face',
-        password: matched.password,
-        notifications: true,
-        autoReply: true,
-        integrations: {
-          whatsapp: true,
-          webhook: false,
-          databaseSync: true,
-        }
-      };
-      setProfile(newProfile);
-      setIsAuthenticated(true);
-      localStorage.setItem('eloos_auth', 'true');
-      return { success: true };
-    }
-
-    return { success: false, message: 'Credenciais inválidas. Verifique seu e-mail e senha.' };
-  };
 
   const logout = () => {
     setIsAuthenticated(false);
@@ -3835,6 +4287,27 @@ ${fullSearchContext.substring(0, 4000)}
       unreadChats,
       setUnreadChats,
       fetchMediaBase64,
+      // Portal Exports
+      portalUsers,
+      setPortalUsers,
+      properties,
+      setProperties,
+      contracts,
+      setContracts,
+      financialRecords,
+      setFinancialRecords,
+      maintenanceRequests,
+      setMaintenanceRequests,
+      portalMessages,
+      setPortalMessages,
+      activityLogs,
+      setActivityLogs,
+      authorizeMaintenance,
+      createMaintenanceRequest,
+      sendPortalMessage,
+      updateMaintenanceStatus,
+      registerActivityLog,
+      quickLoginPortal,
     }}>
       {children}
     </AppContext.Provider>
