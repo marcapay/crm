@@ -56,7 +56,7 @@ export default function Sidebar({ isOpen, onClose }) {
   return (
     <aside className={`glass-panel app-sidebar ${isOpen ? 'open' : ''}`} style={styles.sidebar}>
       <div style={styles.header}>
-        <ClientLogo height={32} theme={theme} />
+        <ClientLogo height={52} theme={theme} />
       </div>
 
       <nav style={styles.nav}>
@@ -215,10 +215,12 @@ const styles = {
   },
   header: {
     display: 'flex',
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: '0.5rem',
-    padding: '2rem 1.5rem',
+    padding: '1.75rem 1rem',
     borderBottom: '1px solid var(--glass-border)',
+    textAlign: 'center',
+    width: '100%',
   },
   nav: {
     display: 'flex',
