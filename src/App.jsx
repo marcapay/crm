@@ -22,11 +22,12 @@ export default function App() {
   }
 
   // 1. Role-based Portal Isolation
-  if (profile?.role === 'proprietario') {
+  const normalizedRole = (profile?.role || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  if (normalizedRole === 'proprietario') {
     return <AreaProprietario />;
   }
 
-  if (profile?.role === 'inquilino') {
+  if (normalizedRole === 'inquilino') {
     return <AreaInquilino />;
   }
 

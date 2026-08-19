@@ -1453,6 +1453,8 @@ Seu cadastro foi realizado com sucesso e seu acesso ao sistema *${clientName}* e
                           >
                             <option value="Administrador">Administrador</option>
                             <option value="Normal">Normal</option>
+                            <option value="Proprietário">Proprietário</option>
+                            <option value="Inquilino">Inquilino</option>
                           </select>
                         </div>
 
@@ -1556,6 +1558,8 @@ Seu cadastro foi realizado com sucesso e seu acesso ao sistema *${clientName}* e
                   >
                     <option value="Administrador">Administrador</option>
                     <option value="Normal">Normal</option>
+                    <option value="Proprietário">Proprietário</option>
+                    <option value="Inquilino">Inquilino</option>
                   </select>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', background: 'var(--bg-tertiary)', padding: '0 0.5rem', borderRadius: '6px', border: '1px solid var(--glass-border)' }}>
                     <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>Cor:</label>
@@ -3278,6 +3282,8 @@ Seu cadastro foi realizado com sucesso e seu acesso ao sistema *${clientName}* e
                 >
                   <option value="Administrador">Administrador</option>
                   <option value="Normal">Normal</option>
+                  <option value="Proprietário">Proprietário</option>
+                  <option value="Inquilino">Inquilino</option>
                 </select>
               </div>
 
