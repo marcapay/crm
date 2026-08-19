@@ -43,7 +43,9 @@ export default function Sidebar({ isOpen, onClose }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [menuRef]);
 
-  const menuItems = [
+  const userRole = (profile?.role || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+  const allMenuItems = [
     { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
     { id: 'kanban', name: 'Kanban', icon: Columns },
     { id: 'conversas', name: 'Conversas', icon: MessageSquare },
@@ -52,6 +54,19 @@ export default function Sidebar({ isOpen, onClose }) {
     { id: 'links-rapidos', name: 'Atalhos Rápidos', icon: Link2 },
     { id: 'configuracoes', name: 'Configurações', icon: Settings },
   ];
+
+  const menuItems = allMenuItems.filter(item => {
+    if (userRole === 'normal') {
+      // Usuário Normal não vê Configurações
+      return item.id !== 'configuracoes';
+    }
+    if (userRole === 'proprietario' || userRole === 'inquilino') {
+      // Proprietário e Inquilino veem apenas o módulo de Portais
+      return item.id === 'gestao-portais';
+    }
+    // Administrador vê tudo
+    return true;
+  });
 
   return (
     <aside className={`glass-panel app-sidebar ${isOpen ? 'open' : ''}`} style={styles.sidebar}>
@@ -166,18 +181,20 @@ export default function Sidebar({ isOpen, onClose }) {
               <span>Perfil</span>
             </button>
 
-            <button 
-              onClick={(e) => { 
-                e.stopPropagation(); 
-                setActiveModule('configuracoes'); 
-                setIsProfileOpen(false); 
-                if (onClose) onClose();
-              }}
-              style={styles.dropdownItem}
-            >
-              <Settings size={14} style={styles.dropdownIcon} />
-              <span>Configurações</span>
-            </button>
+            {userRole !== 'normal' && (
+              <button 
+                onClick={(e) => { 
+                  e.stopPropagation(); 
+                  setActiveModule('configuracoes'); 
+                  setIsProfileOpen(false); 
+                  if (onClose) onClose();
+                }}
+                style={styles.dropdownItem}
+              >
+                <Settings size={14} style={styles.dropdownIcon} />
+                <span>Configurações</span>
+              </button>
+            )}
 
             <div style={styles.dropdownDivider} />
 

@@ -33,6 +33,11 @@ export default function App() {
 
   // 2. Admin / Imobiliária View
   const renderActiveModule = () => {
+    // Bloqueia acesso a Configurações para usuário de cargo 'Normal'
+    if (normalizedRole === 'normal' && activeModule === 'configuracoes') {
+      return <Dashboard />;
+    }
+
     switch (activeModule) {
       case 'dashboard':
         return <Dashboard />;
