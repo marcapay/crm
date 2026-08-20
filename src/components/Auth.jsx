@@ -75,41 +75,6 @@ export default function Auth() {
           Portal de relacionamento e gestão de locações da <strong>Araújo Imóveis</strong>.
         </p>
 
-        {/* Quick Demo Access Buttons */}
-        {mode === 'login' && (
-          <div style={styles.quickAccessSection}>
-            <span style={styles.quickAccessTitle}>Acesso Rápido de Demonstração:</span>
-            <div style={styles.quickAccessGrid}>
-              <button 
-                type="button" 
-                style={styles.quickAccessBtnProp} 
-                onClick={() => quickLoginPortal('proprietario')}
-              >
-                🏠 Proprietário
-              </button>
-
-              <button 
-                type="button" 
-                style={styles.quickAccessBtnTen} 
-                onClick={() => quickLoginPortal('inquilino')}
-              >
-                🔑 Inquilino
-              </button>
-
-              <button 
-                type="button" 
-                style={styles.quickAccessBtnAdmin} 
-                onClick={() => quickLoginPortal('admin')}
-              >
-                🏢 Imobiliária
-              </button>
-            </div>
-            <div style={styles.quickDivider}>
-              <span>ou entre com seu e-mail</span>
-            </div>
-          </div>
-        )}
-
         {error && (
           <div style={styles.alertError}>
             <ShieldAlert size={18} />
@@ -414,41 +379,56 @@ const styles = {
   },
   quickAccessGrid: {
     display: 'grid',
-    gridTemplateColumns: '1fr 1fr 1fr',
+    gridTemplateColumns: '1fr 1fr',
     gap: '0.5rem',
   },
-  quickAccessBtnProp: {
-    padding: '0.5rem 0.25rem',
-    fontSize: '0.75rem',
-    fontWeight: '700',
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    border: '1px solid rgba(255, 255, 255, 0.2)',
-    color: '#ffffff',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    textAlign: 'center',
-  },
-  quickAccessBtnTen: {
-    padding: '0.5rem 0.25rem',
-    fontSize: '0.75rem',
-    fontWeight: '700',
-    backgroundColor: 'rgba(56, 189, 248, 0.12)',
-    border: '1px solid rgba(56, 189, 248, 0.3)',
-    color: '#38bdf8',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    textAlign: 'center',
-  },
   quickAccessBtnAdmin: {
-    padding: '0.5rem 0.25rem',
+    padding: '0.55rem 0.25rem',
     fontSize: '0.75rem',
     fontWeight: '700',
-    backgroundColor: 'rgba(16, 185, 129, 0.12)',
-    border: '1px solid rgba(16, 185, 129, 0.3)',
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    border: '1px solid rgba(16, 185, 129, 0.35)',
     color: '#34d399',
     borderRadius: '8px',
     cursor: 'pointer',
     textAlign: 'center',
+    transition: 'all 0.2s ease',
+  },
+  quickAccessBtnCorretor: {
+    padding: '0.55rem 0.25rem',
+    fontSize: '0.75rem',
+    fontWeight: '700',
+    backgroundColor: 'rgba(168, 85, 247, 0.15)',
+    border: '1px solid rgba(168, 85, 247, 0.35)',
+    color: '#c084fc',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    textAlign: 'center',
+    transition: 'all 0.2s ease',
+  },
+  quickAccessBtnProp: {
+    padding: '0.55rem 0.25rem',
+    fontSize: '0.75rem',
+    fontWeight: '700',
+    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+    border: '1px solid rgba(245, 158, 11, 0.35)',
+    color: '#fbbf24',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    textAlign: 'center',
+    transition: 'all 0.2s ease',
+  },
+  quickAccessBtnTen: {
+    padding: '0.55rem 0.25rem',
+    fontSize: '0.75rem',
+    fontWeight: '700',
+    backgroundColor: 'rgba(56, 189, 248, 0.15)',
+    border: '1px solid rgba(56, 189, 248, 0.35)',
+    color: '#38bdf8',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    textAlign: 'center',
+    transition: 'all 0.2s ease',
   },
   quickDivider: {
     textAlign: 'center',

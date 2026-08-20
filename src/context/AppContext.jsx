@@ -32,6 +32,24 @@ const initialProfile = {
 // Portal Initial Mock Data (Araújo Imóveis Seed Data)
 const initialPortalUsers = [
   {
+    id: 'user_admin_1',
+    name: 'Ricardo Araújo',
+    email: 'admin@araujo.com',
+    role: 'Administrador',
+    phone: '(37) 99988-1122',
+    avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=120&h=120&fit=crop&crop=face',
+    password: 'admin'
+  },
+  {
+    id: 'user_corretor_1',
+    name: 'Fernanda Lima',
+    email: 'corretor@araujo.com',
+    role: 'Normal',
+    phone: '(37) 99123-8899',
+    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=120&h=120&fit=crop&crop=face',
+    password: 'corretor123'
+  },
+  {
     id: 'user_proprietario_1',
     name: 'Carlos Eduardo Silva',
     email: 'proprietario@araujo.com',
@@ -579,7 +597,15 @@ export const AppProvider = ({ children }) => {
   // Portal State Declarations
   const [portalUsers, setPortalUsers] = useState(() => {
     const saved = localStorage.getItem('araujo_portal_users');
-    return safeJsonParse(saved, initialPortalUsers);
+    const parsed = safeJsonParse(saved, initialPortalUsers);
+    if (parsed && Array.isArray(parsed)) {
+      const missing = initialPortalUsers.filter(initU => !parsed.some(p => (p.email || '').toLowerCase() === initU.email.toLowerCase()));
+      if (missing.length > 0) {
+        return [...parsed, ...missing];
+      }
+      return parsed;
+    }
+    return initialPortalUsers;
   });
 
   const [properties, setProperties] = useState(() => {
@@ -634,7 +660,7 @@ export const AppProvider = ({ children }) => {
     const cleanEmail = email.trim().toLowerCase();
     const cleanPassword = password.trim();
 
-    // 1. Check against Portal Users (Proprietário / Inquilino)
+    // 1. Check against Portal Users list (Supports all 4 roles: Admin, Corretor, Proprietario, Inquilino)
     const matchedPortal = portalUsers.find(u =>
       (u.email || '').trim().toLowerCase() === cleanEmail &&
       (u.password || '').trim() === cleanPassword
@@ -651,17 +677,20 @@ export const AppProvider = ({ children }) => {
       });
       setIsAuthenticated(true);
       localStorage.setItem('eloos_auth', 'true');
-      registerActivityLog(`${matchedPortal.name} (${matchedPortal.role === 'proprietario' ? 'Proprietário' : 'Inquilino'})`, 'Fez login no portal');
+      const roleLabel = matchedPortal.role === 'proprietario' ? 'Proprietário' : 
+                        matchedPortal.role === 'inquilino' ? 'Inquilino' :
+                        (matchedPortal.role === 'Normal' || matchedPortal.role === 'Corretor') ? 'Corretor' : 'Administrador';
+      registerActivityLog(`${matchedPortal.name} (${roleLabel})`, 'Fez login no sistema');
       return { success: true };
     }
 
-    // 2. Check against active profile first
+    // 2. Check against active profile fallback
     const activeEmail = (profile?.email || 'admin@admin.com').trim().toLowerCase();
     const activePassword = (profile?.password || 'admin').trim();
     if (cleanEmail === activeEmail && cleanPassword === activePassword) {
       setIsAuthenticated(true);
       localStorage.setItem('eloos_auth', 'true');
-      registerActivityLog('Admin User (Administrador)', 'Fez login na plataforma CRM');
+      registerActivityLog(`${profile.name || 'Admin User'} (Administrador)`, 'Fez login na plataforma CRM');
       return { success: true };
     }
 
@@ -692,22 +721,29 @@ export const AppProvider = ({ children }) => {
 
   const quickLoginPortal = (role) => {
     if (role === 'proprietario') {
-      const user = portalUsers.find(u => u.role === 'proprietario') || initialPortalUsers[0];
+      const user = portalUsers.find(u => u.role === 'proprietario') || initialPortalUsers[2];
       setProfile(user);
       setIsAuthenticated(true);
       localStorage.setItem('eloos_auth', 'true');
       registerActivityLog(`${user.name} (Proprietário)`, 'Fez login rápido no Portal do Proprietário');
     } else if (role === 'inquilino') {
-      const user = portalUsers.find(u => u.role === 'inquilino') || initialPortalUsers[1];
+      const user = portalUsers.find(u => u.role === 'inquilino') || initialPortalUsers[3];
       setProfile(user);
       setIsAuthenticated(true);
       localStorage.setItem('eloos_auth', 'true');
       registerActivityLog(`${user.name} (Inquilino)`, 'Fez login rápido no Portal do Inquilino');
-    } else {
-      setProfile(initialProfile);
+    } else if (role === 'corretor') {
+      const user = portalUsers.find(u => u.role === 'Normal' || u.role === 'Corretor') || initialPortalUsers[1];
+      setProfile(user);
       setIsAuthenticated(true);
       localStorage.setItem('eloos_auth', 'true');
-      registerActivityLog('Admin User (Administrador)', 'Fez login rápido no CRM Interno');
+      registerActivityLog(`${user.name} (Corretor)`, 'Fez login rápido no CRM (Visão Corretor)');
+    } else {
+      const user = portalUsers.find(u => u.role === 'Administrador' || u.role === 'admin') || initialPortalUsers[0];
+      setProfile(user);
+      setIsAuthenticated(true);
+      localStorage.setItem('eloos_auth', 'true');
+      registerActivityLog(`${user.name} (Administrador)`, 'Fez login rápido no CRM Interno (Admin)');
     }
   };
 
