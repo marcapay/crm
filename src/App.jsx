@@ -12,6 +12,7 @@ import Perfil from './components/Perfil';
 import AreaProprietario from './components/AreaProprietario';
 import AreaInquilino from './components/AreaInquilino';
 import PainelGestaoPortais from './components/PainelGestaoPortais';
+import Financeiro from './components/Financeiro';
 
 export default function App() {
   const { isAuthenticated, profile, activeModule } = useApp();
@@ -47,6 +48,8 @@ export default function App() {
         return <Conversas />;
       case 'clientes':
         return <Clientes />;
+      case 'financeiro':
+        return <Financeiro />;
       case 'gestao-portais':
         return <PainelGestaoPortais />;
       case 'links-rapidos':

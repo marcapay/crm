@@ -13,7 +13,8 @@ import {
   Moon,
   User,
   Bell,
-  Building2
+  Building2,
+  DollarSign
 } from 'lucide-react';
 
 export default function Sidebar({ isOpen, onClose }) {
@@ -50,6 +51,7 @@ export default function Sidebar({ isOpen, onClose }) {
     { id: 'kanban', name: 'Kanban', icon: Columns },
     { id: 'conversas', name: 'Conversas', icon: MessageSquare },
     { id: 'clientes', name: 'Clientes', icon: Users },
+    { id: 'financeiro', name: 'Financeiro', icon: DollarSign },
     { id: 'gestao-portais', name: 'Locação', icon: Building2 },
     { id: 'links-rapidos', name: 'Atalhos Rápidos', icon: Link2 },
     { id: 'configuracoes', name: 'Configurações', icon: Settings },
