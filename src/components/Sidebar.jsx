@@ -50,7 +50,7 @@ export default function Sidebar({ isOpen, onClose }) {
     { id: 'kanban', name: 'Kanban', icon: Columns },
     { id: 'conversas', name: 'Conversas', icon: MessageSquare },
     { id: 'clientes', name: 'Clientes', icon: Users },
-    { id: 'gestao-portais', name: 'Portais (Prop. / Inq.)', icon: Building2 },
+    { id: 'gestao-portais', name: 'Locação', icon: Building2 },
     { id: 'links-rapidos', name: 'Atalhos Rápidos', icon: Link2 },
     { id: 'configuracoes', name: 'Configurações', icon: Settings },
   ];
