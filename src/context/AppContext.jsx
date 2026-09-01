@@ -827,6 +827,101 @@ export const AppProvider = ({ children }) => {
     registerActivityLog(profile?.name || 'Imobiliária', `Atualizou status da manutenção ${requestId} para "${newStatus}"`);
   };
 
+  const createPortalUser = (userData) => {
+    const newUser = {
+      id: 'user_' + Date.now(),
+      name: userData.name || 'Novo Usuário',
+      email: userData.email || '',
+      role: userData.role || 'proprietario',
+      phone: userData.phone || '',
+      avatar: userData.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120&h=120&fit=crop&crop=face',
+      password: userData.password || '123456'
+    };
+    setPortalUsers(prev => [...prev, newUser]);
+    registerActivityLog(profile?.name || 'Imobiliária', `Cadastrou usuário do portal: ${newUser.name} (${newUser.role})`);
+    return newUser;
+  };
+
+  const deletePortalUser = (userId) => {
+    setPortalUsers(prev => prev.filter(u => u.id !== userId));
+    registerActivityLog(profile?.name || 'Imobiliária', `Removeu acesso de usuário id: ${userId}`);
+  };
+
+  const createProperty = (propData) => {
+    const newProp = {
+      id: 'prop_' + Date.now(),
+      title: propData.title || 'Novo Imóvel',
+      address: propData.address || '',
+      shortAddress: propData.shortAddress || propData.address || '',
+      photo: propData.photo || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=600&auto=format&fit=crop',
+      status: propData.status || 'Disponível',
+      ownerId: propData.ownerId || 'user_proprietario_1',
+      ownerName: propData.ownerName || 'Carlos Eduardo Silva',
+      currentTenantId: propData.currentTenantId || null,
+      currentTenantName: propData.currentTenantName || null,
+      rentValue: parseFloat(propData.rentValue) || 2000.00,
+      admFeePercent: parseFloat(propData.admFeePercent) || 10,
+      netEstimate: parseFloat(propData.rentValue) * (1 - (parseFloat(propData.admFeePercent) || 10) / 100) || 1800.00
+    };
+    setProperties(prev => [newProp, ...prev]);
+    registerActivityLog(profile?.name || 'Imobiliária', `Cadastrou imóvel: ${newProp.title}`);
+    return newProp;
+  };
+
+  const createContract = (contractData) => {
+    const newCnt = {
+      id: 'cnt_' + Date.now(),
+      propertyId: contractData.propertyId,
+      propertyName: contractData.propertyName,
+      ownerId: contractData.ownerId,
+      ownerName: contractData.ownerName,
+      tenantId: contractData.tenantId,
+      tenantName: contractData.tenantName,
+      startDate: contractData.startDate || new Date().toISOString().split('T')[0],
+      endDate: contractData.endDate || '2026-12-31',
+      rentValue: parseFloat(contractData.rentValue) || 2000.00,
+      admFeePercent: parseFloat(contractData.admFeePercent) || 10,
+      adjustmentIndex: contractData.adjustmentIndex || 'IGP-M Anual',
+      dueDateDay: parseInt(contractData.dueDateDay) || 10,
+      status: 'Ativo',
+      documents: [
+        { id: 'doc_' + Date.now(), title: 'Contrato de Locação Assinado.pdf', type: 'Locação', date: new Date().toLocaleDateString('pt-BR'), size: '2.5 MB', url: '#' }
+      ]
+    };
+    setContracts(prev => [newCnt, ...prev]);
+    registerActivityLog(profile?.name || 'Imobiliária', `Gerou novo contrato de locação: ${newCnt.propertyName}`);
+    return newCnt;
+  };
+
+  const recordTenantPayment = (recordId) => {
+    setFinancialRecords(prev => prev.map(rec => {
+      if (rec.id === recordId) {
+        return {
+          ...rec,
+          tenantStatus: 'Pago',
+          tenantPaymentDate: new Date().toLocaleDateString('pt-BR')
+        };
+      }
+      return rec;
+    }));
+    registerActivityLog(profile?.name || 'Imobiliária', `Confirmou pagamento de aluguel (Reg: ${recordId})`);
+  };
+
+  const recordOwnerPayout = (recordId) => {
+    setFinancialRecords(prev => prev.map(rec => {
+      if (rec.id === recordId) {
+        return {
+          ...rec,
+          ownerStatus: 'Pago',
+          effectiveRepasseDate: new Date().toLocaleDateString('pt-BR'),
+          receiptUrl: '#'
+        };
+      }
+      return rec;
+    }));
+    registerActivityLog(profile?.name || 'Imobiliária', `Efetuou repasse financeiro ao proprietário (Reg: ${recordId})`);
+  };
+
   const [systemUsers, setSystemUsersState] = useState(() => {
     const saved = localStorage.getItem('crmbase_system_users');
     if (saved) {
@@ -4344,6 +4439,12 @@ ${fullSearchContext.substring(0, 4000)}
       updateMaintenanceStatus,
       registerActivityLog,
       quickLoginPortal,
+      createPortalUser,
+      deletePortalUser,
+      createProperty,
+      createContract,
+      recordTenantPayment,
+      recordOwnerPayout
     }}>
       {children}
     </AppContext.Provider>

@@ -16,7 +16,8 @@ import {
   ShieldAlert,
   Calendar,
   Filter,
-  Plus
+  Plus,
+  Trash2
 } from 'lucide-react';
 
 export default function PainelGestaoPortais() {
@@ -30,20 +31,94 @@ export default function PainelGestaoPortais() {
     activityLogs,
     updateMaintenanceStatus,
     sendPortalMessage,
-    quickLoginPortal
+    quickLoginPortal,
+    createPortalUser,
+    deletePortalUser,
+    createProperty,
+    createContract,
+    recordTenantPayment,
+    recordOwnerPayout
   } = useApp();
 
   const [activeSubTab, setActiveSubTab] = useState('usuarios'); // 'usuarios', 'manutencoes', 'repasses', 'mensagens', 'logs'
   const [selectedMaint, setSelectedMaint] = useState(null);
   const [budgetValueInput, setBudgetValueInput] = useState('');
   const [budgetSupplierInput, setBudgetSupplierInput] = useState('');
-  const [scheduledDateInput, setScheduledDateInput] = useState('');
-  const [scheduledTimeInput, setScheduledTimeInput] = useState('');
   const [actionNotice, setActionNotice] = useState('');
 
-  // Mensagem modal
-  const [replyRecipient, setReplyRecipient] = useState(null);
-  const [replyBody, setReplyBody] = useState('');
+  // Modals
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [newUserName, setNewUserName] = useState('');
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserRole, setNewUserRole] = useState('proprietario');
+  const [newUserPhone, setNewUserPhone] = useState('');
+  const [newUserPassword, setNewUserPassword] = useState('123456');
+
+  const [showPropModal, setShowPropModal] = useState(false);
+  const [newPropTitle, setNewPropTitle] = useState('');
+  const [newPropAddress, setNewPropAddress] = useState('');
+  const [newPropRent, setNewPropRent] = useState('2500.00');
+  const [newPropOwnerId, setNewPropOwnerId] = useState('');
+
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [msgTargetUser, setMsgTargetUser] = useState('');
+  const [msgSubjectInput, setMsgSubjectInput] = useState('');
+  const [msgBodyInput, setMsgBodyInput] = useState('');
+
+  const handleCreateUserSubmit = (e) => {
+    e.preventDefault();
+    if (!newUserName.trim() || !newUserEmail.trim()) return;
+    createPortalUser({
+      name: newUserName,
+      email: newUserEmail,
+      role: newUserRole,
+      phone: newUserPhone,
+      password: newUserPassword
+    });
+    setNewUserName('');
+    setNewUserEmail('');
+    setNewUserPhone('');
+    setShowUserModal(false);
+    setActionNotice(`Usuário ${newUserName} cadastrado com sucesso!`);
+    setTimeout(() => setActionNotice(''), 4000);
+  };
+
+  const handleCreatePropSubmit = (e) => {
+    e.preventDefault();
+    if (!newPropTitle.trim()) return;
+    const owner = portalUsers.find(u => u.id === newPropOwnerId) || portalUsers.find(u => u.role === 'proprietario') || { id: 'user_proprietario_1', name: 'Carlos Eduardo Silva' };
+    createProperty({
+      title: newPropTitle,
+      address: newPropAddress,
+      rentValue: newPropRent,
+      ownerId: owner.id,
+      ownerName: owner.name
+    });
+    setNewPropTitle('');
+    setNewPropAddress('');
+    setShowPropModal(false);
+    setActionNotice(`Imóvel "${newPropTitle}" cadastrado com sucesso!`);
+    setTimeout(() => setActionNotice(''), 4000);
+  };
+
+  const handleSendAdminMessage = (e) => {
+    e.preventDefault();
+    if (!msgBodyInput.trim()) return;
+    const recipient = portalUsers.find(u => u.id === msgTargetUser) || portalUsers[0];
+    sendPortalMessage({
+      senderRole: 'imobiliaria',
+      senderName: 'Atendimento Araújo Imóveis',
+      recipientRole: recipient?.role || 'cliente',
+      recipientId: recipient?.id || 'all',
+      subject: msgSubjectInput || 'Aviso do Portal Araújo Imóveis',
+      body: msgBodyInput
+    });
+    setMsgBodyInput('');
+    setMsgSubjectInput('');
+    setShowMessageModal(false);
+    setActionNotice(`Mensagem enviada para ${recipient?.name || 'cliente'}!`);
+    setTimeout(() => setActionNotice(''), 4000);
+  };
 
   const handleSaveBudgetAndForward = (e) => {
     e.preventDefault();
@@ -54,8 +129,8 @@ export default function PainelGestaoPortais() {
       'Aguardando proprietário',
       val,
       budgetSupplierInput,
-      scheduledDateInput,
-      scheduledTimeInput
+      '21/08/2026',
+      '14h às 16h'
     );
     setSelectedMaint(null);
     setActionNotice(`Orçamento de R$ ${val} cadastrado e encaminhado para o Proprietário!`);
@@ -68,8 +143,8 @@ export default function PainelGestaoPortais() {
       'Prestador agendado',
       undefined,
       undefined,
-      '21/08/2026',
-      '14h às 16h'
+      '22/08/2026',
+      '09h às 11h'
     );
     setActionNotice(`Prestador agendado para o chamado ${maintId}!`);
     setTimeout(() => setActionNotice(''), 4000);
@@ -78,23 +153,6 @@ export default function PainelGestaoPortais() {
   const handleMarkCompleted = (maintId) => {
     updateMaintenanceStatus(maintId, 'Concluído');
     setActionNotice(`Chamado ${maintId} marcado como CONCLUÍDO!`);
-    setTimeout(() => setActionNotice(''), 4000);
-  };
-
-  const handleSendReply = (e) => {
-    e.preventDefault();
-    if (!replyRecipient || !replyBody.trim()) return;
-    sendPortalMessage({
-      senderRole: 'imobiliaria',
-      senderName: 'Atendimento Araújo Imóveis',
-      recipientRole: replyRecipient.role,
-      recipientId: replyRecipient.id,
-      subject: `Re: ${replyRecipient.subject || 'Atendimento Imobiliária'}`,
-      body: replyBody
-    });
-    setReplyRecipient(null);
-    setReplyBody('');
-    setActionNotice('Resposta enviada com sucesso ao cliente!');
     setTimeout(() => setActionNotice(''), 4000);
   };
 
@@ -164,10 +222,23 @@ export default function PainelGestaoPortais() {
       {activeSubTab === 'usuarios' && (
         <div style={styles.tabSection}>
           <div style={styles.sectionTitleRow}>
-            <h3>Contas do Portal (Proprietários e Inquilinos)</h3>
-            <span style={{ fontSize: '0.8125rem', color: 'var(--text-tertiary)' }}>
-              Use os botões de simulação para testar o acesso imediato.
-            </span>
+            <div>
+              <h3>Contas do Portal (Proprietários e Inquilinos)</h3>
+              <span style={{ fontSize: '0.8125rem', color: 'var(--text-tertiary)' }}>
+                Gerencie credenciais ou simule o acesso direto ao portal.
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button style={styles.btnActionPrimary} onClick={() => setShowPropModal(true)}>
+                <Plus size={16} />
+                <span>Cadastrar Imóvel</span>
+              </button>
+              <button style={styles.btnActionSuccess} onClick={() => setShowUserModal(true)}>
+                <Plus size={16} />
+                <span>Novo Usuário Portal</span>
+              </button>
+            </div>
           </div>
 
           <div style={styles.userGrid}>
@@ -179,7 +250,7 @@ export default function PainelGestaoPortais() {
                     <strong style={{ color: '#ffffff', fontSize: '1rem' }}>{u.name}</strong>
                     <div style={{ color: 'var(--accent-cyan)', fontSize: '0.8125rem' }}>{u.email}</div>
                     <div style={styles.roleTag(u.role)}>
-                      {u.role === 'proprietario' ? 'Proprietário' : 'Inquilino'}
+                      {u.role === 'proprietario' ? 'Proprietário' : u.role === 'inquilino' ? 'Inquilino' : u.role}
                     </div>
                   </div>
                 </div>
@@ -188,23 +259,111 @@ export default function PainelGestaoPortais() {
 
                 <div style={styles.userInfoRow}>
                   <span>Senha de Acesso:</span>
-                  <strong>{u.password}</strong>
+                  <strong style={{ color: '#f59e0b' }}>{u.password}</strong>
                 </div>
                 <div style={styles.userInfoRow}>
                   <span>Telefone:</span>
-                  <span>{u.phone}</span>
+                  <span>{u.phone || '(37) 99999-0000'}</span>
                 </div>
 
-                <button 
-                  style={styles.btnSimulateLogin} 
-                  onClick={() => quickLoginPortal(u.role)}
-                >
-                  <Eye size={16} />
-                  <span>Simular Acesso ({u.role === 'proprietario' ? 'Proprietário' : 'Inquilino'})</span>
-                </button>
+                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
+                  <button 
+                    style={{ ...styles.btnSimulateLogin, flex: 1 }} 
+                    onClick={() => quickLoginPortal(u.role)}
+                  >
+                    <Eye size={16} />
+                    <span>Entrar no Portal</span>
+                  </button>
+
+                  <button 
+                    style={{ padding: '0.5rem', borderRadius: '6px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444', cursor: 'pointer' }}
+                    onClick={() => {
+                      deletePortalUser(u.id);
+                      setActionNotice(`Acesso de ${u.name} removido.`);
+                      setTimeout(() => setActionNotice(''), 3000);
+                    }}
+                    title="Remover acesso"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
+
+          {/* Modal Novo Usuário */}
+          {showUserModal && (
+            <div style={styles.modalOverlay}>
+              <div style={styles.modalCard}>
+                <h3 style={{ color: '#ffffff', marginBottom: '1rem' }}>Cadastrar Usuário do Portal</h3>
+                <form onSubmit={handleCreateUserSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div className="input-group">
+                    <label>Nome Completo</label>
+                    <input type="text" className="input-field" value={newUserName} onChange={e => setNewUserName(e.target.value)} required />
+                  </div>
+                  <div className="input-group">
+                    <label>E-mail de Acesso</label>
+                    <input type="email" className="input-field" value={newUserEmail} onChange={e => setNewUserEmail(e.target.value)} required />
+                  </div>
+                  <div className="input-group">
+                    <label>Tipo de Conta</label>
+                    <select className="input-field" value={newUserRole} onChange={e => setNewUserRole(e.target.value)}>
+                      <option value="proprietario">Proprietário</option>
+                      <option value="inquilino">Inquilino</option>
+                      <option value="Normal">Corretor / Atendente</option>
+                    </select>
+                  </div>
+                  <div className="input-group">
+                    <label>Telefone / WhatsApp</label>
+                    <input type="text" className="input-field" value={newUserPhone} onChange={e => setNewUserPhone(e.target.value)} placeholder="(37) 99999-0000" />
+                  </div>
+                  <div className="input-group">
+                    <label>Senha Inicial</label>
+                    <input type="text" className="input-field" value={newUserPassword} onChange={e => setNewUserPassword(e.target.value)} required />
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                    <button type="button" className="btn btn-secondary" onClick={() => setShowUserModal(false)}>Cancelar</button>
+                    <button type="submit" className="btn btn-primary">Salvar Usuário</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Modal Novo Imóvel */}
+          {showPropModal && (
+            <div style={styles.modalOverlay}>
+              <div style={styles.modalCard}>
+                <h3 style={{ color: '#ffffff', marginBottom: '1rem' }}>Cadastrar Novo Imóvel de Locação</h3>
+                <form onSubmit={handleCreatePropSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div className="input-group">
+                    <label>Título do Imóvel</label>
+                    <input type="text" className="input-field" value={newPropTitle} onChange={e => setNewPropTitle(e.target.value)} placeholder="Ex: Apt 401 - Edifício Solar" required />
+                  </div>
+                  <div className="input-group">
+                    <label>Endereço Completo</label>
+                    <input type="text" className="input-field" value={newPropAddress} onChange={e => setNewPropAddress(e.target.value)} placeholder="Rua, Número, Bairro, Cidade/MG" required />
+                  </div>
+                  <div className="input-group">
+                    <label>Valor Mensal do Aluguel R$</label>
+                    <input type="number" step="0.01" className="input-field" value={newPropRent} onChange={e => setNewPropRent(e.target.value)} required />
+                  </div>
+                  <div className="input-group">
+                    <label>Proprietário Responsável</label>
+                    <select className="input-field" value={newPropOwnerId} onChange={e => setNewPropOwnerId(e.target.value)}>
+                      {portalUsers.filter(u => u.role === 'proprietario').map(p => (
+                        <option key={p.id} value={p.id}>{p.name} ({p.email})</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                    <button type="button" className="btn btn-secondary" onClick={() => setShowPropModal(false)}>Cancelar</button>
+                    <button type="submit" className="btn btn-primary">Cadastrar Imóvel</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -236,7 +395,7 @@ export default function PainelGestaoPortais() {
                 {maint.budgetValue && (
                   <div style={styles.budgetBoxAdmin}>
                     <span>Orçamento Cadastrado: <strong>R$ {maint.budgetValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong> ({maint.budgetSupplier})</span>
-                    {maint.decision && <span style={{ marginLeft: '1rem', color: maint.decision === 'AUTORIZADO' ? '#34d399' : '#ef4444' }}>Decisão: {maint.decision}</span>}
+                    {maint.decision && <span style={{ marginLeft: '1rem', color: maint.decision === 'AUTORIZADO' ? '#34d399' : '#ef4444', fontWeight: 'bold' }}>Decisão Proprietário: {maint.decision}</span>}
                   </div>
                 )}
 
@@ -246,7 +405,7 @@ export default function PainelGestaoPortais() {
                     <button style={styles.btnActionPrimary} onClick={() => {
                       setSelectedMaint(maint);
                       setBudgetValueInput(maint.budgetValue || '350.00');
-                      setBudgetSupplierInput(maint.budgetSupplier || 'José Serviços');
+                      setBudgetSupplierInput(maint.budgetSupplier || 'José Serviços Hidráulicos');
                     }}>
                       <Edit size={14} />
                       <span>Cadastrar Orçamento & Encaminhar</span>
@@ -256,7 +415,7 @@ export default function PainelGestaoPortais() {
                   {maint.status === 'Autorizado' && (
                     <button style={styles.btnActionWarning} onClick={() => handleSetSchedule(maint.id)}>
                       <Calendar size={14} />
-                      <span>Agendar Prestador (21/08 - 14h)</span>
+                      <span>Agendar Prestador (22/08 - 09h)</span>
                     </button>
                   )}
 
@@ -271,7 +430,7 @@ export default function PainelGestaoPortais() {
             ))}
           </div>
 
-          {/* Modal Modal Cadastrar Orçamento */}
+          {/* Modal Cadastrar Orçamento */}
           {selectedMaint && (
             <div style={styles.modalOverlay}>
               <div style={styles.modalCard}>
@@ -324,11 +483,44 @@ export default function PainelGestaoPortais() {
                 <div>
                   <strong style={{ color: '#ffffff', fontSize: '0.9375rem' }}>{rec.competence}</strong>
                   <div style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem' }}>{rec.propertyName}</div>
+                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginTop: '0.25rem' }}>
+                    Valor Aluguel: <strong>R$ {rec.grossRent.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong> | Repasse Líquido: <strong style={{ color: 'var(--accent-cyan)' }}>R$ {rec.netRepasse.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
+                  </div>
                 </div>
 
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '0.875rem', color: '#ffffff' }}>Inquilino: <strong style={{ color: rec.tenantStatus === 'Pago' ? '#34d399' : '#f59e0b' }}>{rec.tenantStatus}</strong></div>
-                  <div style={{ fontSize: '0.875rem', color: '#ffffff' }}>Proprietário: <strong style={{ color: rec.ownerStatus === 'Pago' ? '#34d399' : '#f59e0b' }}>{rec.ownerStatus}</strong> (R$ {rec.netRepasse.toLocaleString('pt-BR', { minimumFractionDigits: 2 })})</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '0.8125rem', color: '#ffffff' }}>
+                      Inquilino: <strong style={{ color: rec.tenantStatus === 'Pago' ? '#34d399' : '#f59e0b' }}>{rec.tenantStatus}</strong>
+                    </div>
+                    <div style={{ fontSize: '0.8125rem', color: '#ffffff' }}>
+                      Proprietário: <strong style={{ color: rec.ownerStatus === 'Pago' ? '#34d399' : '#f59e0b' }}>{rec.ownerStatus}</strong>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                    {rec.tenantStatus !== 'Pago' && (
+                      <button style={styles.btnActionSuccess} onClick={() => {
+                        recordTenantPayment(rec.id);
+                        setActionNotice(`Pagamento do aluguel confirmado para ${rec.competence}!`);
+                        setTimeout(() => setActionNotice(''), 3000);
+                      }}>
+                        <CheckCircle size={12} />
+                        <span>Baixar Pagamento</span>
+                      </button>
+                    )}
+
+                    {rec.tenantStatus === 'Pago' && rec.ownerStatus !== 'Pago' && (
+                      <button style={styles.btnActionPrimary} onClick={() => {
+                        recordOwnerPayout(rec.id);
+                        setActionNotice(`Repasse de R$ ${rec.netRepasse} realizado ao proprietário!`);
+                        setTimeout(() => setActionNotice(''), 3000);
+                      }}>
+                        <DollarSign size={12} />
+                        <span>Efetuar Repasse</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
@@ -341,6 +533,10 @@ export default function PainelGestaoPortais() {
         <div style={styles.tabSection}>
           <div style={styles.sectionTitleRow}>
             <h3>Central de Mensagens do Portal</h3>
+            <button style={styles.btnActionPrimary} onClick={() => setShowMessageModal(true)}>
+              <Send size={14} />
+              <span>Nova Mensagem</span>
+            </button>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -355,6 +551,37 @@ export default function PainelGestaoPortais() {
               </div>
             ))}
           </div>
+
+          {/* Modal Nova Mensagem */}
+          {showMessageModal && (
+            <div style={styles.modalOverlay}>
+              <div style={styles.modalCard}>
+                <h3 style={{ color: '#ffffff', marginBottom: '1rem' }}>Enviar Mensagem pelo Portal</h3>
+                <form onSubmit={handleSendAdminMessage} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div className="input-group">
+                    <label>Destinatário</label>
+                    <select className="input-field" value={msgTargetUser} onChange={e => setMsgTargetUser(e.target.value)}>
+                      {portalUsers.map(u => (
+                        <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="input-group">
+                    <label>Assunto</label>
+                    <input type="text" className="input-field" value={msgSubjectInput} onChange={e => setMsgSubjectInput(e.target.value)} placeholder="Ex: Atualização do Contrato" required />
+                  </div>
+                  <div className="input-group">
+                    <label>Mensagem</label>
+                    <textarea className="input-field" rows="4" value={msgBodyInput} onChange={e => setMsgBodyInput(e.target.value)} required />
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                    <button type="button" className="btn btn-secondary" onClick={() => setShowMessageModal(false)}>Cancelar</button>
+                    <button type="submit" className="btn btn-primary">Enviar Recado</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
