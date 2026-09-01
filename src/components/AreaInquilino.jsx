@@ -196,8 +196,8 @@ export default function AreaInquilino() {
             <div style={styles.heroCard}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
                 <div>
-                  <h2 style={styles.greetingTitle}>Olá, {profile.name?.split(' ')[0] || 'Mariana'}! 👋</h2>
-                  <p style={styles.greetingSub}>{myProperty?.title}</p>
+                  <h2 style={styles.greetingTitle}>Olá, {profile.name?.split(' ')[0] || 'Inquilino'}! 👋</h2>
+                  <p style={styles.greetingSub}>{myProperty ? myProperty.title : 'Nenhum imóvel vinculado no momento'}</p>
                 </div>
                 <img 
                   src={profile.avatar || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&h=120&fit=crop&crop=face"} 
@@ -207,52 +207,60 @@ export default function AreaInquilino() {
               </div>
 
               {/* CARD PRÓXIMO ALUGUEL EM DESTAQUE */}
-              <div style={styles.billHighlightCard}>
-                <div style={styles.billHeaderRow}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#38bdf8', fontSize: '0.8125rem', fontWeight: '700' }}>
-                    <CreditCard size={16} />
-                    <span>PRÓXIMO ALUGUEL</span>
+              {nextBill ? (
+                <div style={styles.billHighlightCard}>
+                  <div style={styles.billHeaderRow}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#38bdf8', fontSize: '0.8125rem', fontWeight: '700' }}>
+                      <CreditCard size={16} />
+                      <span>PRÓXIMO ALUGUEL</span>
+                    </div>
+                    <span style={styles.statusBillTag(nextBill.tenantStatus)}>
+                      {nextBill.tenantStatus || 'Aguardando Pagamento'}
+                    </span>
                   </div>
-                  <span style={styles.statusBillTag(nextBill?.tenantStatus)}>
-                    {nextBill?.tenantStatus || 'Aguardando Pagamento'}
-                  </span>
-                </div>
 
-                <div style={styles.billValueRow}>
-                  <div>
-                    <div style={styles.billDueDateLabel}>Vencimento: <strong>{nextBill?.dueDate || '10/09/2026'}</strong></div>
-                    <div style={styles.billAmountBig}>R$ {(nextBill?.grossRent || 2000).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                  <div style={styles.billValueRow}>
+                    <div>
+                      <div style={styles.billDueDateLabel}>Vencimento: <strong>{nextBill.dueDate || '10/09/2026'}</strong></div>
+                      <div style={styles.billAmountBig}>R$ {(nextBill.grossRent || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                    </div>
                   </div>
-                </div>
 
-                {/* Direct Action Buttons for Payment */}
-                <div style={styles.billActionGrid}>
-                  <button 
-                    style={styles.btnBillActionPrimary}
-                    onClick={() => alert(`Abrindo boleto do aluguel referente a ${nextBill?.competence}`)}
-                  >
-                    <Download size={15} />
-                    <span>VER BOLETO</span>
-                  </button>
+                  {/* Direct Action Buttons for Payment */}
+                  <div style={styles.billActionGrid}>
+                    <button 
+                      style={styles.btnBillActionPrimary}
+                      onClick={() => alert(`Abrindo boleto do aluguel referente a ${nextBill.competence}`)}
+                    >
+                      <Download size={15} />
+                      <span>VER BOLETO</span>
+                    </button>
 
-                  <button 
-                    style={styles.btnBillActionSecondary}
-                    onClick={() => handleCopyText(nextBill?.pixKey || '00020126580014BR.GOV.BCB.PIX...', 'Chave PIX')}
-                  >
-                    <Copy size={15} />
-                    <span>COPIAR PIX</span>
-                  </button>
-                </div>
+                    <button 
+                      style={styles.btnBillActionSecondary}
+                      onClick={() => handleCopyText(nextBill.pixKey || '00020126580014BR.GOV.BCB.PIX...', 'Chave PIX')}
+                    >
+                      <Copy size={15} />
+                      <span>COPIAR PIX</span>
+                    </button>
+                  </div>
 
-                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-                  <button 
-                    style={styles.btnBillActionOutline}
-                    onClick={() => handleCopyText(nextBill?.boletoBarCode || '34191.79001 01043.510047...', 'Código de Barras')}
-                  >
-                    <span>COPIAR CÓDIGO DE BARRAS</span>
-                  </button>
+                  {nextBill.boletoBarCode && (
+                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                      <button 
+                        style={styles.btnBillActionOutline}
+                        onClick={() => handleCopyText(nextBill.boletoBarCode, 'Código de Barras')}
+                      >
+                        <span>COPIAR CÓDIGO DE BARRAS</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
-              </div>
+              ) : (
+                <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-tertiary)', background: 'var(--glass-highlight)', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
+                  Nenhum aluguel ou fatura pendente.
+                </div>
+              )}
             </div>
 
             {/* Quick Actions Grid */}

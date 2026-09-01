@@ -69,238 +69,17 @@ const initialPortalUsers = [
   }
 ];
 
-const initialProperties = [
-  {
-    id: 'prop_1',
-    title: 'Apartamento 302 - Edifício Horizonte',
-    address: 'Rua dos Inconfidentes, 450 - Centro, Divinópolis/MG',
-    shortAddress: 'Rua dos Inconfidentes, 450 - Apt 302',
-    photo: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=600&auto=format&fit=crop',
-    status: 'Alugado',
-    ownerId: 'user_proprietario_1',
-    ownerName: 'Carlos Eduardo Silva',
-    currentTenantId: 'user_inquilino_1',
-    currentTenantName: 'Mariana Oliveira Costa',
-    rentValue: 2000.00,
-    admFeePercent: 10,
-    netEstimate: 1800.00
-  },
-  {
-    id: 'prop_2',
-    title: 'Casa Residencial - Jardim Candelária',
-    address: 'Av. Gabriel Passos, 1200 - Divinópolis/MG',
-    shortAddress: 'Av. Gabriel Passos, 1200',
-    photo: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=600&auto=format&fit=crop',
-    status: 'Disponível',
-    ownerId: 'user_proprietario_1',
-    ownerName: 'Carlos Eduardo Silva',
-    currentTenantId: null,
-    currentTenantName: null,
-    rentValue: 3500.00,
-    admFeePercent: 10,
-    netEstimate: 3150.00
-  }
-];
+const initialProperties = [];
 
-const initialContracts = [
-  {
-    id: 'cnt_001',
-    propertyId: 'prop_1',
-    propertyName: 'Apartamento 302 - Edifício Horizonte',
-    ownerId: 'user_proprietario_1',
-    ownerName: 'Carlos Eduardo Silva',
-    tenantId: 'user_inquilino_1',
-    tenantName: 'Mariana Oliveira Costa',
-    startDate: '2024-09-10',
-    endDate: '2026-09-10',
-    rentValue: 2000.00,
-    admFeePercent: 10,
-    adjustmentIndex: 'IGP-M Anual',
-    dueDateDay: 10,
-    status: 'Ativo',
-    documents: [
-      { id: 'doc_1', title: 'Contrato de Locação Assinado.pdf', type: 'Locação', date: '10/09/2024', size: '2.4 MB', url: '#' },
-      { id: 'doc_2', title: 'Vistoria de Entrada com Fotos.pdf', type: 'Vistoria', date: '08/09/2024', size: '14.8 MB', url: '#' },
-      { id: 'doc_3', title: 'Contrato de Administração Imobiliária.pdf', type: 'Administração', date: '01/09/2024', size: '1.8 MB', url: '#' }
-    ]
-  }
-];
+const initialContracts = [];
 
-const initialFinancialRecords = [
-  {
-    id: 'fin_202609',
-    contractId: 'cnt_001',
-    propertyId: 'prop_1',
-    propertyName: 'Apartamento 302 - Edifício Horizonte',
-    ownerId: 'user_proprietario_1',
-    tenantId: 'user_inquilino_1',
-    competence: 'Setembro / 2026',
-    dueDate: '10/09/2026',
-    grossRent: 2000.00,
-    admFee: 200.00,
-    maintenanceDeductions: 0.00,
-    maintenanceReason: null,
-    netRepasse: 1800.00,
-    predictedRepasseDate: '15/09/2026',
-    effectiveRepasseDate: null,
-    payoutAccount: 'Banco Itaú - Ag 1234 C/C 56789-0 (PIX: carlos.silva@email.com)',
-    tenantStatus: 'Aguardando pagamento',
-    tenantPaymentDate: null,
-    ownerStatus: 'Pendente',
-    receiptUrl: null,
-    boletoBarCode: '34191.79001 01043.510047 91020.150008 5 98120000200000',
-    pixKey: '00020126580014BR.GOV.BCB.PIX0136123e4567-e89b-12d3-a456-42661417400052040000530398654052000.005802BR5920Araujo Imoveis Ltda6011Divinopolis62070503***6304E2D1'
-  },
-  {
-    id: 'fin_202608',
-    contractId: 'cnt_001',
-    propertyId: 'prop_1',
-    propertyName: 'Apartamento 302 - Edifício Horizonte',
-    ownerId: 'user_proprietario_1',
-    tenantId: 'user_inquilino_1',
-    competence: 'Agosto / 2026',
-    dueDate: '10/08/2026',
-    grossRent: 2000.00,
-    admFee: 200.00,
-    maintenanceDeductions: 150.00,
-    maintenanceReason: 'Manutenção autorizada (Troca da torneira do banheiro)',
-    netRepasse: 1650.00,
-    predictedRepasseDate: '15/08/2026',
-    effectiveRepasseDate: '15/08/2026',
-    payoutAccount: 'Banco Itaú - Ag 1234 C/C 56789-0 (PIX: carlos.silva@email.com)',
-    tenantStatus: 'Pago',
-    tenantPaymentDate: '09/08/2026',
-    ownerStatus: 'Pago',
-    receiptUrl: '#',
-    boletoBarCode: '34191.79001 01043.510047 91020.150008 5 98120000200000',
-    pixKey: '00020126580014BR.GOV.BCB.PIX0136123e4567-e89b-12d3-a456-42661417400052040000530398654052000.005802BR5920Araujo Imoveis Ltda6011Divinopolis62070503***6304E2D1'
-  },
-  {
-    id: 'fin_202607',
-    contractId: 'cnt_001',
-    propertyId: 'prop_1',
-    propertyName: 'Apartamento 302 - Edifício Horizonte',
-    ownerId: 'user_proprietario_1',
-    tenantId: 'user_inquilino_1',
-    competence: 'Julho / 2026',
-    dueDate: '10/07/2026',
-    grossRent: 2000.00,
-    admFee: 200.00,
-    maintenanceDeductions: 0.00,
-    maintenanceReason: null,
-    netRepasse: 1800.00,
-    predictedRepasseDate: '15/07/2026',
-    effectiveRepasseDate: '15/07/2026',
-    payoutAccount: 'Banco Itaú - Ag 1234 C/C 56789-0',
-    tenantStatus: 'Pago',
-    tenantPaymentDate: '10/07/2026',
-    ownerStatus: 'Pago',
-    receiptUrl: '#'
-  },
-  {
-    id: 'fin_202606',
-    contractId: 'cnt_001',
-    propertyId: 'prop_1',
-    propertyName: 'Apartamento 302 - Edifício Horizonte',
-    ownerId: 'user_proprietario_1',
-    tenantId: 'user_inquilino_1',
-    competence: 'Junho / 2026',
-    dueDate: '10/06/2026',
-    grossRent: 2000.00,
-    admFee: 200.00,
-    maintenanceDeductions: 0.00,
-    maintenanceReason: null,
-    netRepasse: 1800.00,
-    predictedRepasseDate: '15/06/2026',
-    effectiveRepasseDate: '15/06/2026',
-    payoutAccount: 'Banco Itaú - Ag 1234 C/C 56789-0',
-    tenantStatus: 'Pago',
-    tenantPaymentDate: '08/06/2026',
-    ownerStatus: 'Pago',
-    receiptUrl: '#'
-  }
-];
+const initialFinancialRecords = [];
 
-const initialMaintenanceRequests = [
-  {
-    id: 'maint_001',
-    protocol: 'MAN-000342',
-    propertyId: 'prop_1',
-    propertyName: 'Apartamento 302 - Edifício Horizonte',
-    tenantId: 'user_inquilino_1',
-    tenantName: 'Mariana Oliveira Costa',
-    ownerId: 'user_proprietario_1',
-    ownerName: 'Carlos Eduardo Silva',
-    title: 'Vazamento na pia da cozinha',
-    category: 'Hidráulica',
-    description: 'Percebi um gotejamento constante no sifão embaixo da pia da cozinha que está molhando o armário de madeira.',
-    requestDate: '12/08/2026 14:20',
-    status: 'Aguardando proprietário',
-    budgetValue: 350.00,
-    budgetSupplier: 'José Serviços Hidráulicos',
-    budgetDetails: 'Troca do sifão flexível e reparo no engate rápido com fornecimento de peças.',
-    decision: null,
-    decisionDate: null,
-    scheduledDate: '21/08/2026',
-    scheduledTime: '14h às 16h',
-    attachments: [
-      { name: 'foto_vazamento_1.jpg', type: 'image', url: 'https://images.unsplash.com/photo-1585704032915-c3400ca199e7?w=500&auto=format&fit=crop' }
-    ]
-  },
-  {
-    id: 'maint_002',
-    protocol: 'MAN-000289',
-    propertyId: 'prop_1',
-    propertyName: 'Apartamento 302 - Edifício Horizonte',
-    tenantId: 'user_inquilino_1',
-    tenantName: 'Mariana Oliveira Costa',
-    ownerId: 'user_proprietario_1',
-    ownerName: 'Carlos Eduardo Silva',
-    title: 'Troca da torneira do banheiro',
-    category: 'Hidráulica',
-    description: 'Torneira espanada com vazamento.',
-    requestDate: '15/07/2026 09:10',
-    status: 'Concluído',
-    budgetValue: 150.00,
-    budgetSupplier: 'José Serviços',
-    decision: 'AUTORIZADO',
-    decisionDate: '15/07/2026 11:30',
-    scheduledDate: '17/07/2026',
-    scheduledTime: '10h',
-    attachments: []
-  }
-];
+const initialMaintenanceRequests = [];
 
-const initialPortalMessages = [
-  {
-    id: 'msg_1',
-    senderRole: 'imobiliaria',
-    senderName: 'Equipe Araújo Imóveis',
-    recipientRole: 'proprietario',
-    recipientId: 'user_proprietario_1',
-    subject: 'Solicitação de Autorização de Manutenção',
-    body: 'Prezado Carlos, identificamos uma solicitação de manutenção para o Apt 302 (Vazamento na cozinha). O orçamento do prestador é R$ 350,00. Por favor, acesse a aba de Manutenções para Autorizar ou Recusar.',
-    date: '12/08/2026 14:35',
-    read: false
-  },
-  {
-    id: 'msg_2',
-    senderRole: 'imobiliaria',
-    senderName: 'Equipe Araújo Imóveis',
-    recipientRole: 'inquilino',
-    recipientId: 'user_inquilino_1',
-    subject: 'Acompanhamento do Chamado MAN-000342',
-    body: 'Olá Mariana! Sua solicitação de manutenção foi recebida e encaminhada ao proprietário para validação do orçamento. Manteremos você informada por aqui.',
-    date: '12/08/2026 14:30',
-    read: true
-  }
-];
+const initialPortalMessages = [];
 
-const initialActivityLogs = [
-  { id: 'act_1', timestamp: '19/08/2026 09:20', userName: 'Carlos Eduardo (Proprietário)', action: 'Visualizou o demonstrativo financeiro de Agosto/2026' },
-  { id: 'act_2', timestamp: '15/08/2026 10:15', userName: 'Mariana Costa (Inquilino)', action: 'Visualizou o boleto com vencimento em 10/09/2026' },
-  { id: 'act_3', timestamp: '12/08/2026 14:20', userName: 'Mariana Costa (Inquilino)', action: 'Abriu solicitação de manutenção MAN-000342 (Vazamento na cozinha)' }
-];
+const initialActivityLogs = [];
 
 const safeJsonParse = (str, fallback) => {
   try {
@@ -610,32 +389,38 @@ export const AppProvider = ({ children }) => {
 
   const [properties, setProperties] = useState(() => {
     const saved = localStorage.getItem('araujo_portal_properties');
-    return safeJsonParse(saved, initialProperties);
+    const list = safeJsonParse(saved, initialProperties);
+    return list.filter(p => p.id !== 'prop_1' && p.id !== 'prop_2');
   });
 
   const [contracts, setContracts] = useState(() => {
     const saved = localStorage.getItem('araujo_portal_contracts');
-    return safeJsonParse(saved, initialContracts);
+    const list = safeJsonParse(saved, initialContracts);
+    return list.filter(c => c.id !== 'cnt_001');
   });
 
   const [financialRecords, setFinancialRecords] = useState(() => {
     const saved = localStorage.getItem('araujo_portal_financial_records');
-    return safeJsonParse(saved, initialFinancialRecords);
+    const list = safeJsonParse(saved, initialFinancialRecords);
+    return list.filter(f => !f.id.startsWith('fin_2026'));
   });
 
   const [maintenanceRequests, setMaintenanceRequests] = useState(() => {
     const saved = localStorage.getItem('araujo_portal_maintenance_requests');
-    return safeJsonParse(saved, initialMaintenanceRequests);
+    const list = safeJsonParse(saved, initialMaintenanceRequests);
+    return list.filter(m => m.id !== 'maint_001' && m.id !== 'maint_002');
   });
 
   const [portalMessages, setPortalMessages] = useState(() => {
     const saved = localStorage.getItem('araujo_portal_messages');
-    return safeJsonParse(saved, initialPortalMessages);
+    const list = safeJsonParse(saved, initialPortalMessages);
+    return list.filter(m => m.id !== 'msg_1' && m.id !== 'msg_2');
   });
 
   const [activityLogs, setActivityLogs] = useState(() => {
     const saved = localStorage.getItem('araujo_portal_activity_logs');
-    return safeJsonParse(saved, initialActivityLogs);
+    const list = safeJsonParse(saved, initialActivityLogs);
+    return list.filter(a => !['act_1', 'act_2', 'act_3'].includes(a.id));
   });
 
   useEffect(() => { localStorage.setItem('araujo_portal_users', JSON.stringify(portalUsers)); }, [portalUsers]);

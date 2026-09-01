@@ -142,15 +142,17 @@ export default function AreaProprietario() {
                   <span>PRÓXIMO REPASSE PREVISTO</span>
                 </div>
                 <div style={styles.payoutAmountRow}>
-                  <span style={styles.payoutDateLabel}>{nextPayout?.predictedRepasseDate || '15/09/2026'}</span>
+                  <span style={styles.payoutDateLabel}>{nextPayout?.predictedRepasseDate || 'Sem repasses agendados'}</span>
                   <span style={styles.payoutValueBig}>
-                    R$ {(nextPayout?.netRepasse || 1850).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    R$ {(nextPayout?.netRepasse || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
-                <div style={styles.payoutSubInfo}>
-                  <span>Imóvel: {nextPayout?.propertyName || myProperties[0]?.title}</span>
-                  <span style={styles.statusBadgePendente}>{nextPayout?.ownerStatus || 'Pendente'}</span>
-                </div>
+                {nextPayout && (
+                  <div style={styles.payoutSubInfo}>
+                    <span>Imóvel: {nextPayout.propertyName}</span>
+                    <span style={styles.statusBadgePendente}>{nextPayout.ownerStatus}</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -187,7 +189,7 @@ export default function AreaProprietario() {
                   <div>
                     <strong style={{ color: '#ffffff', fontSize: '0.9375rem' }}>Ação Necessária do Proprietário</strong>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.8125rem' }}>
-                      Existe 1 manutenção aguardando sua autorização de orçamento.
+                      Existe {pendingApprovalsCount} manutenção(ões) aguardando sua autorização de orçamento.
                     </p>
                   </div>
                 </div>
@@ -205,17 +207,23 @@ export default function AreaProprietario() {
             </div>
 
             <div style={styles.propertiesListHorizontal}>
-              {myProperties.map(prop => (
-                <div key={prop.id} style={styles.propertyCardMini} onClick={() => setActiveTab('imoveis')}>
-                  <img src={prop.photo} alt={prop.title} style={styles.propImgMini} />
-                  <div style={styles.propBodyMini}>
-                    <div style={styles.statusTag(prop.status)}>{prop.status}</div>
-                    <h4 style={styles.propTitleMini}>{prop.title}</h4>
-                    <p style={styles.propAddressMini}>{prop.shortAddress}</p>
-                    <div style={styles.propRentMini}>Aluguel: R$ {prop.rentValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
-                  </div>
+              {myProperties.length === 0 ? (
+                <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-tertiary)', background: 'var(--glass-highlight)', borderRadius: '8px', border: '1px solid var(--glass-border)', width: '100%' }}>
+                  Nenhum imóvel cadastrado no momento.
                 </div>
-              ))}
+              ) : (
+                myProperties.map(prop => (
+                  <div key={prop.id} style={styles.propertyCardMini} onClick={() => setActiveTab('imoveis')}>
+                    <img src={prop.photo} alt={prop.title} style={styles.propImgMini} />
+                    <div style={styles.propBodyMini}>
+                      <div style={styles.statusTag(prop.status)}>{prop.status}</div>
+                      <h4 style={styles.propTitleMini}>{prop.title}</h4>
+                      <p style={styles.propAddressMini}>{prop.shortAddress}</p>
+                      <div style={styles.propRentMini}>Aluguel: R$ {prop.rentValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         )}

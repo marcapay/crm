@@ -375,59 +375,65 @@ export default function PainelGestaoPortais() {
           </div>
 
           <div style={styles.maintTableWrapper}>
-            {maintenanceRequests.map(maint => (
-              <div key={maint.id} style={styles.maintAdminCard}>
-                <div style={styles.maintAdminHeader}>
-                  <div>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--accent-cyan)', fontWeight: '700' }}>{maint.protocol}</span>
-                    <h4 style={{ color: '#ffffff', fontSize: '1rem', marginTop: '0.125rem' }}>{maint.title}</h4>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
-                      Imóvel: {maint.propertyName} | Inquilino: {maint.tenantName} | Proprietário: {maint.ownerName}
-                    </span>
-                  </div>
-                  <span style={styles.statusBadgeAdmin(maint.status)}>{maint.status}</span>
-                </div>
-
-                <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', margin: '0.75rem 0' }}>
-                  {maint.description}
-                </p>
-
-                {maint.budgetValue && (
-                  <div style={styles.budgetBoxAdmin}>
-                    <span>Orçamento Cadastrado: <strong>R$ {maint.budgetValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong> ({maint.budgetSupplier})</span>
-                    {maint.decision && <span style={{ marginLeft: '1rem', color: maint.decision === 'AUTORIZADO' ? '#34d399' : '#ef4444', fontWeight: 'bold' }}>Decisão Proprietário: {maint.decision}</span>}
-                  </div>
-                )}
-
-                {/* Admin Actions */}
-                <div style={styles.adminMaintActions}>
-                  {maint.status === 'Solicitado' || maint.status === 'Em análise' ? (
-                    <button style={styles.btnActionPrimary} onClick={() => {
-                      setSelectedMaint(maint);
-                      setBudgetValueInput(maint.budgetValue || '350.00');
-                      setBudgetSupplierInput(maint.budgetSupplier || 'José Serviços Hidráulicos');
-                    }}>
-                      <Edit size={14} />
-                      <span>Cadastrar Orçamento & Encaminhar</span>
-                    </button>
-                  ) : null}
-
-                  {maint.status === 'Autorizado' && (
-                    <button style={styles.btnActionWarning} onClick={() => handleSetSchedule(maint.id)}>
-                      <Calendar size={14} />
-                      <span>Agendar Prestador (22/08 - 09h)</span>
-                    </button>
-                  )}
-
-                  {maint.status !== 'Concluído' && (
-                    <button style={styles.btnActionSuccess} onClick={() => handleMarkCompleted(maint.id)}>
-                      <CheckCircle size={14} />
-                      <span>Marcar como Concluído</span>
-                    </button>
-                  )}
-                </div>
+            {maintenanceRequests.length === 0 ? (
+              <div style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-tertiary)', background: 'var(--glass-highlight)', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
+                Nenhum chamado de manutenção cadastrado até o momento.
               </div>
-            ))}
+            ) : (
+              maintenanceRequests.map(maint => (
+                <div key={maint.id} style={styles.maintAdminCard}>
+                  <div style={styles.maintAdminHeader}>
+                    <div>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--accent-cyan)', fontWeight: '700' }}>{maint.protocol}</span>
+                      <h4 style={{ color: '#ffffff', fontSize: '1rem', marginTop: '0.125rem' }}>{maint.title}</h4>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
+                        Imóvel: {maint.propertyName} | Inquilino: {maint.tenantName} | Proprietário: {maint.ownerName}
+                      </span>
+                    </div>
+                    <span style={styles.statusBadgeAdmin(maint.status)}>{maint.status}</span>
+                  </div>
+
+                  <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', margin: '0.75rem 0' }}>
+                    {maint.description}
+                  </p>
+
+                  {maint.budgetValue && (
+                    <div style={styles.budgetBoxAdmin}>
+                      <span>Orçamento Cadastrado: <strong>R$ {maint.budgetValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong> ({maint.budgetSupplier})</span>
+                      {maint.decision && <span style={{ marginLeft: '1rem', color: maint.decision === 'AUTORIZADO' ? '#34d399' : '#ef4444', fontWeight: 'bold' }}>Decisão Proprietário: {maint.decision}</span>}
+                    </div>
+                  )}
+
+                  {/* Admin Actions */}
+                  <div style={styles.adminMaintActions}>
+                    {maint.status === 'Solicitado' || maint.status === 'Em análise' ? (
+                      <button style={styles.btnActionPrimary} onClick={() => {
+                        setSelectedMaint(maint);
+                        setBudgetValueInput(maint.budgetValue || '350.00');
+                        setBudgetSupplierInput(maint.budgetSupplier || 'José Serviços Hidráulicos');
+                      }}>
+                        <Edit size={14} />
+                        <span>Cadastrar Orçamento & Encaminhar</span>
+                      </button>
+                    ) : null}
+
+                    {maint.status === 'Autorizado' && (
+                      <button style={styles.btnActionWarning} onClick={() => handleSetSchedule(maint.id)}>
+                        <Calendar size={14} />
+                        <span>Agendar Prestador (22/08 - 09h)</span>
+                      </button>
+                    )}
+
+                    {maint.status !== 'Concluído' && (
+                      <button style={styles.btnActionSuccess} onClick={() => handleMarkCompleted(maint.id)}>
+                        <CheckCircle size={14} />
+                        <span>Marcar como Concluído</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
 
           {/* Modal Cadastrar Orçamento */}
@@ -478,52 +484,58 @@ export default function PainelGestaoPortais() {
           </div>
 
           <div style={styles.finTableCard}>
-            {financialRecords.map(rec => (
-              <div key={rec.id} style={styles.finRow}>
-                <div>
-                  <strong style={{ color: '#ffffff', fontSize: '0.9375rem' }}>{rec.competence}</strong>
-                  <div style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem' }}>{rec.propertyName}</div>
-                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginTop: '0.25rem' }}>
-                    Valor Aluguel: <strong>R$ {rec.grossRent.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong> | Repasse Líquido: <strong style={{ color: 'var(--accent-cyan)' }}>R$ {rec.netRepasse.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '0.8125rem', color: '#ffffff' }}>
-                      Inquilino: <strong style={{ color: rec.tenantStatus === 'Pago' ? '#34d399' : '#f59e0b' }}>{rec.tenantStatus}</strong>
-                    </div>
-                    <div style={{ fontSize: '0.8125rem', color: '#ffffff' }}>
-                      Proprietário: <strong style={{ color: rec.ownerStatus === 'Pago' ? '#34d399' : '#f59e0b' }}>{rec.ownerStatus}</strong>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-                    {rec.tenantStatus !== 'Pago' && (
-                      <button style={styles.btnActionSuccess} onClick={() => {
-                        recordTenantPayment(rec.id);
-                        setActionNotice(`Pagamento do aluguel confirmado para ${rec.competence}!`);
-                        setTimeout(() => setActionNotice(''), 3000);
-                      }}>
-                        <CheckCircle size={12} />
-                        <span>Baixar Pagamento</span>
-                      </button>
-                    )}
-
-                    {rec.tenantStatus === 'Pago' && rec.ownerStatus !== 'Pago' && (
-                      <button style={styles.btnActionPrimary} onClick={() => {
-                        recordOwnerPayout(rec.id);
-                        setActionNotice(`Repasse de R$ ${rec.netRepasse} realizado ao proprietário!`);
-                        setTimeout(() => setActionNotice(''), 3000);
-                      }}>
-                        <DollarSign size={12} />
-                        <span>Efetuar Repasse</span>
-                      </button>
-                    )}
-                  </div>
-                </div>
+            {financialRecords.length === 0 ? (
+              <div style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-tertiary)' }}>
+                Nenhum aluguel ou repasse financeiro registrado no momento.
               </div>
-            ))}
+            ) : (
+              financialRecords.map(rec => (
+                <div key={rec.id} style={styles.finRow}>
+                  <div>
+                    <strong style={{ color: '#ffffff', fontSize: '0.9375rem' }}>{rec.competence}</strong>
+                    <div style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem' }}>{rec.propertyName}</div>
+                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginTop: '0.25rem' }}>
+                      Valor Aluguel: <strong>R$ {rec.grossRent.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong> | Repasse Líquido: <strong style={{ color: 'var(--accent-cyan)' }}>R$ {rec.netRepasse.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: '0.8125rem', color: '#ffffff' }}>
+                        Inquilino: <strong style={{ color: rec.tenantStatus === 'Pago' ? '#34d399' : '#f59e0b' }}>{rec.tenantStatus}</strong>
+                      </div>
+                      <div style={{ fontSize: '0.8125rem', color: '#ffffff' }}>
+                        Proprietário: <strong style={{ color: rec.ownerStatus === 'Pago' ? '#34d399' : '#f59e0b' }}>{rec.ownerStatus}</strong>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                      {rec.tenantStatus !== 'Pago' && (
+                        <button style={styles.btnActionSuccess} onClick={() => {
+                          recordTenantPayment(rec.id);
+                          setActionNotice(`Pagamento do aluguel confirmado para ${rec.competence}!`);
+                          setTimeout(() => setActionNotice(''), 3000);
+                        }}>
+                          <CheckCircle size={12} />
+                          <span>Baixar Pagamento</span>
+                        </button>
+                      )}
+
+                      {rec.tenantStatus === 'Pago' && rec.ownerStatus !== 'Pago' && (
+                        <button style={styles.btnActionPrimary} onClick={() => {
+                          recordOwnerPayout(rec.id);
+                          setActionNotice(`Repasse de R$ ${rec.netRepasse} realizado ao proprietário!`);
+                          setTimeout(() => setActionNotice(''), 3000);
+                        }}>
+                          <DollarSign size={12} />
+                          <span>Efetuar Repasse</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}
@@ -540,16 +552,22 @@ export default function PainelGestaoPortais() {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {portalMessages.map(msg => (
-              <div key={msg.id} style={styles.msgAdminCard}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <strong style={{ color: '#ffffff' }}>{msg.senderName} ({msg.senderRole})</strong>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>{msg.date}</span>
-                </div>
-                <h4 style={{ color: 'var(--accent-cyan)', margin: '0.25rem 0' }}>{msg.subject}</h4>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '0.8125rem' }}>{msg.body}</p>
+            {portalMessages.length === 0 ? (
+              <div style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-tertiary)', background: 'var(--glass-highlight)', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
+                Nenhuma mensagem na central de recados.
               </div>
-            ))}
+            ) : (
+              portalMessages.map(msg => (
+                <div key={msg.id} style={styles.msgAdminCard}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <strong style={{ color: '#ffffff' }}>{msg.senderName} ({msg.senderRole})</strong>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>{msg.date}</span>
+                  </div>
+                  <h4 style={{ color: 'var(--accent-cyan)', margin: '0.25rem 0' }}>{msg.subject}</h4>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.8125rem' }}>{msg.body}</p>
+                </div>
+              ))
+            )}
           </div>
 
           {/* Modal Nova Mensagem */}
@@ -593,17 +611,23 @@ export default function PainelGestaoPortais() {
           </div>
 
           <div style={styles.logsList}>
-            {activityLogs.map(log => (
-              <div key={log.id} style={styles.logRow}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <Clock size={16} color="var(--accent-cyan)" />
-                  <span style={{ fontSize: '0.8125rem', color: 'var(--text-tertiary)' }}>{log.timestamp}</span>
-                </div>
-                <div style={{ fontSize: '0.875rem', color: '#ffffff' }}>
-                  <strong>{log.userName}</strong>: {log.action}
-                </div>
+            {activityLogs.length === 0 ? (
+              <div style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-tertiary)', background: 'var(--glass-highlight)', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
+                Nenhuma atividade registrada no log até o momento.
               </div>
-            ))}
+            ) : (
+              activityLogs.map(log => (
+                <div key={log.id} style={styles.logRow}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <Clock size={16} color="var(--accent-cyan)" />
+                    <span style={{ fontSize: '0.8125rem', color: 'var(--text-tertiary)' }}>{log.timestamp}</span>
+                  </div>
+                  <div style={{ fontSize: '0.875rem', color: '#ffffff' }}>
+                    <strong>{log.userName}</strong>: {log.action}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}
