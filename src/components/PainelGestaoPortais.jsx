@@ -22,13 +22,13 @@ import {
 
 export default function PainelGestaoPortais() {
   const {
-    portalUsers,
-    properties,
-    contracts,
-    financialRecords,
-    maintenanceRequests,
-    portalMessages,
-    activityLogs,
+    portalUsers = [],
+    properties = [],
+    contracts = [],
+    financialRecords = [],
+    maintenanceRequests = [],
+    portalMessages = [],
+    activityLogs = [],
     updateMaintenanceStatus,
     sendPortalMessage,
     quickLoginPortal,
@@ -39,6 +39,11 @@ export default function PainelGestaoPortais() {
     recordTenantPayment,
     recordOwnerPayout
   } = useApp();
+
+  const formatMoney = (val) => {
+    const num = Number(val);
+    return isNaN(num) ? '0,00' : num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
 
   const [activeSubTab, setActiveSubTab] = useState('usuarios'); // 'usuarios', 'manutencoes', 'repasses', 'mensagens', 'logs'
   const [selectedMaint, setSelectedMaint] = useState(null);
@@ -358,7 +363,7 @@ export default function PainelGestaoPortais() {
                   <div className="input-group">
                     <label>Proprietário Responsável</label>
                     <select className="input-field" value={newPropOwnerId} onChange={e => setNewPropOwnerId(e.target.value)}>
-                      {portalUsers.filter(u => u.role === 'proprietario').map(p => (
+                      {activePortalUsers.filter(u => u.role === 'proprietario').map(p => (
                         <option key={p.id} value={p.id}>{p.name} ({p.email})</option>
                       ))}
                     </select>
@@ -406,7 +411,7 @@ export default function PainelGestaoPortais() {
 
                   {maint.budgetValue && (
                     <div style={styles.budgetBoxAdmin}>
-                      <span>Orçamento Cadastrado: <strong>R$ {maint.budgetValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong> ({maint.budgetSupplier})</span>
+                      <span>Orçamento Cadastrado: <strong>R$ {formatMoney(maint.budgetValue)}</strong> ({maint.budgetSupplier})</span>
                       {maint.decision && <span style={{ marginLeft: '1rem', color: maint.decision === 'AUTORIZADO' ? '#34d399' : '#ef4444', fontWeight: 'bold' }}>Decisão Proprietário: {maint.decision}</span>}
                     </div>
                   )}
@@ -502,7 +507,7 @@ export default function PainelGestaoPortais() {
                     <strong style={{ color: '#ffffff', fontSize: '0.9375rem' }}>{rec.competence}</strong>
                     <div style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem' }}>{rec.propertyName}</div>
                     <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginTop: '0.25rem' }}>
-                      Valor Aluguel: <strong>R$ {rec.grossRent.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong> | Repasse Líquido: <strong style={{ color: 'var(--accent-cyan)' }}>R$ {rec.netRepasse.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
+                      Valor Aluguel: <strong>R$ {formatMoney(rec.grossRent)}</strong> | Repasse Líquido: <strong style={{ color: 'var(--accent-cyan)' }}>R$ {formatMoney(rec.netRepasse)}</strong>
                     </div>
                   </div>
 
@@ -586,7 +591,7 @@ export default function PainelGestaoPortais() {
                   <div className="input-group">
                     <label>Destinatário</label>
                     <select className="input-field" value={msgTargetUser} onChange={e => setMsgTargetUser(e.target.value)}>
-                      {portalUsers.map(u => (
+                      {activePortalUsers.map(u => (
                         <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
                       ))}
                     </select>
