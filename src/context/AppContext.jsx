@@ -88,19 +88,41 @@ export const AppProvider = ({ children }) => {
           const currentUsers = safeJsonParse(localStorage.getItem('araujo_portal_users'), initialPortalUsers);
 
           if (cleanRole === 'inquilino' || cleanRole === 'locatario') {
-            const user = currentUsers.find(u => u.role === 'inquilino' && (identifierParam ? (u.email || '').toLowerCase() === identifierParam.toLowerCase() : true)) || currentUsers.find(u => u.role === 'inquilino') || initialPortalUsers[3];
+            let user = (currentUsers || []).find(u => u.role === 'inquilino' && (identifierParam ? (u.email || '').toLowerCase() === identifierParam.toLowerCase() : true)) || (currentUsers || []).find(u => u.role === 'inquilino');
+            if (!user) {
+              const namePart = identifierParam ? identifierParam.split('@')[0] : 'Inquilino';
+              const cleanName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
+              user = {
+                id: 'usr_inq_' + Date.now(),
+                name: cleanName,
+                email: identifierParam || 'inquilino@portal.com',
+                role: 'inquilino',
+                avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=face'
+              };
+            }
             setProfile(user);
             setIsAuthenticated(true);
             localStorage.setItem('eloos_auth', 'true');
             localStorage.setItem('eloos_profile', JSON.stringify(user));
           } else if (cleanRole === 'proprietario' || cleanRole === 'locador') {
-            const user = currentUsers.find(u => u.role === 'proprietario' && (identifierParam ? (u.email || '').toLowerCase() === identifierParam.toLowerCase() : true)) || currentUsers.find(u => u.role === 'proprietario') || initialPortalUsers[2];
+            let user = (currentUsers || []).find(u => u.role === 'proprietario' && (identifierParam ? (u.email || '').toLowerCase() === identifierParam.toLowerCase() : true)) || (currentUsers || []).find(u => u.role === 'proprietario');
+            if (!user) {
+              const namePart = identifierParam ? identifierParam.split('@')[0] : 'Proprietário';
+              const cleanName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
+              user = {
+                id: 'usr_prop_' + Date.now(),
+                name: cleanName,
+                email: identifierParam || 'proprietario@portal.com',
+                role: 'proprietario',
+                avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100&h=100&fit=crop&crop=face'
+              };
+            }
             setProfile(user);
             setIsAuthenticated(true);
             localStorage.setItem('eloos_auth', 'true');
             localStorage.setItem('eloos_profile', JSON.stringify(user));
           } else if (cleanRole === 'admin' || cleanRole === 'administrador') {
-            const user = currentUsers.find(u => u.role === 'Administrador') || initialPortalUsers[0];
+            let user = (currentUsers || []).find(u => u.role === 'Administrador') || initialProfile;
             setProfile(user);
             setIsAuthenticated(true);
             localStorage.setItem('eloos_auth', 'true');
@@ -371,7 +393,8 @@ export const AppProvider = ({ children }) => {
 
   const [profile, setProfile] = useState(() => {
     const saved = localStorage.getItem('eloos_profile');
-    return safeJsonParse(saved, initialProfile);
+    const parsed = safeJsonParse(saved, initialProfile);
+    return parsed || initialProfile;
   });
 
   const isMockPortalUser = (u) => {

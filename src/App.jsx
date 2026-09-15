@@ -35,7 +35,8 @@ export default function App() {
   }
 
   // 1. Role-based Portal Isolation
-  const normalizedRole = (profile?.role || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const safeProfile = profile || {};
+  const normalizedRole = (safeProfile.role || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   if (normalizedRole === 'proprietario') {
     return <AreaProprietario />;
   }

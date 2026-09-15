@@ -50,10 +50,11 @@ export default function AreaProprietario() {
   const [actionNotice, setActionNotice] = useState('');
 
   // Filter items for current logged in owner
-  const myProperties = properties.filter(p => p.ownerId === profile.id || (profile.role === 'proprietario' && !p.ownerId));
-  const myContracts = contracts.filter(c => c.ownerId === profile.id || (profile.role === 'proprietario' && !c.ownerId));
-  const myFinancials = financialRecords.filter(f => f.ownerId === profile.id || (profile.role === 'proprietario' && !f.ownerId));
-  const myMaintenances = maintenanceRequests.filter(m => m.ownerId === profile.id || (profile.role === 'proprietario' && !m.ownerId));
+  const safeProfile = profile || { id: 'usr_proprietario', name: 'Proprietário', role: 'proprietario' };
+  const myProperties = properties.filter(p => p.ownerId === safeProfile.id || (safeProfile.role === 'proprietario' && !p.ownerId));
+  const myContracts = contracts.filter(c => c.ownerId === safeProfile.id || (safeProfile.role === 'proprietario' && !c.ownerId));
+  const myFinancials = financialRecords.filter(f => f.ownerId === safeProfile.id || (safeProfile.role === 'proprietario' && !f.ownerId));
+  const myMaintenances = maintenanceRequests.filter(m => m.ownerId === safeProfile.id || (safeProfile.role === 'proprietario' && !m.ownerId));
   const myMessages = portalMessages.filter(m => m.recipientRole === 'proprietario' || m.senderRole === 'proprietario');
 
   // Dashboard Metrics

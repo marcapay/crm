@@ -64,10 +64,11 @@ export default function AreaInquilino() {
   const [showVacancyModal, setShowVacancyModal] = useState(false);
 
   // Filter items for current logged in tenant
-  const myContract = contracts.find(c => c.tenantId === profile.id) || contracts[0];
+  const safeProfile = profile || { id: 'usr_inquilino', name: 'Inquilino', role: 'inquilino' };
+  const myContract = contracts.find(c => c.tenantId === safeProfile.id) || contracts[0];
   const myProperty = properties.find(p => p.id === myContract?.propertyId) || properties[0];
-  const myFinancials = financialRecords.filter(f => f.tenantId === profile.id);
-  const myMaintenances = maintenanceRequests.filter(m => m.tenantId === profile.id);
+  const myFinancials = financialRecords.filter(f => f.tenantId === safeProfile.id);
+  const myMaintenances = maintenanceRequests.filter(m => m.tenantId === safeProfile.id);
   const myMessages = portalMessages.filter(m => m.recipientRole === 'inquilino' || m.senderRole === 'inquilino');
 
   // Active Next Bill

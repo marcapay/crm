@@ -28,6 +28,7 @@ export default function Sidebar({ isOpen, onClose }) {
     unreadChats = []
   } = useApp();
 
+  const currentProfile = profile || { name: 'Usuário', role: 'Administrador', email: '', avatar: '' };
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const menuRef = useRef(null);
 
@@ -123,13 +124,13 @@ export default function Sidebar({ isOpen, onClose }) {
           onClick={() => setIsProfileOpen(!isProfileOpen)}
         >
           <img 
-            src={profile.avatar} 
-            alt={profile.name} 
+            src={currentProfile.avatar} 
+            alt={currentProfile.name} 
             style={styles.avatar} 
           />
           <div style={styles.profileInfo}>
-            <span style={styles.profileName}>{profile.name}</span>
-            <span style={styles.profileRole}>{profile.role}</span>
+            <span style={styles.profileName}>{currentProfile.name}</span>
+            <span style={styles.profileRole}>{currentProfile.role}</span>
           </div>
 
           {/* Notification Bell Icon on Far Right */}
@@ -164,8 +165,8 @@ export default function Sidebar({ isOpen, onClose }) {
         {isProfileOpen && (
           <div className="glass-panel" style={styles.profileDropdown}>
             <div style={styles.dropdownHeader}>
-              <div style={styles.dropdownName}>{profile.name.toUpperCase()}</div>
-              <div style={styles.dropdownEmail}>{profile.email}</div>
+              <div style={styles.dropdownName}>{(currentProfile.name || 'USUÁRIO').toUpperCase()}</div>
+              <div style={styles.dropdownEmail}>{currentProfile.email}</div>
             </div>
             
             <div style={styles.dropdownDivider} />
