@@ -12,10 +12,23 @@ import Perfil from './components/Perfil';
 import AreaProprietario from './components/AreaProprietario';
 import AreaInquilino from './components/AreaInquilino';
 import PainelGestaoPortais from './components/PainelGestaoPortais';
+import FichaVisitaTecnica from './components/FichaVisitaTecnica';
+import FichaPublicaCliente from './components/FichaPublicaCliente';
 
 export default function App() {
   const { isAuthenticated, profile, activeModule } = useApp();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // Check for public client form link (e.g. ?form=ficha-visita)
+  const isPublicForm = typeof window !== 'undefined' && (
+    window.location.search.includes('form=ficha-visita') || 
+    window.location.search.includes('ficha') ||
+    window.location.hash.includes('ficha-visita')
+  );
+
+  if (isPublicForm) {
+    return <FichaPublicaCliente />;
+  }
 
   if (!isAuthenticated) {
     return <Auth />;
@@ -47,6 +60,9 @@ export default function App() {
         return <Conversas />;
       case 'clientes':
         return <Clientes />;
+      case 'ficha':
+      case 'visita-tecnica':
+        return <FichaVisitaTecnica />;
       case 'gestao-portais':
         return <PainelGestaoPortais />;
       case 'links-rapidos':

@@ -29,45 +29,8 @@ const initialProfile = {
     databaseSync: true,  }
 };
 
-// Portal Initial Mock Data (Araújo Imóveis Seed Data)
-const initialPortalUsers = [
-  {
-    id: 'user_admin_1',
-    name: 'Ricardo Araújo',
-    email: 'admin@araujo.com',
-    role: 'Administrador',
-    phone: '(37) 99988-1122',
-    avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=120&h=120&fit=crop&crop=face',
-    password: 'admin'
-  },
-  {
-    id: 'user_corretor_1',
-    name: 'Fernanda Lima',
-    email: 'corretor@araujo.com',
-    role: 'Normal',
-    phone: '(37) 99123-8899',
-    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=120&h=120&fit=crop&crop=face',
-    password: 'corretor123'
-  },
-  {
-    id: 'user_proprietario_1',
-    name: 'Carlos Eduardo Silva',
-    email: 'proprietario@araujo.com',
-    role: 'proprietario',
-    phone: '(37) 99911-2233',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&h=120&fit=crop&crop=face',
-    password: '123456'
-  },
-  {
-    id: 'user_inquilino_1',
-    name: 'Mariana Oliveira Costa',
-    email: 'inquilino@araujo.com',
-    role: 'inquilino',
-    phone: '(37) 99888-4455',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&h=120&fit=crop&crop=face',
-    password: '123456'
-  }
-];
+// Portal Initial Data (Cleared/Empty)
+const initialPortalUsers = [];
 
 const initialProperties = [];
 
@@ -411,18 +374,27 @@ export const AppProvider = ({ children }) => {
     return safeJsonParse(saved, initialProfile);
   });
 
+  const isMockPortalUser = (u) => {
+    if (!u) return true;
+    const email = (u.email || '').toLowerCase();
+    const name = (u.name || '').toLowerCase();
+    const id = (u.id || '').toLowerCase();
+    if (['admin@araujo.com', 'corretor@araujo.com', 'proprietario@araujo.com', 'inquilino@araujo.com'].includes(email)) return true;
+    if (['user_admin_1', 'user_corretor_1', 'user_proprietario_1', 'user_inquilino_1'].includes(id)) return true;
+    if (name.includes('carlos eduardo') || name.includes('mariana oliveira') || name.includes('ricardo araújo') || name.includes('ricardo araujo') || name.includes('fernanda lima')) return true;
+    return false;
+  };
+
   // Portal State Declarations
   const [portalUsers, setPortalUsers] = useState(() => {
     const saved = localStorage.getItem('araujo_portal_users');
-    const parsed = safeJsonParse(saved, initialPortalUsers);
-    if (parsed && Array.isArray(parsed)) {
-      const missing = initialPortalUsers.filter(initU => !parsed.some(p => (p.email || '').toLowerCase() === initU.email.toLowerCase()));
-      if (missing.length > 0) {
-        return [...parsed, ...missing];
+    if (saved) {
+      const parsed = safeJsonParse(saved, []);
+      if (parsed && Array.isArray(parsed)) {
+        return parsed.filter(u => !isMockPortalUser(u));
       }
-      return parsed;
     }
-    return initialPortalUsers;
+    return [];
   });
 
   const [properties, setProperties] = useState(() => {
@@ -461,6 +433,11 @@ export const AppProvider = ({ children }) => {
     return list.filter(a => !['act_1', 'act_2', 'act_3'].includes(a.id));
   });
 
+  const [fichasVisita, setFichasVisita] = useState(() => {
+    const saved = localStorage.getItem('crmbase_fichas_visita');
+    return safeJsonParse(saved, []);
+  });
+
   useEffect(() => { localStorage.setItem('araujo_portal_users', JSON.stringify(portalUsers)); }, [portalUsers]);
   useEffect(() => { localStorage.setItem('araujo_portal_properties', JSON.stringify(properties)); }, [properties]);
   useEffect(() => { localStorage.setItem('araujo_portal_contracts', JSON.stringify(contracts)); }, [contracts]);
@@ -468,6 +445,52 @@ export const AppProvider = ({ children }) => {
   useEffect(() => { localStorage.setItem('araujo_portal_maintenance_requests', JSON.stringify(maintenanceRequests)); }, [maintenanceRequests]);
   useEffect(() => { localStorage.setItem('araujo_portal_messages', JSON.stringify(portalMessages)); }, [portalMessages]);
   useEffect(() => { localStorage.setItem('araujo_portal_activity_logs', JSON.stringify(activityLogs)); }, [activityLogs]);
+  useEffect(() => { localStorage.setItem('crmbase_fichas_visita', JSON.stringify(fichasVisita)); }, [fichasVisita]);
+
+  const addFichaVisita = (fichaData) => {
+    const now = new Date().toISOString();
+    const count = fichasVisita.length + 1;
+    const autoCodigo = fichaData.codigoImovel || `VT-${String(count).padStart(4, '0')}`;
+    const newFicha = {
+      id: 'ficha_' + Date.now(),
+      codigoImovel: autoCodigo,
+      createdAt: now,
+      updatedAt: now,
+      createdBy: profile?.name || 'Usuário Sistema',
+      updatedBy: profile?.name || 'Usuário Sistema',
+      ...fichaData
+    };
+    setFichasVisita(prev => [newFicha, ...prev]);
+    if (typeof registerActivityLog === 'function') {
+      registerActivityLog(profile?.name, `Criou Ficha 01 de Visita Técnica ${autoCodigo} (${fichaData.nomeProprietario || 'Proprietário'})`);
+    }
+    return newFicha;
+  };
+
+  const updateFichaVisita = (id, updatedFields) => {
+    const now = new Date().toISOString();
+    setFichasVisita(prev => prev.map(f => {
+      if (f.id === id) {
+        return {
+          ...f,
+          ...updatedFields,
+          updatedAt: now,
+          updatedBy: profile?.name || 'Usuário Sistema'
+        };
+      }
+      return f;
+    }));
+    if (typeof registerActivityLog === 'function') {
+      registerActivityLog(profile?.name, `Atualizou Ficha 01 de Visita Técnica ${updatedFields.codigoImovel || id}`);
+    }
+  };
+
+  const deleteFichaVisita = (id) => {
+    setFichasVisita(prev => prev.filter(f => f.id !== id));
+    if (typeof registerActivityLog === 'function') {
+      registerActivityLog(profile?.name, `Excluiu Ficha 01 de Visita Técnica ${id}`);
+    }
+  };
 
   const registerActivityLog = (userName, actionText) => {
     const newLog = {
@@ -544,29 +567,29 @@ export const AppProvider = ({ children }) => {
 
   const quickLoginPortal = (role) => {
     if (role === 'proprietario') {
-      const user = portalUsers.find(u => u.role === 'proprietario') || initialPortalUsers[2];
+      const user = portalUsers.find(u => u.role === 'proprietario') || { id: 'user_proprietario', name: 'Proprietário', email: 'proprietario@portal.com', role: 'proprietario' };
       setProfile(user);
       setIsAuthenticated(true);
       localStorage.setItem('eloos_auth', 'true');
-      registerActivityLog(`${user.name} (Proprietário)`, 'Fez login rápido no Portal do Proprietário');
+      registerActivityLog(`${user.name} (Proprietário)`, 'Fez login no Portal do Proprietário');
     } else if (role === 'inquilino') {
-      const user = portalUsers.find(u => u.role === 'inquilino') || initialPortalUsers[3];
+      const user = portalUsers.find(u => u.role === 'inquilino') || { id: 'user_inquilino', name: 'Inquilino', email: 'inquilino@portal.com', role: 'inquilino' };
       setProfile(user);
       setIsAuthenticated(true);
       localStorage.setItem('eloos_auth', 'true');
-      registerActivityLog(`${user.name} (Inquilino)`, 'Fez login rápido no Portal do Inquilino');
+      registerActivityLog(`${user.name} (Inquilino)`, 'Fez login no Portal do Inquilino');
     } else if (role === 'corretor') {
-      const user = portalUsers.find(u => u.role === 'Normal' || u.role === 'Corretor') || initialPortalUsers[1];
+      const user = portalUsers.find(u => u.role === 'Normal' || u.role === 'Corretor') || { id: 'user_corretor', name: 'Corretor', email: 'corretor@portal.com', role: 'Normal' };
       setProfile(user);
       setIsAuthenticated(true);
       localStorage.setItem('eloos_auth', 'true');
-      registerActivityLog(`${user.name} (Corretor)`, 'Fez login rápido no CRM (Visão Corretor)');
+      registerActivityLog(`${user.name} (Corretor)`, 'Fez login no CRM (Visão Corretor)');
     } else {
-      const user = portalUsers.find(u => u.role === 'Administrador' || u.role === 'admin') || initialPortalUsers[0];
+      const user = portalUsers.find(u => u.role === 'Administrador' || u.role === 'admin') || profile || { id: 'user_admin', name: 'Administrador', email: 'admin@portal.com', role: 'Administrador' };
       setProfile(user);
       setIsAuthenticated(true);
       localStorage.setItem('eloos_auth', 'true');
-      registerActivityLog(`${user.name} (Administrador)`, 'Fez login rápido no CRM Interno (Admin)');
+      registerActivityLog(`${user.name} (Administrador)`, 'Fez login no CRM Interno (Admin)');
     }
   };
 
@@ -595,10 +618,10 @@ export const AppProvider = ({ children }) => {
       protocol: protocolStr,
       propertyId: data.propertyId || 'prop_1',
       propertyName: data.propertyName || 'Apartamento 302 - Edifício Horizonte',
-      tenantId: profile?.id || 'user_inquilino_1',
-      tenantName: profile?.name || 'Mariana Oliveira Costa',
-      ownerId: 'user_proprietario_1',
-      ownerName: 'Carlos Eduardo Silva',
+      tenantId: profile?.id || 'user_inquilino',
+      tenantName: profile?.name || 'Inquilino',
+      ownerId: 'user_proprietario',
+      ownerName: 'Proprietário',
       title: data.title || 'Solicitação de Reparo',
       category: data.category || 'Geral',
       description: data.description || '',
@@ -678,8 +701,8 @@ export const AppProvider = ({ children }) => {
       shortAddress: propData.shortAddress || propData.address || '',
       photo: propData.photo || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=600&auto=format&fit=crop',
       status: propData.status || 'Disponível',
-      ownerId: propData.ownerId || 'user_proprietario_1',
-      ownerName: propData.ownerName || 'Carlos Eduardo Silva',
+      ownerId: propData.ownerId || '',
+      ownerName: propData.ownerName || 'Proprietário',
       currentTenantId: propData.currentTenantId || null,
       currentTenantName: propData.currentTenantName || null,
       rentValue: parseFloat(propData.rentValue) || 2000.00,
@@ -4267,7 +4290,12 @@ ${fullSearchContext.substring(0, 4000)}
       createProperty,
       createContract,
       recordTenantPayment,
-      recordOwnerPayout
+      recordOwnerPayout,
+      fichasVisita,
+      setFichasVisita,
+      addFichaVisita,
+      updateFichaVisita,
+      deleteFichaVisita
     }}>
       {children}
     </AppContext.Provider>

@@ -86,7 +86,7 @@ export default function PainelGestaoPortais() {
   const handleCreatePropSubmit = (e) => {
     e.preventDefault();
     if (!newPropTitle.trim()) return;
-    const owner = portalUsers.find(u => u.id === newPropOwnerId) || portalUsers.find(u => u.role === 'proprietario') || { id: 'user_proprietario_1', name: 'Carlos Eduardo Silva' };
+    const owner = portalUsers.find(u => u.id === newPropOwnerId) || portalUsers.find(u => u.role === 'proprietario') || { id: '', name: 'Proprietário' };
     createProperty({
       title: newPropTitle,
       address: newPropAddress,
@@ -242,53 +242,60 @@ export default function PainelGestaoPortais() {
           </div>
 
           <div style={styles.userGrid}>
-            {portalUsers.map(u => (
-              <div key={u.id} style={styles.userCard}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  <img src={u.avatar} alt={u.name} style={styles.userAvatar} />
-                  <div>
-                    <strong style={{ color: '#ffffff', fontSize: '1rem' }}>{u.name}</strong>
-                    <div style={{ color: 'var(--accent-cyan)', fontSize: '0.8125rem' }}>{u.email}</div>
-                    <div style={styles.roleTag(u.role)}>
-                      {u.role === 'proprietario' ? 'Proprietário' : u.role === 'inquilino' ? 'Inquilino' : u.role}
+            {activePortalUsers.length === 0 ? (
+              <div style={{ padding: '3rem 1.5rem', textAlign: 'center', color: 'var(--text-tertiary)', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '12px', border: '1px solid var(--glass-border)', gridColumn: '1 / -1' }}>
+                <p style={{ fontSize: '1rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Nenhum usuário cadastrado no portal.</p>
+                <span style={{ fontSize: '0.875rem' }}>Clique no botão "+ Novo Usuário Portal" para cadastrar proprietários ou inquilinos reais.</span>
+              </div>
+            ) : (
+              activePortalUsers.map(u => (
+                <div key={u.id} style={styles.userCard}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <img src={u.avatar} alt={u.name} style={styles.userAvatar} />
+                    <div>
+                      <strong style={{ color: '#ffffff', fontSize: '1rem' }}>{u.name}</strong>
+                      <div style={{ color: 'var(--accent-cyan)', fontSize: '0.8125rem' }}>{u.email}</div>
+                      <div style={styles.roleTag(u.role)}>
+                        {u.role === 'proprietario' ? 'Proprietário' : u.role === 'inquilino' ? 'Inquilino' : u.role}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div style={styles.userDivider} />
+                  <div style={styles.userDivider} />
 
-                <div style={styles.userInfoRow}>
-                  <span>Senha de Acesso:</span>
-                  <strong style={{ color: '#f59e0b' }}>{u.password}</strong>
-                </div>
-                <div style={styles.userInfoRow}>
-                  <span>Telefone:</span>
-                  <span>{u.phone || '(37) 99999-0000'}</span>
-                </div>
+                  <div style={styles.userInfoRow}>
+                    <span>Senha de Acesso:</span>
+                    <strong style={{ color: '#f59e0b' }}>{u.password}</strong>
+                  </div>
+                  <div style={styles.userInfoRow}>
+                    <span>Telefone:</span>
+                    <span>{u.phone || '(37) 99999-0000'}</span>
+                  </div>
 
-                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
-                  <button 
-                    style={{ ...styles.btnSimulateLogin, flex: 1 }} 
-                    onClick={() => quickLoginPortal(u.role)}
-                  >
-                    <Eye size={16} />
-                    <span>Entrar no Portal</span>
-                  </button>
+                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
+                    <button 
+                      style={{ ...styles.btnSimulateLogin, flex: 1 }} 
+                      onClick={() => quickLoginPortal(u.role)}
+                    >
+                      <Eye size={16} />
+                      <span>Entrar no Portal</span>
+                    </button>
 
-                  <button 
-                    style={{ padding: '0.5rem', borderRadius: '6px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444', cursor: 'pointer' }}
-                    onClick={() => {
-                      deletePortalUser(u.id);
-                      setActionNotice(`Acesso de ${u.name} removido.`);
-                      setTimeout(() => setActionNotice(''), 3000);
-                    }}
-                    title="Remover acesso"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                    <button 
+                      style={{ padding: '0.5rem', borderRadius: '6px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444', cursor: 'pointer' }}
+                      onClick={() => {
+                        deletePortalUser(u.id);
+                        setActionNotice(`Acesso de ${u.name} removido.`);
+                        setTimeout(() => setActionNotice(''), 3000);
+                      }}
+                      title="Remover acesso"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
 
           {/* Modal Novo Usuário */}

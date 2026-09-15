@@ -64,10 +64,10 @@ export default function AreaInquilino() {
   const [showVacancyModal, setShowVacancyModal] = useState(false);
 
   // Filter items for current logged in tenant
-  const myContract = contracts.find(c => c.tenantId === profile.id || c.tenantId === 'user_inquilino_1') || contracts[0];
+  const myContract = contracts.find(c => c.tenantId === profile.id) || contracts[0];
   const myProperty = properties.find(p => p.id === myContract?.propertyId) || properties[0];
-  const myFinancials = financialRecords.filter(f => f.tenantId === profile.id || f.tenantId === 'user_inquilino_1');
-  const myMaintenances = maintenanceRequests.filter(m => m.tenantId === profile.id || m.tenantId === 'user_inquilino_1');
+  const myFinancials = financialRecords.filter(f => f.tenantId === profile.id);
+  const myMaintenances = maintenanceRequests.filter(m => m.tenantId === profile.id);
   const myMessages = portalMessages.filter(m => m.recipientRole === 'inquilino' || m.senderRole === 'inquilino');
 
   // Active Next Bill
@@ -110,7 +110,7 @@ export default function AreaInquilino() {
     if (!msgBody.trim()) return;
     sendPortalMessage({
       senderRole: 'inquilino',
-      senderName: profile.name || 'Mariana Oliveira Costa',
+      senderName: profile.name || 'Inquilino',
       recipientRole: 'imobiliaria',
       subject: msgSubject || 'Dúvida do Inquilino',
       body: msgBody
@@ -130,7 +130,7 @@ export default function AreaInquilino() {
 
     sendPortalMessage({
       senderRole: 'inquilino',
-      senderName: profile.name || 'Mariana Costa',
+      senderName: profile.name || 'Inquilino',
       recipientRole: 'imobiliaria',
       subject: subject,
       body: body

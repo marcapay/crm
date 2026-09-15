@@ -1109,6 +1109,484 @@ img {
   }
 }
 
+/* ==========================================================================
+   FICHA 01: AGENDAMENTO DE VISITA TÉCNICA STYLES & PRINT MEDIA
+   ========================================================================== */
+
+/* Form Layout Grids & UI Helpers */
+.ficha-form-container {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.form-group.span-2 {
+  grid-column: span 2;
+}
+
+.form-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.form-label.required::after {
+  content: ' *';
+  color: var(--accent-danger);
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius-sm);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--accent-cyan);
+}
+
+.form-input.input-error {
+  border-color: var(--accent-danger);
+  background-color: rgba(239, 68, 68, 0.05);
+}
+
+.error-text {
+  font-size: 0.75rem;
+  color: var(--accent-danger);
+  margin-top: 0.25rem;
+}
+
+/* Status Badges */
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.625rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.status-badge.status-aguardando-agendamento,
+.status-badge.status-aguardando {
+  background-color: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.status-badge.status-agendado {
+  background-color: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.status-badge.status-confirmado {
+  background-color: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.status-badge.status-realizado {
+  background-color: rgba(168, 85, 247, 0.15);
+  color: #a855f7;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+.status-badge.status-reagendar {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* Table Row Hover */
+.table-row-hover:hover {
+  background-color: var(--glass-highlight);
+}
+
+.btn-icon-glass {
+  background: var(--glass-highlight);
+  border: 1px solid var(--glass-border);
+  color: var(--text-primary);
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-icon-glass:hover {
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+}
+
+.btn-icon-glass.text-danger:hover {
+  border-color: var(--accent-danger);
+  color: var(--accent-danger);
+}
+
+/* Printable A4 Document Styles */
+.ficha-print-wrapper {
+  background-color: #525659;
+  min-height: 100vh;
+  padding: 20px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.print-action-bar {
+  width: 100%;
+  max-width: 210mm;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: rgba(16, 18, 24, 0.95);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn-print-primary {
+  background-color: #0284c7;
+  color: #ffffff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-print-secondary {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ficha-a4-sheet {
+  width: 210mm;
+  min-height: 297mm;
+  padding: 15mm 16mm;
+  margin: 0 auto;
+  background: #ffffff !important;
+  color: #1e293b !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  box-sizing: border-box;
+  font-family: Arial, Helvetica, sans-serif;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.ficha-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2px solid #0f172a;
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+}
+
+.header-logo-area {
+  flex: 0 0 140px;
+}
+
+.header-title-area {
+  flex: 1;
+  text-align: center;
+  padding: 0 12px;
+}
+
+.ficha-main-title {
+  font-size: 16pt;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+}
+
+.ficha-subtitle {
+  font-size: 9pt;
+  color: #475569;
+  margin-top: 2px;
+}
+
+.header-code-area {
+  flex: 0 0 110px;
+  border: 1.5px solid #0f172a;
+  border-radius: 6px;
+  padding: 6px 8px;
+  text-align: center;
+  background: #f8fafc;
+}
+
+.code-label {
+  display: block;
+  font-size: 7.5pt;
+  text-transform: uppercase;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.code-value {
+  font-size: 11pt;
+  font-weight: 800;
+  color: #0284c7;
+}
+
+.ficha-section {
+  margin-bottom: 14px;
+}
+
+.section-title {
+  font-size: 10pt;
+  font-weight: 800;
+  color: #0f172a;
+  background: #f1f5f9;
+  border-left: 4px solid #0284c7;
+  padding: 4px 8px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.ficha-grid {
+  display: grid;
+  gap: 6px 12px;
+}
+
+.ficha-grid.grid-col-2 {
+  grid-template-columns: 1fr 1fr;
+}
+
+.field-group {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 9pt;
+}
+
+.field-group.span-2 {
+  grid-column: span 2;
+}
+
+.field-label {
+  font-weight: 700;
+  color: #334155;
+  white-space: nowrap;
+}
+
+.field-content {
+  color: #0f172a;
+  word-break: break-word;
+}
+
+.field-content.multiline {
+  display: block;
+  width: 100%;
+  line-height: 1.4;
+  margin-top: 2px;
+}
+
+.blank-line {
+  color: #94a3b8;
+  letter-spacing: -1px;
+}
+
+.print-box {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  border: 1.5px solid #334155;
+  border-radius: 2px;
+  text-align: center;
+  line-height: 11px;
+  font-size: 9pt;
+  font-weight: 800;
+  color: #0f172a;
+  margin-right: 4px;
+}
+
+.print-box.checked {
+  background-color: #f1f5f9;
+}
+
+.radio-options {
+  display: inline-flex;
+  align-items: center;
+}
+
+.flex-row-wrap {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.check-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  font-size: 8.5pt;
+}
+
+.ficha-footer {
+  margin-top: auto;
+  border-top: 1px solid #cbd5e1;
+  padding-top: 12px;
+}
+
+.issuance-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 8pt;
+  color: #64748b;
+  margin-bottom: 28px;
+}
+
+.signature-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+}
+
+.signature-block {
+  text-align: center;
+}
+
+.signature-line {
+  border-top: 1.5px solid #334155;
+  width: 85%;
+  margin: 0 auto 6px auto;
+}
+
+.signature-name {
+  display: block;
+  font-size: 9pt;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.signature-role {
+  display: block;
+  font-size: 7.5pt;
+  color: #64748b;
+}
+
+/* PRINT MEDIA OVERRIDES */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm 12mm;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  /* Hide app navigation & Chrome */
+  .mobile-header,
+  .app-sidebar,
+  .sidebar-backdrop,
+  .no-print,
+  .print-action-bar,
+  .main-content > *:not(.ficha-print-wrapper) {
+    display: none !important;
+  }
+
+  .main-content {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  .ficha-print-wrapper {
+    background: #ffffff !important;
+    padding: 0 !important;
+    min-height: auto !important;
+  }
+
+  .ficha-a4-sheet {
+    width: 100% !important;
+    min-height: auto !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    page-break-inside: avoid;
+  }
+
+  .ficha-section {
+    page-break-inside: avoid;
+  }
+}
+
+/* Mobile Responsiveness for Form */
+@media (max-width: 768px) {
+  .form-grid-2 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .form-group.span-2 {
+    grid-column: span 1 !important;
+  }
+
+  .ficha-grid.grid-col-2 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .field-group.span-2 {
+    grid-column: span 1 !important;
+  }
+
+  .signature-grid {
+    grid-template-columns: 1fr !important;
+    gap: 24px !important;
+  }
+
+  .flex-row-wrap {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+}
+
+
 
 
 

@@ -50,10 +50,10 @@ export default function AreaProprietario() {
   const [actionNotice, setActionNotice] = useState('');
 
   // Filter items for current logged in owner
-  const myProperties = properties.filter(p => p.ownerId === profile.id || p.ownerId === 'user_proprietario_1');
-  const myContracts = contracts.filter(c => c.ownerId === profile.id || c.ownerId === 'user_proprietario_1');
-  const myFinancials = financialRecords.filter(f => f.ownerId === profile.id || f.ownerId === 'user_proprietario_1');
-  const myMaintenances = maintenanceRequests.filter(m => m.ownerId === profile.id || m.ownerId === 'user_proprietario_1');
+  const myProperties = properties.filter(p => p.ownerId === profile.id || (profile.role === 'proprietario' && !p.ownerId));
+  const myContracts = contracts.filter(c => c.ownerId === profile.id || (profile.role === 'proprietario' && !c.ownerId));
+  const myFinancials = financialRecords.filter(f => f.ownerId === profile.id || (profile.role === 'proprietario' && !f.ownerId));
+  const myMaintenances = maintenanceRequests.filter(m => m.ownerId === profile.id || (profile.role === 'proprietario' && !m.ownerId));
   const myMessages = portalMessages.filter(m => m.recipientRole === 'proprietario' || m.senderRole === 'proprietario');
 
   // Dashboard Metrics
@@ -72,7 +72,7 @@ export default function AreaProprietario() {
     if (!messageInput.trim()) return;
     sendPortalMessage({
       senderRole: 'proprietario',
-      senderName: profile.name || 'Carlos Eduardo Silva',
+      senderName: profile.name || 'Proprietário',
       recipientRole: 'imobiliaria',
       subject: msgSubject || 'Dúvida do Proprietário',
       body: messageInput
@@ -695,7 +695,7 @@ export default function AreaProprietario() {
                 </div>
                 <div style={styles.bankInfoLine}>
                   <span style={styles.infoLabel}>Chave PIX:</span>
-                  <span>carlos.silva@email.com</span>
+                  <span>{profile.email || profile.pix || 'Chave cadastrada'}</span>
                 </div>
               </div>
 
