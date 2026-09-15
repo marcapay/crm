@@ -40,6 +40,17 @@ export default function PainelGestaoPortais() {
     recordOwnerPayout
   } = useApp();
 
+  const activePortalUsers = (portalUsers || []).filter(u => {
+    if (!u) return false;
+    const email = (u.email || '').toLowerCase();
+    const name = (u.name || '').toLowerCase();
+    const id = (u.id || '').toLowerCase();
+    if (['admin@araujo.com', 'corretor@araujo.com', 'proprietario@araujo.com', 'inquilino@araujo.com'].includes(email)) return false;
+    if (['user_admin_1', 'user_corretor_1', 'user_proprietario_1', 'user_inquilino_1'].includes(id)) return false;
+    if (name.includes('carlos eduardo') || name.includes('mariana oliveira') || name.includes('ricardo araújo') || name.includes('ricardo araujo') || name.includes('fernanda lima')) return false;
+    return true;
+  });
+
   const formatMoney = (val) => {
     const num = Number(val);
     return isNaN(num) ? '0,00' : num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
