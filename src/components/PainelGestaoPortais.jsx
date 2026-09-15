@@ -25,6 +25,7 @@ export default function PainelGestaoPortais() {
     portalUsers = [],
     systemUsers = [],
     setSystemUsers,
+    profile,
     properties = [],
     contracts = [],
     financialRecords = [],
@@ -57,6 +58,33 @@ export default function PainelGestaoPortais() {
     if (!u) return false;
     const role = (u.role || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     return role === 'proprietario' || role === 'inquilino';
+  });
+
+  const isUserAdmin = (profile?.role || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') === 'administrador' || (profile?.role || '').toLowerCase() === 'admin';
+
+  const visiblePortalMessages = (portalMessages || []).filter(msg => {
+    if (!msg) return false;
+    if (isUserAdmin) return true;
+
+    const currentId = (profile?.id || '').toString();
+    const currentEmail = (profile?.email || '').toLowerCase();
+    const currentName = (profile?.name || '').toLowerCase();
+
+    const senderId = (msg.senderId || '').toString();
+    const senderEmail = (msg.senderEmail || '').toLowerCase();
+    const senderName = (msg.senderName || '').toLowerCase();
+
+    const recipientId = (msg.recipientId || '').toString();
+    const recipientEmail = (msg.recipientEmail || '').toLowerCase();
+
+    const isSender = (currentId && senderId && currentId === senderId) ||
+                     (currentEmail && senderEmail && currentEmail === senderEmail) ||
+                     (currentName && senderName && currentName === senderName);
+
+    const isRecipient = (currentId && recipientId && currentId === recipientId) ||
+                        (currentEmail && recipientEmail && currentEmail === recipientEmail);
+
+    return isSender || isRecipient;
   });
 
   const formatMoney = (val) => {
@@ -103,12 +131,15 @@ export default function PainelGestaoPortais() {
   const handleSendAdminMessage = (e) => {
     e.preventDefault();
     if (!msgBodyInput.trim()) return;
-    const recipient = portalUsers.find(u => u.id === msgTargetUser) || portalUsers[0];
+    const recipient = activePortalUsers.find(u => u.id === msgTargetUser) || activePortalUsers[0];
     sendPortalMessage({
-      senderRole: 'imobiliaria',
-      senderName: 'Atendimento Araújo Imóveis',
+      senderId: profile?.id,
+      senderEmail: profile?.email,
+      senderRole: profile?.role || 'imobiliaria',
+      senderName: profile?.name || 'Atendimento Araújo Imóveis',
       recipientRole: recipient?.role || 'cliente',
       recipientId: recipient?.id || 'all',
+      recipientEmail: recipient?.email || '',
       subject: msgSubjectInput || 'Aviso do Portal Araújo Imóveis',
       body: msgBodyInput
     });
@@ -540,12 +571,12 @@ export default function PainelGestaoPortais() {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {portalMessages.length === 0 ? (
+            {visiblePortalMessages.length === 0 ? (
               <div style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-tertiary)', background: 'var(--glass-highlight)', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
                 Nenhuma mensagem na central de recados.
               </div>
             ) : (
-              portalMessages.map(msg => (
+              visiblePortalMessages.map(msg => (
                 <div key={msg.id} style={styles.msgAdminCard}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <strong style={{ color: '#ffffff' }}>{msg.senderName} ({msg.senderRole})</strong>

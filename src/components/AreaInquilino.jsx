@@ -69,7 +69,33 @@ export default function AreaInquilino() {
   const myProperty = properties.find(p => p.id === myContract?.propertyId) || properties[0];
   const myFinancials = financialRecords.filter(f => f.tenantId === safeProfile.id);
   const myMaintenances = maintenanceRequests.filter(m => m.tenantId === safeProfile.id);
-  const myMessages = portalMessages.filter(m => m.recipientRole === 'inquilino' || m.senderRole === 'inquilino');
+
+  const isTenantAdmin = (safeProfile.role || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') === 'administrador' || (safeProfile.role || '').toLowerCase() === 'admin';
+  const myMessages = (portalMessages || []).filter(m => {
+    if (!m) return false;
+    if (isTenantAdmin) return true;
+
+    const currentId = (safeProfile.id || '').toString();
+    const currentEmail = (safeProfile.email || '').toLowerCase();
+    const currentName = (safeProfile.name || '').toLowerCase();
+
+    const senderId = (m.senderId || '').toString();
+    const senderEmail = (m.senderEmail || '').toLowerCase();
+    const senderName = (m.senderName || '').toLowerCase();
+
+    const recipientId = (m.recipientId || '').toString();
+    const recipientEmail = (m.recipientEmail || '').toLowerCase();
+
+    const isSender = (currentId && senderId && currentId === senderId) ||
+                     (currentEmail && senderEmail && currentEmail === senderEmail) ||
+                     (currentName && senderName && currentName === senderName);
+
+    const isRecipient = (currentId && recipientId && currentId === recipientId) ||
+                        (currentEmail && recipientEmail && currentEmail === recipientEmail) ||
+                        (m.recipientRole === 'inquilino' && (!m.recipientId || m.recipientId === 'all'));
+
+    return isSender || isRecipient;
+  });
 
   // Active Next Bill
   const nextBill = myFinancials.find(f => f.tenantStatus === 'Aguardando pagamento' || f.tenantStatus === 'Atrasado') || myFinancials[0];
@@ -110,9 +136,12 @@ export default function AreaInquilino() {
     e.preventDefault();
     if (!msgBody.trim()) return;
     sendPortalMessage({
+      senderId: safeProfile.id,
+      senderEmail: safeProfile.email,
       senderRole: 'inquilino',
-      senderName: profile.name || 'Inquilino',
+      senderName: safeProfile.name || 'Inquilino',
       recipientRole: 'imobiliaria',
+      recipientId: 'admin',
       subject: msgSubject || 'Dúvida do Inquilino',
       body: msgBody
     });
@@ -130,9 +159,12 @@ export default function AreaInquilino() {
       : 'Olá, pretendo desocupar o imóvel ao término do contrato e gostaria de receber as orientações e vistoria de saída.';
 
     sendPortalMessage({
+      senderId: safeProfile.id,
+      senderEmail: safeProfile.email,
       senderRole: 'inquilino',
-      senderName: profile.name || 'Inquilino',
+      senderName: safeProfile.name || 'Inquilino',
       recipientRole: 'imobiliaria',
+      recipientId: 'admin',
       subject: subject,
       body: body
     });

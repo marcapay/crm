@@ -55,7 +55,33 @@ export default function AreaProprietario() {
   const myContracts = contracts.filter(c => c.ownerId === safeProfile.id || (safeProfile.role === 'proprietario' && !c.ownerId));
   const myFinancials = financialRecords.filter(f => f.ownerId === safeProfile.id || (safeProfile.role === 'proprietario' && !f.ownerId));
   const myMaintenances = maintenanceRequests.filter(m => m.ownerId === safeProfile.id || (safeProfile.role === 'proprietario' && !m.ownerId));
-  const myMessages = portalMessages.filter(m => m.recipientRole === 'proprietario' || m.senderRole === 'proprietario');
+  
+  const isPropAdmin = (safeProfile.role || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') === 'administrador' || (safeProfile.role || '').toLowerCase() === 'admin';
+  const myMessages = (portalMessages || []).filter(m => {
+    if (!m) return false;
+    if (isPropAdmin) return true;
+
+    const currentId = (safeProfile.id || '').toString();
+    const currentEmail = (safeProfile.email || '').toLowerCase();
+    const currentName = (safeProfile.name || '').toLowerCase();
+
+    const senderId = (m.senderId || '').toString();
+    const senderEmail = (m.senderEmail || '').toLowerCase();
+    const senderName = (m.senderName || '').toLowerCase();
+
+    const recipientId = (m.recipientId || '').toString();
+    const recipientEmail = (m.recipientEmail || '').toLowerCase();
+
+    const isSender = (currentId && senderId && currentId === senderId) ||
+                     (currentEmail && senderEmail && currentEmail === senderEmail) ||
+                     (currentName && senderName && currentName === senderName);
+
+    const isRecipient = (currentId && recipientId && currentId === recipientId) ||
+                        (currentEmail && recipientEmail && currentEmail === recipientEmail) ||
+                        (m.recipientRole === 'proprietario' && (!m.recipientId || m.recipientId === 'all'));
+
+    return isSender || isRecipient;
+  });
 
   // Dashboard Metrics
   const nextPayout = myFinancials.find(f => f.tenantStatus === 'Aguardando pagamento' || f.ownerStatus === 'Pendente') || myFinancials[0];
@@ -72,9 +98,12 @@ export default function AreaProprietario() {
     e.preventDefault();
     if (!messageInput.trim()) return;
     sendPortalMessage({
+      senderId: safeProfile.id,
+      senderEmail: safeProfile.email,
       senderRole: 'proprietario',
-      senderName: profile.name || 'Proprietário',
+      senderName: safeProfile.name || 'Proprietário',
       recipientRole: 'imobiliaria',
+      recipientId: 'admin',
       subject: msgSubject || 'Dúvida do Proprietário',
       body: messageInput
     });

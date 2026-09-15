@@ -697,10 +697,13 @@ export const AppProvider = ({ children }) => {
   const sendPortalMessage = (msg) => {
     const newMsg = {
       id: 'msg_' + Date.now(),
+      senderId: msg.senderId || profile?.id || '',
+      senderEmail: msg.senderEmail || profile?.email || '',
       senderRole: msg.senderRole || profile?.role || 'inquilino',
       senderName: msg.senderName || profile?.name || 'Usuário',
       recipientRole: msg.recipientRole || 'imobiliaria',
       recipientId: msg.recipientId || 'admin',
+      recipientEmail: msg.recipientEmail || '',
       subject: msg.subject || 'Mensagem do Portal',
       body: msg.body || '',
       date: new Date().toLocaleString('pt-BR'),
