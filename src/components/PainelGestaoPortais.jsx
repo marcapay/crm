@@ -23,6 +23,8 @@ import {
 export default function PainelGestaoPortais() {
   const {
     portalUsers = [],
+    systemUsers = [],
+    setSystemUsers,
     properties = [],
     contracts = [],
     financialRecords = [],
@@ -32,7 +34,6 @@ export default function PainelGestaoPortais() {
     updateMaintenanceStatus,
     sendPortalMessage,
     quickLoginPortal,
-    createPortalUser,
     deletePortalUser,
     createProperty,
     createContract,
@@ -40,15 +41,22 @@ export default function PainelGestaoPortais() {
     recordOwnerPayout
   } = useApp();
 
-  const activePortalUsers = (portalUsers || []).filter(u => {
+  const allUsers = [...(systemUsers || []), ...(portalUsers || [])];
+  const uniqueUsers = [];
+  const seenKeys = new Set();
+  allUsers.forEach(u => {
+    if (!u) return;
+    const key = (u.email || u.id || '').toLowerCase();
+    if (!seenKeys.has(key)) {
+      seenKeys.add(key);
+      uniqueUsers.push(u);
+    }
+  });
+
+  const activePortalUsers = uniqueUsers.filter(u => {
     if (!u) return false;
-    const email = (u.email || '').toLowerCase();
-    const name = (u.name || '').toLowerCase();
-    const id = (u.id || '').toLowerCase();
-    if (['admin@araujo.com', 'corretor@araujo.com', 'proprietario@araujo.com', 'inquilino@araujo.com'].includes(email)) return false;
-    if (['user_admin_1', 'user_corretor_1', 'user_proprietario_1', 'user_inquilino_1'].includes(id)) return false;
-    if (name.includes('carlos eduardo') || name.includes('mariana oliveira') || name.includes('ricardo araújo') || name.includes('ricardo araujo') || name.includes('fernanda lima')) return false;
-    return true;
+    const role = (u.role || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    return role === 'proprietario' || role === 'inquilino';
   });
 
   const formatMoney = (val) => {
@@ -63,13 +71,6 @@ export default function PainelGestaoPortais() {
   const [actionNotice, setActionNotice] = useState('');
 
   // Modals
-  const [showUserModal, setShowUserModal] = useState(false);
-  const [newUserName, setNewUserName] = useState('');
-  const [newUserEmail, setNewUserEmail] = useState('');
-  const [newUserRole, setNewUserRole] = useState('proprietario');
-  const [newUserPhone, setNewUserPhone] = useState('');
-  const [newUserPassword, setNewUserPassword] = useState('123456');
-
   const [showPropModal, setShowPropModal] = useState(false);
   const [newPropTitle, setNewPropTitle] = useState('');
   const [newPropAddress, setNewPropAddress] = useState('');
@@ -80,24 +81,6 @@ export default function PainelGestaoPortais() {
   const [msgTargetUser, setMsgTargetUser] = useState('');
   const [msgSubjectInput, setMsgSubjectInput] = useState('');
   const [msgBodyInput, setMsgBodyInput] = useState('');
-
-  const handleCreateUserSubmit = (e) => {
-    e.preventDefault();
-    if (!newUserName.trim() || !newUserEmail.trim()) return;
-    createPortalUser({
-      name: newUserName,
-      email: newUserEmail,
-      role: newUserRole,
-      phone: newUserPhone,
-      password: newUserPassword
-    });
-    setNewUserName('');
-    setNewUserEmail('');
-    setNewUserPhone('');
-    setShowUserModal(false);
-    setActionNotice(`Usuário ${newUserName} cadastrado com sucesso!`);
-    setTimeout(() => setActionNotice(''), 4000);
-  };
 
   const handleCreatePropSubmit = (e) => {
     e.preventDefault();
@@ -250,29 +233,44 @@ export default function PainelGestaoPortais() {
                 <Plus size={16} />
                 <span>Cadastrar Imóvel</span>
               </button>
-              <button style={styles.btnActionSuccess} onClick={() => setShowUserModal(true)}>
-                <Plus size={16} />
-                <span>Novo Usuário Portal</span>
-              </button>
             </div>
           </div>
 
           <div style={styles.userGrid}>
             {activePortalUsers.length === 0 ? (
               <div style={{ padding: '3rem 1.5rem', textAlign: 'center', color: 'var(--text-tertiary)', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '12px', border: '1px solid var(--glass-border)', gridColumn: '1 / -1' }}>
-                <p style={{ fontSize: '1rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Nenhum usuário cadastrado no portal.</p>
-                <span style={{ fontSize: '0.875rem' }}>Clique no botão "+ Novo Usuário Portal" para cadastrar proprietários ou inquilinos reais.</span>
+                <p style={{ fontSize: '1rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Nenhum proprietário ou inquilino cadastrado no sistema.</p>
+                <span style={{ fontSize: '0.875rem' }}>Para adicionar contas com acesso a esta aba, vá em <strong>Configurações &gt; Usuários</strong> e cadastre um membro com a função <strong>Proprietário</strong> ou <strong>Inquilino</strong>.</span>
               </div>
             ) : (
               activePortalUsers.map(u => (
                 <div key={u.id} style={styles.userCard}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <img src={u.avatar} alt={u.name} style={styles.userAvatar} />
+                    <div style={{
+                      width: '44px',
+                      height: '44px',
+                      borderRadius: '50%',
+                      backgroundColor: u.color || 'var(--accent-primary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 'bold',
+                      color: '#ffffff',
+                      fontSize: '1rem',
+                      overflow: 'hidden',
+                      flexShrink: 0
+                    }}>
+                      {u.avatar ? (
+                        <img src={u.avatar} alt={u.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        (u.name || 'U').charAt(0).toUpperCase()
+                      )}
+                    </div>
                     <div>
                       <strong style={{ color: '#ffffff', fontSize: '1rem' }}>{u.name}</strong>
                       <div style={{ color: 'var(--accent-cyan)', fontSize: '0.8125rem' }}>{u.email}</div>
                       <div style={styles.roleTag(u.role)}>
-                        {u.role === 'proprietario' ? 'Proprietário' : u.role === 'inquilino' ? 'Inquilino' : u.role}
+                        {u.role}
                       </div>
                     </div>
                   </div>
@@ -281,7 +279,7 @@ export default function PainelGestaoPortais() {
 
                   <div style={styles.userInfoRow}>
                     <span>Senha de Acesso:</span>
-                    <strong style={{ color: '#f59e0b' }}>{u.password}</strong>
+                    <strong style={{ color: '#f59e0b' }}>{u.password || '123456'}</strong>
                   </div>
                   <div style={styles.userInfoRow}>
                     <span>Telefone:</span>
@@ -291,7 +289,10 @@ export default function PainelGestaoPortais() {
                   <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
                     <button 
                       style={{ ...styles.btnSimulateLogin, flex: 1 }} 
-                      onClick={() => quickLoginPortal(u.role)}
+                      onClick={() => {
+                        const r = (u.role || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                        quickLoginPortal(r.includes('inquilino') ? 'inquilino' : 'proprietario');
+                      }}
                     >
                       <Eye size={16} />
                       <span>Entrar no Portal</span>
@@ -300,9 +301,12 @@ export default function PainelGestaoPortais() {
                     <button 
                       style={{ padding: '0.5rem', borderRadius: '6px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444', cursor: 'pointer' }}
                       onClick={() => {
-                        deletePortalUser(u.id);
-                        setActionNotice(`Acesso de ${u.name} removido.`);
-                        setTimeout(() => setActionNotice(''), 3000);
+                        if (confirm(`Deseja remover o acesso de "${u.name}"?`)) {
+                          setSystemUsers(prev => (prev || []).filter(x => x.id !== u.id && x.email !== u.email));
+                          setPortalUsers(prev => (prev || []).filter(x => x.id !== u.id && x.email !== u.email));
+                          setActionNotice(`Acesso de ${u.name} removido.`);
+                          setTimeout(() => setActionNotice(''), 3000);
+                        }
                       }}
                       title="Remover acesso"
                     >
@@ -313,45 +317,6 @@ export default function PainelGestaoPortais() {
               ))
             )}
           </div>
-
-          {/* Modal Novo Usuário */}
-          {showUserModal && (
-            <div style={styles.modalOverlay}>
-              <div style={styles.modalCard}>
-                <h3 style={{ color: '#ffffff', marginBottom: '1rem' }}>Cadastrar Usuário do Portal</h3>
-                <form onSubmit={handleCreateUserSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <div className="input-group">
-                    <label>Nome Completo</label>
-                    <input type="text" className="input-field" value={newUserName} onChange={e => setNewUserName(e.target.value)} required />
-                  </div>
-                  <div className="input-group">
-                    <label>E-mail de Acesso</label>
-                    <input type="email" className="input-field" value={newUserEmail} onChange={e => setNewUserEmail(e.target.value)} required />
-                  </div>
-                  <div className="input-group">
-                    <label>Tipo de Conta</label>
-                    <select className="input-field" value={newUserRole} onChange={e => setNewUserRole(e.target.value)}>
-                      <option value="proprietario">Proprietário</option>
-                      <option value="inquilino">Inquilino</option>
-                      <option value="Normal">Corretor / Atendente</option>
-                    </select>
-                  </div>
-                  <div className="input-group">
-                    <label>Telefone / WhatsApp</label>
-                    <input type="text" className="input-field" value={newUserPhone} onChange={e => setNewUserPhone(e.target.value)} placeholder="(37) 99999-0000" />
-                  </div>
-                  <div className="input-group">
-                    <label>Senha Inicial</label>
-                    <input type="text" className="input-field" value={newUserPassword} onChange={e => setNewUserPassword(e.target.value)} required />
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                    <button type="button" className="btn btn-secondary" onClick={() => setShowUserModal(false)}>Cancelar</button>
-                    <button type="submit" className="btn btn-primary">Salvar Usuário</button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          )}
 
           {/* Modal Novo Imóvel */}
           {showPropModal && (
