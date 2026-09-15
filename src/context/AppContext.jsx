@@ -46,10 +46,10 @@ const initialActivityLogs = [];
 
 const safeJsonParse = (str, fallback) => {
   try {
-    if (!str) return fallback;
-    return JSON.parse(str);
+    if (!str || str === 'undefined' || str === 'null') return fallback;
+    const parsed = JSON.parse(str);
+    return (parsed !== null && parsed !== undefined) ? parsed : fallback;
   } catch (e) {
-    console.error("Failed to parse JSON from localStorage:", e);
     return fallback;
   }
 };
@@ -133,6 +133,23 @@ export const AppProvider = ({ children }) => {
     } catch (e) {
       console.error("Error parsing URL search params for portal role:", e);
     }
+  }, []);
+
+  // Self-heal corrupted profile in localStorage
+  useEffect(() => {
+    try {
+      const savedProfile = localStorage.getItem('eloos_profile');
+      if (!savedProfile || savedProfile === 'undefined' || savedProfile === 'null') {
+        localStorage.setItem('eloos_profile', JSON.stringify(initialProfile));
+        setProfileState(initialProfile);
+      } else {
+        const parsed = safeJsonParse(savedProfile, null);
+        if (!parsed || typeof parsed !== 'object' || !parsed.role) {
+          localStorage.setItem('eloos_profile', JSON.stringify(initialProfile));
+          setProfileState(initialProfile);
+        }
+      }
+    } catch (e) {}
   }, []);
 
   // Initialize pipelines and columns state with Araújo Imóveis defaults
@@ -391,11 +408,25 @@ export const AppProvider = ({ children }) => {
     return [];
   });
 
-  const [profile, setProfile] = useState(() => {
+  const [profile, setProfileState] = useState(() => {
     const saved = localStorage.getItem('eloos_profile');
     const parsed = safeJsonParse(saved, initialProfile);
-    return parsed || initialProfile;
+    if (!parsed || typeof parsed !== 'object' || !parsed.role) {
+      return initialProfile;
+    }
+    return parsed;
   });
+
+  const setProfile = (val) => {
+    setProfileState(prev => {
+      const next = typeof val === 'function' ? val(prev) : val;
+      const safeNext = (next && typeof next === 'object' && next.role) ? next : initialProfile;
+      try {
+        localStorage.setItem('eloos_profile', JSON.stringify(safeNext));
+      } catch (e) {}
+      return safeNext;
+    });
+  };
 
   const isMockPortalUser = (u) => {
     if (!u) return true;
