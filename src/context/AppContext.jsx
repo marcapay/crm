@@ -112,6 +112,44 @@ export const AppProvider = ({ children }) => {
   const [activeChatClientId, setActiveChatClientId] = useState(null);
   const isSyncingRef = useRef(false);
 
+  // Auto-route on load if ?role=inquilino or ?role=proprietario parameters are present
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined' && window.location.search) {
+        const params = new URLSearchParams(window.location.search);
+        const roleParam = params.get('role') || params.get('portal');
+        const identifierParam = params.get('identifier') || params.get('email');
+
+        if (roleParam) {
+          const cleanRole = roleParam.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+          const currentUsers = safeJsonParse(localStorage.getItem('araujo_portal_users'), initialPortalUsers);
+
+          if (cleanRole === 'inquilino' || cleanRole === 'locatario') {
+            const user = currentUsers.find(u => u.role === 'inquilino' && (identifierParam ? (u.email || '').toLowerCase() === identifierParam.toLowerCase() : true)) || currentUsers.find(u => u.role === 'inquilino') || initialPortalUsers[3];
+            setProfile(user);
+            setIsAuthenticated(true);
+            localStorage.setItem('eloos_auth', 'true');
+            localStorage.setItem('eloos_profile', JSON.stringify(user));
+          } else if (cleanRole === 'proprietario' || cleanRole === 'locador') {
+            const user = currentUsers.find(u => u.role === 'proprietario' && (identifierParam ? (u.email || '').toLowerCase() === identifierParam.toLowerCase() : true)) || currentUsers.find(u => u.role === 'proprietario') || initialPortalUsers[2];
+            setProfile(user);
+            setIsAuthenticated(true);
+            localStorage.setItem('eloos_auth', 'true');
+            localStorage.setItem('eloos_profile', JSON.stringify(user));
+          } else if (cleanRole === 'admin' || cleanRole === 'administrador') {
+            const user = currentUsers.find(u => u.role === 'Administrador') || initialPortalUsers[0];
+            setProfile(user);
+            setIsAuthenticated(true);
+            localStorage.setItem('eloos_auth', 'true');
+            localStorage.setItem('eloos_profile', JSON.stringify(user));
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Error parsing URL search params for portal role:", e);
+    }
+  }, []);
+
   // Initialize pipelines and columns state with Araújo Imóveis defaults
   useEffect(() => {
     try {
