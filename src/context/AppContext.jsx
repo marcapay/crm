@@ -829,7 +829,7 @@ export const AppProvider = ({ children }) => {
         let parsed = JSON.parse(saved);
         // Filter out legacy default user accounts
         parsed = parsed.filter(u => 
-          u.email !== 'mqssolucao@gmail.com' && 
+          u && u.email !== 'mqssolucao@gmail.com' && 
           u.email !== 'atg.contador@gmail.com' && 
           u.email !== 'miguelmr.business@gmail.com' &&
           u.id !== 'default_u2' && u.id !== 'default_u3' && u.id !== 'default_u4' && u.id !== 'u1' && u.id !== 'u3' && u.id !== 'u4'
@@ -845,7 +845,11 @@ export const AppProvider = ({ children }) => {
   const setSystemUsers = (newUsersOrFn) => {
     setSystemUsersState(prev => {
       const next = typeof newUsersOrFn === 'function' ? newUsersOrFn(prev) : newUsersOrFn;
-      localStorage.setItem('crmbase_system_users', JSON.stringify(next));
+      try {
+        localStorage.setItem('crmbase_system_users', JSON.stringify(next));
+      } catch (e) {
+        console.error("Error saving users to localStorage:", e);
+      }
       fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -862,7 +866,43 @@ export const AppProvider = ({ children }) => {
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data) && data.length > 0) {
-            setSystemUsersState(data);
+            setSystemUsersState(prev => {
+              const localUsers = prev || [];
+              const mergedMap = new Map();
+
+              // 1. Add cloud users to map
+              data.forEach(u => {
+                if (u && (u.id || u.email)) {
+                  const key = (u.id || u.email).toString().toLowerCase();
+                  mergedMap.set(key, u);
+                }
+              });
+
+              // 2. Overlay local users so newly added/edited local users are NEVER overwritten
+              localUsers.forEach(u => {
+                if (u && (u.id || u.email)) {
+                  const key = (u.id || u.email).toString().toLowerCase();
+                  const existing = mergedMap.get(key) || {};
+                  mergedMap.set(key, { ...existing, ...u });
+                }
+              });
+
+              const mergedUsers = Array.from(mergedMap.values());
+              try {
+                localStorage.setItem('crmbase_system_users', JSON.stringify(mergedUsers));
+              } catch (e) {}
+
+              // 3. If local has users cloud didn't have, sync back to cloud
+              if (mergedUsers.length > data.length) {
+                fetch('/api/users', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(mergedUsers)
+                }).catch(err => console.error("Error syncing merged users to cloud:", err));
+              }
+
+              return mergedUsers;
+            });
           }
         }
       } catch (err) {

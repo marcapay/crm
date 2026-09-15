@@ -1,5 +1,5 @@
 // Serverless endpoint to manage system users globally across all devices
-const BUCKET_ID = process.env.KV_BUCKET_ID || "crm_base_default";
+const BUCKET_ID = process.env.KV_BUCKET_ID || "araujo_imoveis_crm_users_v2";
 
 const defaultUsers = [];
 
