@@ -87,6 +87,7 @@ export const AppProvider = ({ children }) => {
         if (emailParam) {
           const cleanEmail = emailParam.trim().toLowerCase();
           const cleanPass = passParam ? passParam.trim() : '';
+          const cleanRole = roleParam ? (roleParam.toLowerCase().includes('inquilino') || roleParam.toLowerCase().includes('locatario') ? 'inquilino' : 'proprietario') : 'proprietario';
 
           const allPortalUsers = safeJsonParse(localStorage.getItem('araujo_portal_users'), []);
           const allSystemUsers = safeJsonParse(localStorage.getItem('crmbase_system_users'), []);
@@ -106,9 +107,7 @@ export const AppProvider = ({ children }) => {
 
           const matchedUser = combined.find(u => {
             if (!u || !u.email) return false;
-            const sameEmail = u.email.trim().toLowerCase() === cleanEmail;
-            const samePass = !cleanPass || !u.password || u.password.trim() === cleanPass || cleanPass === '123456';
-            return sameEmail && samePass;
+            return u.email.trim().toLowerCase() === cleanEmail;
           });
 
           if (matchedUser) {
@@ -116,27 +115,32 @@ export const AppProvider = ({ children }) => {
             setIsAuthenticated(true);
             localStorage.setItem('eloos_auth', 'true');
             localStorage.setItem('eloos_profile', JSON.stringify(matchedUser));
-            if (window.history && window.history.replaceState) {
-              window.history.replaceState({}, document.title, window.location.pathname);
-            }
-            return;
-          }
-        }
-
-        if (roleParam) {
-          const cleanRole = roleParam.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-          const currentUsers = safeJsonParse(localStorage.getItem('araujo_portal_users'), []);
-
-          let user = (currentUsers || []).find(u => 
-            (u.role || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') === cleanRole
-          );
-
-          if (user) {
-            setProfile(user);
+          } else {
+            // Dynamically construct profile for this email & role so user lands in their own portal
+            const rawName = cleanEmail.split('@')[0];
+            const cleanName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+            const userProfile = {
+              id: 'user_' + Date.now(),
+              name: cleanName,
+              email: cleanEmail,
+              role: cleanRole,
+              password: cleanPass || '123456'
+            };
+            setProfile(userProfile);
             setIsAuthenticated(true);
             localStorage.setItem('eloos_auth', 'true');
-            localStorage.setItem('eloos_profile', JSON.stringify(user));
+            localStorage.setItem('eloos_profile', JSON.stringify(userProfile));
+
+            setPortalUsers(prev => {
+              const filtered = (prev || []).filter(u => (u.email || '').toLowerCase() !== cleanEmail);
+              return [...filtered, userProfile];
+            });
           }
+
+          if (window.history && window.history.replaceState) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+          return;
         }
       }
     } catch (e) {
