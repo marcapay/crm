@@ -81,6 +81,14 @@ export default function PainelGestaoPortais() {
 
   const ownerOptions = availableOwners.length > 0 ? availableOwners : uniqueUsers;
 
+  const availableTenants = uniqueUsers.filter(u => {
+    if (!u) return false;
+    const roleNorm = (u.role || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    return roleNorm.includes('inquilino') || roleNorm.includes('locatario') || roleNorm.includes('morador') || !roleNorm;
+  });
+
+  const tenantOptions = availableTenants.length > 0 ? availableTenants : uniqueUsers;
+
   const isUserAdmin = (profile?.role || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') === 'administrador' || (profile?.role || '').toLowerCase() === 'admin';
 
   const visiblePortalMessages = (portalMessages || []).filter(msg => {
@@ -125,6 +133,7 @@ export default function PainelGestaoPortais() {
   const [newPropAddress, setNewPropAddress] = useState('');
   const [newPropRent, setNewPropRent] = useState('2500.00');
   const [newPropOwnerId, setNewPropOwnerId] = useState('');
+  const [newPropTenantId, setNewPropTenantId] = useState('');
 
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [msgTargetUser, setMsgTargetUser] = useState('');
@@ -138,16 +147,27 @@ export default function PainelGestaoPortais() {
                   ownerOptions.find(u => u.id === newPropOwnerId) ||
                   ownerOptions[0] ||
                   { id: 'owner_gen', name: 'Proprietário' };
+
+    const tenant = uniqueUsers.find(u => u.id === newPropTenantId) ||
+                   tenantOptions.find(u => u.id === newPropTenantId) ||
+                   null;
+
     createProperty({
       title: newPropTitle,
       address: newPropAddress,
       rentValue: newPropRent,
       ownerId: owner.id,
-      ownerName: owner.name || owner.nome || 'Proprietário'
+      ownerName: owner.name || owner.nome || 'Proprietário',
+      currentTenantId: tenant ? tenant.id : null,
+      currentTenantName: tenant ? (tenant.name || tenant.nome || 'Inquilino') : null,
+      tenantId: tenant ? tenant.id : null,
+      tenantName: tenant ? (tenant.name || tenant.nome || 'Inquilino') : null,
+      status: tenant ? 'Alugado' : 'Disponível'
     });
     setNewPropTitle('');
     setNewPropAddress('');
     setNewPropOwnerId('');
+    setNewPropTenantId('');
     setShowPropModal(false);
     setActionNotice(`Imóvel "${newPropTitle}" cadastrado com sucesso!`);
     setTimeout(() => setActionNotice(''), 4000);
@@ -416,6 +436,32 @@ export default function PainelGestaoPortais() {
                       {ownerOptions.map(p => (
                         <option key={p.id || p.email} value={p.id} style={{ backgroundColor: '#1e293b', color: '#ffffff' }}>
                           {p.name || p.nome || 'Proprietário'} ({p.email || p.phone || 'Sem e-mail'})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="input-group">
+                    <label style={{ color: '#ffffff', marginBottom: '0.375rem', display: 'block', fontSize: '0.875rem' }}>Inquilino / Locatário Responsável (Opcional)</label>
+                    <select 
+                      className="input-field" 
+                      value={newPropTenantId} 
+                      onChange={e => setNewPropTenantId(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem',
+                        backgroundColor: '#1e293b',
+                        color: '#ffffff',
+                        border: '1px solid #334155',
+                        borderRadius: '0.5rem',
+                        fontSize: '0.875rem',
+                        outline: 'none',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <option value="" style={{ backgroundColor: '#1e293b', color: '#94a3b8' }}>Selecione o inquilino (se alugado)...</option>
+                      {tenantOptions.map(t => (
+                        <option key={t.id || t.email} value={t.id} style={{ backgroundColor: '#1e293b', color: '#ffffff' }}>
+                          {t.name || t.nome || 'Inquilino'} ({t.email || t.phone || 'Sem e-mail'})
                         </option>
                       ))}
                     </select>
