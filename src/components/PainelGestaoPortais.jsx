@@ -25,6 +25,7 @@ export default function PainelGestaoPortais() {
     portalUsers = [],
     systemUsers = [],
     setSystemUsers,
+    clients = [],
     profile,
     properties = [],
     contracts = [],
@@ -42,7 +43,19 @@ export default function PainelGestaoPortais() {
     recordOwnerPayout
   } = useApp();
 
-  const allUsers = [...(systemUsers || []), ...(portalUsers || [])];
+  const allUsers = [
+    ...(systemUsers || []),
+    ...(portalUsers || []),
+    ...(clients || []).map(c => ({
+      id: c.id,
+      name: c.name || c.nome || 'Cliente CRM',
+      email: c.email || `${c.id}@portal.com`,
+      role: (c.role || c.tipo || c.situacaoComercial || '').toLowerCase().includes('inquilino') ? 'inquilino' : 
+            (c.role || c.tipo || c.situacaoComercial || '').toLowerCase().includes('proprietario') ? 'proprietario' : (c.role || 'proprietario'),
+      phone: c.phone || c.telefone || '',
+      password: c.password || '123456'
+    }))
+  ];
   const uniqueUsers = [];
   const seenKeys = new Set();
   allUsers.forEach(u => {
@@ -57,7 +70,7 @@ export default function PainelGestaoPortais() {
   const activePortalUsers = uniqueUsers.filter(u => {
     if (!u) return false;
     const role = (u.role || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    return role === 'proprietario' || role === 'inquilino';
+    return role === 'proprietario' || role === 'inquilino' || role === 'locador' || role === 'locatario';
   });
 
   const isUserAdmin = (profile?.role || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') === 'administrador' || (profile?.role || '').toLowerCase() === 'admin';
