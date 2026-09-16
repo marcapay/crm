@@ -131,7 +131,6 @@ export const AppProvider = ({ children }) => {
       console.error("Error parsing URL search params for portal authentication:", e);
     }
   }, []);
-  }, []);
 
   // Self-heal corrupted profile in localStorage
   useEffect(() => {
