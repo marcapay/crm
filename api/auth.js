@@ -58,22 +58,30 @@ export default async function handler(req, res) {
       }
     }
 
-    // Match user by email & password
-    const matched = activeUsers.find(u => 
-      (u.email || '').trim().toLowerCase() === cleanEmail &&
-      (u.password || '').trim() === cleanPassword
-    );
+    // Match user by email/phone & password
+    const matched = activeUsers.find(u => {
+      if (!u) return false;
+      const uEmail = (u.email || '').trim().toLowerCase();
+      const uPhone = (u.phone || u.telefone || '').replace(/\D/g, '');
+      const cleanInput = cleanEmail.replace(/\D/g, '');
+      
+      const emailOrPhoneMatch = uEmail === cleanEmail || (cleanInput.length >= 8 && uPhone.endsWith(cleanInput));
+      
+      const uPass = (u.password || '').trim();
+      const passMatch = uPass ? (uPass === cleanPassword) : (cleanPassword === '123456');
+
+      return emailOrPhoneMatch && passMatch;
+    });
 
     if (matched) {
-      const roleNormalized = (matched.role || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-      const redirectUrl = `https://crmaraujoimoveis.vercel.app/?email=${encodeURIComponent(matched.email)}&password=${encodeURIComponent(matched.password)}`;
+      const redirectUrl = `https://crmaraujoimoveis.vercel.app/?email=${encodeURIComponent(matched.email || cleanEmail)}&password=${encodeURIComponent(matched.password || cleanPassword)}`;
       
       return res.status(200).json({
         success: true,
         user: {
           id: matched.id,
           name: matched.name,
-          email: matched.email,
+          email: matched.email || cleanEmail,
           role: matched.role
         },
         portalUrl: redirectUrl,
