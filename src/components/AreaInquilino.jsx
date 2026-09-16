@@ -70,7 +70,7 @@ export default function AreaInquilino() {
     (safeProfile.email && (c.tenantEmail || '').toLowerCase() === safeProfile.email.toLowerCase()) ||
     (safeProfile.name && (c.tenantName || '').toLowerCase() === safeProfile.name.toLowerCase())
   ) || null;
-  const myProperty = myContract ? properties.find(p => p.id === myContract.propertyId) : (safeProfile.role === 'inquilino' ? properties[0] : null);
+  const myProperty = myContract ? properties.find(p => p.id === myContract.propertyId) : null;
   const myFinancials = financialRecords.filter(f => 
     (safeProfile.id && f.tenantId === safeProfile.id) ||
     (safeProfile.email && (f.tenantEmail || '').toLowerCase() === safeProfile.email.toLowerCase()) ||
@@ -132,9 +132,7 @@ export default function AreaInquilino() {
       category: maintCategory,
       title: maintTitle,
       description: maintDesc,
-      attachments: [
-        { name: 'foto_evidencia.jpg', type: 'image', url: 'https://images.unsplash.com/photo-1585704032915-c3400ca199e7?w=500&auto=format&fit=crop' }
-      ]
+      attachments: []
     });
 
     setMaintTitle('');
@@ -272,7 +270,7 @@ export default function AreaInquilino() {
 
                   <div style={styles.billValueRow}>
                     <div>
-                      <div style={styles.billDueDateLabel}>Vencimento: <strong>{nextBill.dueDate || '10/09/2026'}</strong></div>
+                      {nextBill.dueDate && <div style={styles.billDueDateLabel}>Vencimento: <strong>{nextBill.dueDate}</strong></div>}
                       <div style={styles.billAmountBig}>R$ {(nextBill.grossRent || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
                     </div>
                   </div>
@@ -281,19 +279,21 @@ export default function AreaInquilino() {
                   <div style={styles.billActionGrid}>
                     <button 
                       style={styles.btnBillActionPrimary}
-                      onClick={() => alert(`Abrindo boleto do aluguel referente a ${nextBill.competence}`)}
+                      onClick={() => alert(`Abrindo boleto do aluguel referente a ${nextBill.competence || 'mês vigente'}`)}
                     >
                       <Download size={15} />
                       <span>VER BOLETO</span>
                     </button>
 
-                    <button 
-                      style={styles.btnBillActionSecondary}
-                      onClick={() => handleCopyText(nextBill.pixKey || '00020126580014BR.GOV.BCB.PIX...', 'Chave PIX')}
-                    >
-                      <Copy size={15} />
-                      <span>COPIAR PIX</span>
-                    </button>
+                    {nextBill.pixKey && (
+                      <button 
+                        style={styles.btnBillActionSecondary}
+                        onClick={() => handleCopyText(nextBill.pixKey, 'Chave PIX')}
+                      >
+                        <Copy size={15} />
+                        <span>COPIAR PIX</span>
+                      </button>
+                    )}
                   </div>
 
                   {nextBill.boletoBarCode && (
@@ -334,21 +334,23 @@ export default function AreaInquilino() {
             </div>
 
             {/* Alerta de Vencimento de Contrato ou Aviso */}
-            <div style={styles.contractNoticeCard}>
-              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
-                <Info size={20} color="var(--accent-cyan)" style={{ flexShrink: 0, marginTop: '2px' }} />
-                <div>
-                  <h4 style={{ color: '#ffffff', fontSize: '0.875rem', fontWeight: '600' }}>Vencimento do Contrato em 60 Dias</h4>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginTop: '0.25rem' }}>
-                    Seu contrato encerra em 10/09/2026. Informe sua intenção de renovação ou desocupação.
-                  </p>
-                  <button style={styles.btnNoticeAction} onClick={() => setShowVacancyModal(true)}>
-                    <span>Responder Intenção</span>
-                    <ChevronRight size={14} />
-                  </button>
+            {myContract && (
+              <div style={styles.contractNoticeCard}>
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+                  <Info size={20} color="var(--accent-cyan)" style={{ flexShrink: 0, marginTop: '2px' }} />
+                  <div>
+                    <h4 style={{ color: '#ffffff', fontSize: '0.875rem', fontWeight: '600' }}>Informações do Contrato</h4>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginTop: '0.25rem' }}>
+                      Vigência do contrato com término previsto para {myContract.endDate || 'período cadastrado'}. Informe sua intenção de renovação ou desocupação.
+                    </p>
+                    <button style={styles.btnNoticeAction} onClick={() => setShowVacancyModal(true)}>
+                      <span>Responder Intenção</span>
+                      <ChevronRight size={14} />
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Minhas Manutenções em Andamento */}
             <div style={styles.sectionHeaderRow}>
@@ -384,71 +386,89 @@ export default function AreaInquilino() {
             </div>
 
             {/* Highlighted Bill */}
-            <div style={styles.billCardFull}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.8125rem', color: 'var(--text-tertiary)' }}>Mês Vigente: <strong>{nextBill?.competence}</strong></span>
-                <span style={styles.statusBillTag(nextBill?.tenantStatus)}>{nextBill?.tenantStatus}</span>
-              </div>
-
-              <div style={{ margin: '1rem 0' }}>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>Valor Total do Aluguel</div>
-                <div style={{ fontSize: '2rem', fontWeight: '700', color: '#ffffff' }}>
-                  R$ {(nextBill?.grossRent || 2000).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            {nextBill ? (
+              <div style={styles.billCardFull}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.8125rem', color: 'var(--text-tertiary)' }}>Mês Vigente: <strong>{nextBill.competence}</strong></span>
+                  <span style={styles.statusBillTag(nextBill.tenantStatus)}>{nextBill.tenantStatus}</span>
                 </div>
-                <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-                  Vencimento sem juros: <strong>{nextBill?.dueDate}</strong>
+
+                <div style={{ margin: '1rem 0' }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>Valor Total do Aluguel</div>
+                  <div style={{ fontSize: '2rem', fontWeight: '700', color: '#ffffff' }}>
+                    R$ {(nextBill.grossRent || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </div>
+                  {nextBill.dueDate && (
+                    <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                      Vencimento sem juros: <strong>{nextBill.dueDate}</strong>
+                    </div>
+                  )}
+                </div>
+
+                {/* Action Buttons */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+                  <button style={styles.btnPrimaryFull} onClick={() => alert('Download da Segunda Via do Boleto gerado com sucesso!')}>
+                    <Download size={16} />
+                    <span>SEGUNDA VIA DO ALUGUEL (PDF)</span>
+                  </button>
+
+                  {nextBill.pixKey && (
+                    <button style={styles.btnSecondaryFull} onClick={() => handleCopyText(nextBill.pixKey, 'Chave PIX Copia-e-Cola')}>
+                      <Copy size={16} />
+                      <span>COPIAR PIX COPIA E COLA</span>
+                    </button>
+                  )}
+
+                  {nextBill.boletoBarCode && (
+                    <button style={styles.btnOutlineFull} onClick={() => handleCopyText(nextBill.boletoBarCode, 'Código de Barras')}>
+                      <Copy size={16} />
+                      <span>COPIAR CÓDIGO DE BARRAS</span>
+                    </button>
+                  )}
                 </div>
               </div>
-
-              {/* Action Buttons */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-                <button style={styles.btnPrimaryFull} onClick={() => alert('Download da Segunda Via do Boleto gerado com sucesso!')}>
-                  <Download size={16} />
-                  <span>SEGUNDA VIA DO ALUGUEL (PDF)</span>
-                </button>
-
-                <button style={styles.btnSecondaryFull} onClick={() => handleCopyText(nextBill?.pixKey || '', 'Chave PIX Copia-e-Cola')}>
-                  <Copy size={16} />
-                  <span>COPIAR PIX COPIA E COLA</span>
-                </button>
-
-                <button style={styles.btnOutlineFull} onClick={() => handleCopyText(nextBill?.boletoBarCode || '', 'Código de Barras')}>
-                  <Copy size={16} />
-                  <span>COPIAR CÓDIGO DE BARRAS</span>
-                </button>
+            ) : (
+              <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-tertiary)', background: 'var(--glass-highlight)', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
+                Nenhum boleto ou fatura em aberto para esta conta.
               </div>
-            </div>
+            )}
 
             {/* Payment History */}
             <h3 style={styles.sectionTitle}>Histórico de Pagamentos e Recibos</h3>
             <div style={styles.historyList}>
-              {myFinancials.map(fin => (
-                <div key={fin.id} style={styles.historyItem}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <div style={styles.historyIconBox(fin.tenantStatus === 'Pago')}>
-                      <CheckCircle size={18} color={fin.tenantStatus === 'Pago' ? '#34d399' : '#f59e0b'} />
-                    </div>
-                    <div>
-                      <strong style={{ color: '#ffffff', fontSize: '0.875rem' }}>{fin.competence}</strong>
-                      <div style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem' }}>
-                        {fin.tenantStatus === 'Pago' ? `Pago em ${fin.tenantPaymentDate}` : `Vencimento: ${fin.dueDate}`}
+              {myFinancials.length === 0 ? (
+                <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-tertiary)', background: 'var(--glass-highlight)', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
+                  Nenhum histórico de pagamentos registrado.
+                </div>
+              ) : (
+                myFinancials.map(fin => (
+                  <div key={fin.id} style={styles.historyItem}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <div style={styles.historyIconBox(fin.tenantStatus === 'Pago')}>
+                        <CheckCircle size={18} color={fin.tenantStatus === 'Pago' ? '#34d399' : '#f59e0b'} />
+                      </div>
+                      <div>
+                        <strong style={{ color: '#ffffff', fontSize: '0.875rem' }}>{fin.competence}</strong>
+                        <div style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem' }}>
+                          {fin.tenantStatus === 'Pago' ? `Pago em ${fin.tenantPaymentDate}` : `Vencimento: ${fin.dueDate}`}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div style={{ textAlign: 'right' }}>
-                    <strong style={{ color: '#ffffff', fontSize: '0.9375rem' }}>
-                      R$ {fin.grossRent.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </strong>
-                    {fin.tenantStatus === 'Pago' && (
-                      <button style={styles.btnReceiptLink} onClick={() => alert(`Baixando recibo da competência ${fin.competence}`)}>
-                        <Download size={12} />
-                        <span>Recibo</span>
-                      </button>
-                    )}
+                    <div style={{ textAlign: 'right' }}>
+                      <strong style={{ color: '#ffffff', fontSize: '0.9375rem' }}>
+                        R$ {fin.grossRent.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </strong>
+                      {fin.tenantStatus === 'Pago' && (
+                        <button style={styles.btnReceiptLink} onClick={() => alert(`Baixando recibo da competência ${fin.competence}`)}>
+                          <Download size={12} />
+                          <span>Recibo</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         )}
@@ -593,63 +613,62 @@ export default function AreaInquilino() {
               <p style={styles.pageSubtitle}>Termos de locação e laudo de vistoria inicial do imóvel.</p>
             </div>
 
-            <div style={styles.contractDetailCard}>
-              <div style={styles.contractHeaderRow}>
-                <div>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--accent-cyan)' }}>Contrato #{myContract?.id}</span>
-                  <h3 style={{ fontSize: '1.125rem', fontWeight: '700', color: '#ffffff' }}>{myProperty?.title}</h3>
-                </div>
-                <span style={styles.contractStatusActive}>{myContract?.status}</span>
-              </div>
-
-              <div style={styles.contractGridInfo}>
-                <div style={styles.contractCell}>
-                  <span style={styles.cellLabel}>Início do Contrato</span>
-                  <strong>{myContract?.startDate}</strong>
-                </div>
-                <div style={styles.contractCell}>
-                  <span style={styles.cellLabel}>Término Previsto</span>
-                  <strong>{myContract?.endDate}</strong>
-                </div>
-                <div style={styles.contractCell}>
-                  <span style={styles.cellLabel}>Valor do Aluguel</span>
-                  <strong>R$ {myContract?.rentValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
-                </div>
-                <div style={styles.contractCell}>
-                  <span style={styles.cellLabel}>Índice de Reajuste</span>
-                  <strong>{myContract?.adjustmentIndex}</strong>
-                </div>
-              </div>
-
-              <h4 style={{ fontSize: '0.9375rem', fontWeight: '600', color: '#ffffff', marginTop: '0.5rem' }}>Documentos e Vistorias</h4>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <div style={styles.docRowItem}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
-                    <FileText size={18} color="var(--accent-cyan)" />
-                    <div>
-                      <div style={{ fontSize: '0.8125rem', color: '#ffffff', fontWeight: '600' }}>Cópia do Contrato de Locação.pdf</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>Documento assinado digitalmente</div>
-                    </div>
+            {myContract ? (
+              <div style={styles.contractDetailCard}>
+                <div style={styles.contractHeaderRow}>
+                  <div>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--accent-cyan)' }}>Contrato #{myContract.id}</span>
+                    <h3 style={{ fontSize: '1.125rem', fontWeight: '700', color: '#ffffff' }}>{myProperty?.title || 'Imóvel de Locação'}</h3>
                   </div>
-                  <button style={styles.btnReceiptLink} onClick={() => alert('Download do contrato PDF.')}>
-                    <Download size={14} />
-                  </button>
+                  <span style={styles.contractStatusActive}>{myContract.status}</span>
                 </div>
 
-                <div style={styles.docRowItem}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
-                    <ShieldCheck size={18} color="#34d399" />
-                    <div>
-                      <div style={{ fontSize: '0.8125rem', color: '#ffffff', fontWeight: '600' }}>Vistoria de Entrada com Fotos.pdf</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>Laudo completo de entrega das chaves</div>
-                    </div>
+                <div style={styles.contractGridInfo}>
+                  <div style={styles.contractCell}>
+                    <span style={styles.cellLabel}>Início do Contrato</span>
+                    <strong>{myContract.startDate}</strong>
                   </div>
-                  <button style={styles.btnReceiptLink} onClick={() => alert('Download do laudo de vistoria.')}>
-                    <Download size={14} />
-                  </button>
+                  <div style={styles.contractCell}>
+                    <span style={styles.cellLabel}>Término Previsto</span>
+                    <strong>{myContract.endDate}</strong>
+                  </div>
+                  <div style={styles.contractCell}>
+                    <span style={styles.cellLabel}>Valor do Aluguel</span>
+                    <strong>R$ {(myContract.rentValue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
+                  </div>
+                  <div style={styles.contractCell}>
+                    <span style={styles.cellLabel}>Índice de Reajuste</span>
+                    <strong>{myContract.adjustmentIndex || 'IGPM'}</strong>
+                  </div>
                 </div>
+
+                {myContract.documents && myContract.documents.length > 0 && (
+                  <>
+                    <h4 style={{ fontSize: '0.9375rem', fontWeight: '600', color: '#ffffff', marginTop: '0.5rem' }}>Documentos e Vistorias</h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      {myContract.documents.map(doc => (
+                        <div key={doc.id} style={styles.docRowItem}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+                            <FileText size={18} color="var(--accent-cyan)" />
+                            <div>
+                              <div style={{ fontSize: '0.8125rem', color: '#ffffff', fontWeight: '600' }}>{doc.title}</div>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>{doc.type} • {doc.date}</div>
+                            </div>
+                          </div>
+                          <button style={styles.btnReceiptLink} onClick={() => alert(`Download de ${doc.title}`)}>
+                            <Download size={14} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
-            </div>
+            ) : (
+              <div style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-tertiary)', background: 'var(--glass-highlight)', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
+                Nenhum contrato de locação ativo vinculado a esta conta.
+              </div>
+            )}
           </div>
         )}
 
