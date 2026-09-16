@@ -70,8 +70,16 @@ export default function PainelGestaoPortais() {
   const activePortalUsers = uniqueUsers.filter(u => {
     if (!u) return false;
     const role = (u.role || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    return role === 'proprietario' || role === 'inquilino' || role === 'locador' || role === 'locatario';
+    return role.includes('proprietar') || role.includes('inquilino') || role.includes('locador') || role.includes('locatario');
   });
+
+  const availableOwners = uniqueUsers.filter(u => {
+    if (!u) return false;
+    const roleNorm = (u.role || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    return roleNorm.includes('proprietar') || roleNorm.includes('locador') || roleNorm.includes('dono') || !roleNorm;
+  });
+
+  const ownerOptions = availableOwners.length > 0 ? availableOwners : uniqueUsers;
 
   const isUserAdmin = (profile?.role || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') === 'administrador' || (profile?.role || '').toLowerCase() === 'admin';
 
@@ -126,16 +134,20 @@ export default function PainelGestaoPortais() {
   const handleCreatePropSubmit = (e) => {
     e.preventDefault();
     if (!newPropTitle.trim()) return;
-    const owner = portalUsers.find(u => u.id === newPropOwnerId) || portalUsers.find(u => u.role === 'proprietario') || { id: '', name: 'Proprietário' };
+    const owner = uniqueUsers.find(u => u.id === newPropOwnerId) ||
+                  ownerOptions.find(u => u.id === newPropOwnerId) ||
+                  ownerOptions[0] ||
+                  { id: 'owner_gen', name: 'Proprietário' };
     createProperty({
       title: newPropTitle,
       address: newPropAddress,
       rentValue: newPropRent,
       ownerId: owner.id,
-      ownerName: owner.name
+      ownerName: owner.name || owner.nome || 'Proprietário'
     });
     setNewPropTitle('');
     setNewPropAddress('');
+    setNewPropOwnerId('');
     setShowPropModal(false);
     setActionNotice(`Imóvel "${newPropTitle}" cadastrado com sucesso!`);
     setTimeout(() => setActionNotice(''), 4000);
@@ -273,7 +285,12 @@ export default function PainelGestaoPortais() {
             </div>
 
             <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button style={styles.btnActionPrimary} onClick={() => setShowPropModal(true)}>
+              <button style={styles.btnActionPrimary} onClick={() => {
+                if (!newPropOwnerId && ownerOptions.length > 0) {
+                  setNewPropOwnerId(ownerOptions[0].id);
+                }
+                setShowPropModal(true);
+              }}>
                 <Plus size={16} />
                 <span>Cadastrar Imóvel</span>
               </button>
@@ -378,10 +395,28 @@ export default function PainelGestaoPortais() {
                     <input type="number" step="0.01" className="input-field" value={newPropRent} onChange={e => setNewPropRent(e.target.value)} required />
                   </div>
                   <div className="input-group">
-                    <label>Proprietário Responsável</label>
-                    <select className="input-field" value={newPropOwnerId} onChange={e => setNewPropOwnerId(e.target.value)}>
-                      {activePortalUsers.filter(u => u.role === 'proprietario').map(p => (
-                        <option key={p.id} value={p.id}>{p.name} ({p.email})</option>
+                    <label style={{ color: '#ffffff', marginBottom: '0.375rem', display: 'block', fontSize: '0.875rem' }}>Proprietário Responsável</label>
+                    <select 
+                      className="input-field" 
+                      value={newPropOwnerId} 
+                      onChange={e => setNewPropOwnerId(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem',
+                        backgroundColor: '#1e293b',
+                        color: '#ffffff',
+                        border: '1px solid #334155',
+                        borderRadius: '0.5rem',
+                        fontSize: '0.875rem',
+                        outline: 'none',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <option value="" style={{ backgroundColor: '#1e293b', color: '#94a3b8' }}>Selecione o proprietário...</option>
+                      {ownerOptions.map(p => (
+                        <option key={p.id || p.email} value={p.id} style={{ backgroundColor: '#1e293b', color: '#ffffff' }}>
+                          {p.name || p.nome || 'Proprietário'} ({p.email || p.phone || 'Sem e-mail'})
+                        </option>
                       ))}
                     </select>
                   </div>
