@@ -51,10 +51,26 @@ export default function AreaProprietario() {
 
   // Filter items for current logged in owner
   const safeProfile = profile || { id: 'usr_proprietario', name: 'Proprietário', role: 'proprietario' };
-  const myProperties = properties.filter(p => p.ownerId === safeProfile.id || (safeProfile.role === 'proprietario' && !p.ownerId));
-  const myContracts = contracts.filter(c => c.ownerId === safeProfile.id || (safeProfile.role === 'proprietario' && !c.ownerId));
-  const myFinancials = financialRecords.filter(f => f.ownerId === safeProfile.id || (safeProfile.role === 'proprietario' && !f.ownerId));
-  const myMaintenances = maintenanceRequests.filter(m => m.ownerId === safeProfile.id || (safeProfile.role === 'proprietario' && !m.ownerId));
+  const myProperties = properties.filter(p => 
+    (safeProfile.id && p.ownerId === safeProfile.id) ||
+    (safeProfile.email && (p.ownerEmail || '').toLowerCase() === safeProfile.email.toLowerCase()) ||
+    (safeProfile.name && (p.ownerName || '').toLowerCase() === safeProfile.name.toLowerCase())
+  );
+  const myContracts = contracts.filter(c => 
+    (safeProfile.id && c.ownerId === safeProfile.id) ||
+    (safeProfile.email && (c.ownerEmail || '').toLowerCase() === safeProfile.email.toLowerCase()) ||
+    (safeProfile.name && (c.ownerName || '').toLowerCase() === safeProfile.name.toLowerCase())
+  );
+  const myFinancials = financialRecords.filter(f => 
+    (safeProfile.id && f.ownerId === safeProfile.id) ||
+    (safeProfile.email && (f.ownerEmail || '').toLowerCase() === safeProfile.email.toLowerCase()) ||
+    (safeProfile.name && (f.ownerName || '').toLowerCase() === safeProfile.name.toLowerCase())
+  );
+  const myMaintenances = maintenanceRequests.filter(m => 
+    (safeProfile.id && m.ownerId === safeProfile.id) ||
+    (safeProfile.email && (m.ownerEmail || '').toLowerCase() === safeProfile.email.toLowerCase()) ||
+    (safeProfile.name && (m.ownerName || '').toLowerCase() === safeProfile.name.toLowerCase())
+  );
   
   const isPropAdmin = (safeProfile.role || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') === 'administrador' || (safeProfile.role || '').toLowerCase() === 'admin';
   const myMessages = (portalMessages || []).filter(m => {
@@ -155,14 +171,20 @@ export default function AreaProprietario() {
             <div style={styles.heroCard}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
                 <div>
-                  <h2 style={styles.greetingTitle}>Olá, {profile.name?.split(' ')[0] || 'Proprietário'}! 👋</h2>
+                  <h2 style={styles.greetingTitle}>Olá, {safeProfile.name?.split(' ')[0] || safeProfile.name || 'Proprietário'}! 👋</h2>
                   <p style={styles.greetingSub}>Confira o resumo financeiro dos seus imóveis.</p>
                 </div>
-                <img 
-                  src={profile.avatar || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&h=120&fit=crop&crop=face"} 
-                  alt="Avatar" 
-                  style={styles.avatarImg} 
-                />
+                {safeProfile.avatar ? (
+                  <img 
+                    src={safeProfile.avatar} 
+                    alt="Avatar" 
+                    style={styles.avatarImg} 
+                  />
+                ) : (
+                  <div style={styles.avatarCircleInitial}>
+                    {(safeProfile.name || 'P').charAt(0).toUpperCase()}
+                  </div>
+                )}
               </div>
 
               {/* Banner Destacado do Próximo Repasse */}
@@ -332,11 +354,15 @@ export default function AreaProprietario() {
             <div style={styles.finSummaryRow}>
               <div style={styles.finSummaryBox}>
                 <span style={styles.finBoxLabel}>Aluguel Bruto Recebido</span>
-                <strong style={styles.finBoxVal}>R$ 2.000,00</strong>
+                <strong style={styles.finBoxVal}>
+                  R$ {myFinancials.reduce((sum, f) => sum + (Number(f.grossRent) || 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </strong>
               </div>
               <div style={styles.finSummaryBox}>
                 <span style={styles.finBoxLabel}>Repasse Líquido Pago</span>
-                <strong style={{ ...styles.finBoxVal, color: '#34d399' }}>R$ 1.650,00</strong>
+                <strong style={{ ...styles.finBoxVal, color: '#34d399' }}>
+                  R$ {myFinancials.filter(f => f.ownerStatus === 'Pago').reduce((sum, f) => sum + (Number(f.netRepasse) || 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </strong>
               </div>
             </div>
 
@@ -697,12 +723,18 @@ export default function AreaProprietario() {
 
             <div style={styles.profileCard}>
               <div style={styles.profileHeaderRow}>
-                <img src={profile.avatar} alt="Avatar" style={styles.profileAvatarBig} />
+                {safeProfile.avatar ? (
+                  <img src={safeProfile.avatar} alt="Avatar" style={styles.profileAvatarBig} />
+                ) : (
+                  <div style={styles.profileAvatarCircleBig}>
+                    {(safeProfile.name || 'P').charAt(0).toUpperCase()}
+                  </div>
+                )}
                 <div>
-                  <h3 style={{ color: '#ffffff', fontSize: '1.125rem' }}>{profile.name}</h3>
-                  <div style={{ color: 'var(--accent-cyan)', fontSize: '0.8125rem' }}>{profile.email}</div>
+                  <h3 style={{ color: '#ffffff', fontSize: '1.125rem' }}>{safeProfile.name}</h3>
+                  <div style={{ color: 'var(--accent-cyan)', fontSize: '0.8125rem' }}>{safeProfile.email}</div>
                   <div style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem', marginTop: '0.25rem' }}>
-                    Telefone: {profile.phone || '(37) 99911-2233'}
+                    Telefone: {safeProfile.phone || 'Não informado'}
                   </div>
                 </div>
               </div>
@@ -713,19 +745,19 @@ export default function AreaProprietario() {
               <div style={styles.bankAccountCard}>
                 <div style={styles.bankInfoLine}>
                   <span style={styles.infoLabel}>Titular:</span>
-                  <strong>{profile.name}</strong>
+                  <strong>{safeProfile.name}</strong>
                 </div>
                 <div style={styles.bankInfoLine}>
                   <span style={styles.infoLabel}>Banco:</span>
-                  <span>Banco Itaú Unibanco S.A.</span>
+                  <span>{safeProfile.bankName || 'Não informado'}</span>
                 </div>
                 <div style={styles.bankInfoLine}>
                   <span style={styles.infoLabel}>Agência / Conta:</span>
-                  <span>Ag 1234 - C/C 56789-0</span>
+                  <span>{safeProfile.bankAccount ? `Ag ${safeProfile.bankAgency || ''} - C/C ${safeProfile.bankAccount}` : 'Não cadastrado'}</span>
                 </div>
                 <div style={styles.bankInfoLine}>
                   <span style={styles.infoLabel}>Chave PIX:</span>
-                  <span>{profile.email || profile.pix || 'Chave cadastrada'}</span>
+                  <span>{safeProfile.pix || safeProfile.email || 'Não informada'}</span>
                 </div>
               </div>
 
@@ -1724,5 +1756,33 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  avatarCircleInitial: {
+    width: '52px',
+    height: '52px',
+    borderRadius: '50%',
+    backgroundColor: 'var(--accent-primary)',
+    color: '#000000',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontWeight: '700',
+    fontSize: '1.25rem',
+    border: '2px solid rgba(255, 255, 255, 0.1)',
+    flexShrink: 0,
+  },
+  profileAvatarCircleBig: {
+    width: '64px',
+    height: '64px',
+    borderRadius: '50%',
+    backgroundColor: 'var(--accent-primary)',
+    color: '#000000',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontWeight: '700',
+    fontSize: '1.5rem',
+    border: '2px solid rgba(255, 255, 255, 0.15)',
+    flexShrink: 0,
   }
 };

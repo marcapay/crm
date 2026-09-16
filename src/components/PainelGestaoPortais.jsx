@@ -320,10 +320,7 @@ export default function PainelGestaoPortais() {
                   <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
                     <button 
                       style={{ ...styles.btnSimulateLogin, flex: 1 }} 
-                      onClick={() => {
-                        const r = (u.role || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-                        quickLoginPortal(r.includes('inquilino') ? 'inquilino' : 'proprietario');
-                      }}
+                      onClick={() => quickLoginPortal(u)}
                     >
                       <Eye size={16} />
                       <span>Entrar no Portal</span>

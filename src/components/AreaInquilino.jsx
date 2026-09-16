@@ -65,10 +65,22 @@ export default function AreaInquilino() {
 
   // Filter items for current logged in tenant
   const safeProfile = profile || { id: 'usr_inquilino', name: 'Inquilino', role: 'inquilino' };
-  const myContract = contracts.find(c => c.tenantId === safeProfile.id) || contracts[0];
-  const myProperty = properties.find(p => p.id === myContract?.propertyId) || properties[0];
-  const myFinancials = financialRecords.filter(f => f.tenantId === safeProfile.id);
-  const myMaintenances = maintenanceRequests.filter(m => m.tenantId === safeProfile.id);
+  const myContract = contracts.find(c => 
+    (safeProfile.id && c.tenantId === safeProfile.id) ||
+    (safeProfile.email && (c.tenantEmail || '').toLowerCase() === safeProfile.email.toLowerCase()) ||
+    (safeProfile.name && (c.tenantName || '').toLowerCase() === safeProfile.name.toLowerCase())
+  ) || null;
+  const myProperty = myContract ? properties.find(p => p.id === myContract.propertyId) : (safeProfile.role === 'inquilino' ? properties[0] : null);
+  const myFinancials = financialRecords.filter(f => 
+    (safeProfile.id && f.tenantId === safeProfile.id) ||
+    (safeProfile.email && (f.tenantEmail || '').toLowerCase() === safeProfile.email.toLowerCase()) ||
+    (safeProfile.name && (f.tenantName || '').toLowerCase() === safeProfile.name.toLowerCase())
+  );
+  const myMaintenances = maintenanceRequests.filter(m => 
+    (safeProfile.id && m.tenantId === safeProfile.id) ||
+    (safeProfile.email && (m.tenantEmail || '').toLowerCase() === safeProfile.email.toLowerCase()) ||
+    (safeProfile.name && (m.tenantName || '').toLowerCase() === safeProfile.name.toLowerCase())
+  );
 
   const isTenantAdmin = (safeProfile.role || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') === 'administrador' || (safeProfile.role || '').toLowerCase() === 'admin';
   const myMessages = (portalMessages || []).filter(m => {
@@ -229,14 +241,20 @@ export default function AreaInquilino() {
             <div style={styles.heroCard}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
                 <div>
-                  <h2 style={styles.greetingTitle}>Olá, {profile.name?.split(' ')[0] || 'Inquilino'}! 👋</h2>
+                  <h2 style={styles.greetingTitle}>Olá, {safeProfile.name?.split(' ')[0] || safeProfile.name || 'Inquilino'}! 👋</h2>
                   <p style={styles.greetingSub}>{myProperty ? myProperty.title : 'Nenhum imóvel vinculado no momento'}</p>
                 </div>
-                <img 
-                  src={profile.avatar || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&h=120&fit=crop&crop=face"} 
-                  alt="Avatar" 
-                  style={styles.avatarImg} 
-                />
+                {safeProfile.avatar ? (
+                  <img 
+                    src={safeProfile.avatar} 
+                    alt="Avatar" 
+                    style={styles.avatarImg} 
+                  />
+                ) : (
+                  <div style={styles.avatarCircleInitial}>
+                    {(safeProfile.name || 'I').charAt(0).toUpperCase()}
+                  </div>
+                )}
               </div>
 
               {/* CARD PRÓXIMO ALUGUEL EM DESTAQUE */}
@@ -714,11 +732,17 @@ export default function AreaInquilino() {
 
             <div style={styles.profileCard}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-                <img src={profile.avatar} alt="Avatar" style={styles.profileAvatarBig} />
+                {safeProfile.avatar ? (
+                  <img src={safeProfile.avatar} alt="Avatar" style={styles.profileAvatarBig} />
+                ) : (
+                  <div style={styles.profileAvatarCircleBig}>
+                    {(safeProfile.name || 'I').charAt(0).toUpperCase()}
+                  </div>
+                )}
                 <div>
-                  <h3 style={{ color: '#ffffff', fontSize: '1.125rem' }}>{profile.name}</h3>
-                  <div style={{ color: 'var(--accent-cyan)', fontSize: '0.8125rem' }}>{profile.email}</div>
-                  <div style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem' }}>{profile.phone || '(37) 99888-4455'}</div>
+                  <h3 style={{ color: '#ffffff', fontSize: '1.125rem' }}>{safeProfile.name}</h3>
+                  <div style={{ color: 'var(--accent-cyan)', fontSize: '0.8125rem' }}>{safeProfile.email}</div>
+                  <div style={{ color: 'var(--text-tertiary)', fontSize: '0.8125rem' }}>{safeProfile.phone || 'Não informado'}</div>
                 </div>
               </div>
 
@@ -1515,5 +1539,33 @@ const styles = {
     fontWeight: active ? '700' : '400',
     cursor: 'pointer',
     height: '100%',
-  })
+  }),
+  avatarCircleInitial: {
+    width: '52px',
+    height: '52px',
+    borderRadius: '50%',
+    backgroundColor: 'var(--accent-primary)',
+    color: '#000000',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontWeight: '700',
+    fontSize: '1.25rem',
+    border: '2px solid rgba(255, 255, 255, 0.1)',
+    flexShrink: 0,
+  },
+  profileAvatarCircleBig: {
+    width: '64px',
+    height: '64px',
+    borderRadius: '50%',
+    backgroundColor: 'var(--accent-primary)',
+    color: '#000000',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontWeight: '700',
+    fontSize: '1.5rem',
+    border: '2px solid rgba(255, 255, 255, 0.15)',
+    flexShrink: 0,
+  }
 };

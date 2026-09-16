@@ -619,31 +619,52 @@ export const AppProvider = ({ children }) => {
     return { success: false, message: 'Credenciais inválidas. Verifique seu e-mail e senha.' };
   };
 
-  const quickLoginPortal = (role) => {
-    if (role === 'proprietario') {
-      const user = portalUsers.find(u => u.role === 'proprietario') || { id: 'user_proprietario', name: 'Proprietário', email: 'proprietario@portal.com', role: 'proprietario' };
-      setProfile(user);
+  const quickLoginPortal = (roleOrUser) => {
+    if (roleOrUser && typeof roleOrUser === 'object') {
+      setProfile(roleOrUser);
       setIsAuthenticated(true);
       localStorage.setItem('eloos_auth', 'true');
-      registerActivityLog(`${user.name} (Proprietário)`, 'Fez login no Portal do Proprietário');
-    } else if (role === 'inquilino') {
-      const user = portalUsers.find(u => u.role === 'inquilino') || { id: 'user_inquilino', name: 'Inquilino', email: 'inquilino@portal.com', role: 'inquilino' };
-      setProfile(user);
-      setIsAuthenticated(true);
-      localStorage.setItem('eloos_auth', 'true');
-      registerActivityLog(`${user.name} (Inquilino)`, 'Fez login no Portal do Inquilino');
-    } else if (role === 'corretor') {
-      const user = portalUsers.find(u => u.role === 'Normal' || u.role === 'Corretor') || { id: 'user_corretor', name: 'Corretor', email: 'corretor@portal.com', role: 'Normal' };
-      setProfile(user);
-      setIsAuthenticated(true);
-      localStorage.setItem('eloos_auth', 'true');
-      registerActivityLog(`${user.name} (Corretor)`, 'Fez login no CRM (Visão Corretor)');
-    } else {
-      const user = portalUsers.find(u => u.role === 'Administrador' || u.role === 'admin') || profile || { id: 'user_admin', name: 'Administrador', email: 'admin@portal.com', role: 'Administrador' };
-      setProfile(user);
-      setIsAuthenticated(true);
-      localStorage.setItem('eloos_auth', 'true');
-      registerActivityLog(`${user.name} (Administrador)`, 'Fez login no CRM Interno (Admin)');
+      const roleName = (roleOrUser.role || '').toLowerCase().includes('inquilino') ? 'Inquilino' : 'Proprietário';
+      registerActivityLog(`${roleOrUser.name || 'Usuário'} (${roleName})`, `Fez login no Portal`);
+      return;
+    }
+
+    if (typeof roleOrUser === 'string') {
+      const foundUser = portalUsers.find(u => u.id === roleOrUser || (u.email || '').toLowerCase() === roleOrUser.toLowerCase());
+      if (foundUser) {
+        setProfile(foundUser);
+        setIsAuthenticated(true);
+        localStorage.setItem('eloos_auth', 'true');
+        const roleName = (foundUser.role || '').toLowerCase().includes('inquilino') ? 'Inquilino' : 'Proprietário';
+        registerActivityLog(`${foundUser.name || 'Usuário'} (${roleName})`, `Fez login no Portal`);
+        return;
+      }
+
+      if (roleOrUser === 'proprietario') {
+        const user = portalUsers.find(u => u.role === 'proprietario') || { id: 'user_proprietario', name: 'Proprietário', email: 'proprietario@portal.com', role: 'proprietario' };
+        setProfile(user);
+        setIsAuthenticated(true);
+        localStorage.setItem('eloos_auth', 'true');
+        registerActivityLog(`${user.name} (Proprietário)`, 'Fez login no Portal do Proprietário');
+      } else if (roleOrUser === 'inquilino') {
+        const user = portalUsers.find(u => u.role === 'inquilino') || { id: 'user_inquilino', name: 'Inquilino', email: 'inquilino@portal.com', role: 'inquilino' };
+        setProfile(user);
+        setIsAuthenticated(true);
+        localStorage.setItem('eloos_auth', 'true');
+        registerActivityLog(`${user.name} (Inquilino)`, 'Fez login no Portal do Inquilino');
+      } else if (roleOrUser === 'corretor') {
+        const user = portalUsers.find(u => u.role === 'Normal' || u.role === 'Corretor') || { id: 'user_corretor', name: 'Corretor', email: 'corretor@portal.com', role: 'Normal' };
+        setProfile(user);
+        setIsAuthenticated(true);
+        localStorage.setItem('eloos_auth', 'true');
+        registerActivityLog(`${user.name} (Corretor)`, 'Fez login no CRM (Visão Corretor)');
+      } else {
+        const user = portalUsers.find(u => u.role === 'Administrador' || u.role === 'admin') || profile || { id: 'user_admin', name: 'Administrador', email: 'admin@portal.com', role: 'Administrador' };
+        setProfile(user);
+        setIsAuthenticated(true);
+        localStorage.setItem('eloos_auth', 'true');
+        registerActivityLog(`${user.name} (Administrador)`, 'Fez login no CRM Interno (Admin)');
+      }
     }
   };
 
@@ -737,7 +758,7 @@ export const AppProvider = ({ children }) => {
       email: userData.email || '',
       role: userData.role || 'proprietario',
       phone: userData.phone || '',
-      avatar: userData.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120&h=120&fit=crop&crop=face',
+      avatar: userData.avatar || '',
       password: userData.password || '123456'
     };
     setPortalUsers(prev => [...prev, newUser]);
