@@ -75,54 +75,51 @@ export const AppProvider = ({ children }) => {
   const [activeChatClientId, setActiveChatClientId] = useState(null);
   const isSyncingRef = useRef(false);
 
-  // Auto-route on load if ?role=inquilino or ?role=proprietario parameters are present
+  // Auto-authenticate via URL parameters (e.g., from sitearaujoimoveis.vercel.app/entrar)
   useEffect(() => {
     try {
       if (typeof window !== 'undefined' && window.location.search) {
         const params = new URLSearchParams(window.location.search);
+        const emailParam = params.get('email') || params.get('identifier');
+        const passParam = params.get('password') || params.get('pass');
         const roleParam = params.get('role') || params.get('portal');
-        const identifierParam = params.get('identifier') || params.get('email');
+
+        if (emailParam) {
+          const cleanEmail = emailParam.trim().toLowerCase();
+          const cleanPass = passParam ? passParam.trim() : '';
+
+          const allPortalUsers = safeJsonParse(localStorage.getItem('araujo_portal_users'), []);
+          const allSystemUsers = safeJsonParse(localStorage.getItem('crmbase_system_users'), []);
+          const combined = [...allPortalUsers, ...allSystemUsers];
+
+          const matchedUser = combined.find(u => {
+            if (!u || !u.email) return false;
+            const sameEmail = u.email.trim().toLowerCase() === cleanEmail;
+            const samePass = !cleanPass || !u.password || u.password.trim() === cleanPass;
+            return sameEmail && samePass;
+          });
+
+          if (matchedUser) {
+            setProfile(matchedUser);
+            setIsAuthenticated(true);
+            localStorage.setItem('eloos_auth', 'true');
+            localStorage.setItem('eloos_profile', JSON.stringify(matchedUser));
+            if (window.history && window.history.replaceState) {
+              window.history.replaceState({}, document.title, window.location.pathname);
+            }
+            return;
+          }
+        }
 
         if (roleParam) {
           const cleanRole = roleParam.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-          const currentUsers = safeJsonParse(localStorage.getItem('araujo_portal_users'), initialPortalUsers);
+          const currentUsers = safeJsonParse(localStorage.getItem('araujo_portal_users'), []);
 
-          if (cleanRole === 'inquilino' || cleanRole === 'locatario') {
-            let user = (currentUsers || []).find(u => u.role === 'inquilino' && (identifierParam ? (u.email || '').toLowerCase() === identifierParam.toLowerCase() : true)) || (currentUsers || []).find(u => u.role === 'inquilino');
-            if (!user) {
-              const namePart = identifierParam ? identifierParam.split('@')[0] : 'Inquilino';
-              const cleanName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
-              user = {
-                id: 'usr_inq_' + Date.now(),
-                name: cleanName,
-                email: identifierParam || 'inquilino@portal.com',
-                role: 'inquilino',
-                avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=face'
-              };
-            }
-            setProfile(user);
-            setIsAuthenticated(true);
-            localStorage.setItem('eloos_auth', 'true');
-            localStorage.setItem('eloos_profile', JSON.stringify(user));
-          } else if (cleanRole === 'proprietario' || cleanRole === 'locador') {
-            let user = (currentUsers || []).find(u => u.role === 'proprietario' && (identifierParam ? (u.email || '').toLowerCase() === identifierParam.toLowerCase() : true)) || (currentUsers || []).find(u => u.role === 'proprietario');
-            if (!user) {
-              const namePart = identifierParam ? identifierParam.split('@')[0] : 'Proprietário';
-              const cleanName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
-              user = {
-                id: 'usr_prop_' + Date.now(),
-                name: cleanName,
-                email: identifierParam || 'proprietario@portal.com',
-                role: 'proprietario',
-                avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100&h=100&fit=crop&crop=face'
-              };
-            }
-            setProfile(user);
-            setIsAuthenticated(true);
-            localStorage.setItem('eloos_auth', 'true');
-            localStorage.setItem('eloos_profile', JSON.stringify(user));
-          } else if (cleanRole === 'admin' || cleanRole === 'administrador') {
-            let user = (currentUsers || []).find(u => u.role === 'Administrador') || initialProfile;
+          let user = (currentUsers || []).find(u => 
+            (u.role || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') === cleanRole
+          );
+
+          if (user) {
             setProfile(user);
             setIsAuthenticated(true);
             localStorage.setItem('eloos_auth', 'true');
@@ -131,8 +128,9 @@ export const AppProvider = ({ children }) => {
         }
       }
     } catch (e) {
-      console.error("Error parsing URL search params for portal role:", e);
+      console.error("Error parsing URL search params for portal authentication:", e);
     }
+  }, []);
   }, []);
 
   // Self-heal corrupted profile in localStorage
