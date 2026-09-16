@@ -501,37 +501,7 @@ export const AppProvider = ({ children }) => {
   useEffect(() => { localStorage.setItem('araujo_portal_activity_logs', JSON.stringify(activityLogs)); }, [activityLogs]);
   useEffect(() => { localStorage.setItem('crmbase_fichas_visita', JSON.stringify(fichasVisita)); }, [fichasVisita]);
 
-  // Auto-sync systemUsers & clients with portalUsers for Proprietário and Inquilino roles
-  useEffect(() => {
-    if (!systemUsers || !Array.isArray(systemUsers)) return;
-    const portalEmails = new Set((portalUsers || []).map(u => (u.email || '').toLowerCase().trim()));
-    const newPortalUsers = [];
 
-    systemUsers.forEach(u => {
-      if (!u || !u.email) return;
-      const cleanEmail = u.email.toLowerCase().trim();
-      const role = (u.role || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-      const isPortalRole = role === 'proprietario' || role === 'inquilino' || role === 'locador' || role === 'locatario';
-      
-      if (isPortalRole && !portalEmails.has(cleanEmail)) {
-        portalEmails.add(cleanEmail);
-        const mappedRole = (role.includes('inquilino') || role.includes('locatario')) ? 'inquilino' : 'proprietario';
-        newPortalUsers.push({
-          id: u.id || 'usr_' + Date.now(),
-          name: u.name,
-          email: u.email,
-          role: mappedRole,
-          phone: u.phone || '',
-          avatar: u.avatar || '',
-          password: u.password || '123456'
-        });
-      }
-    });
-
-    if (newPortalUsers.length > 0) {
-      setPortalUsers(prev => [...prev, ...newPortalUsers]);
-    }
-  }, [systemUsers, portalUsers]);
 
   const addFichaVisita = (fichaData) => {
     const now = new Date().toISOString();
