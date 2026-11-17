@@ -17,8 +17,11 @@ export default function Dashboard() {
     quickLinks, 
     setActiveModule,
     setActiveChatClientId,
-    waStatus
+    waStatus,
+    profile
   } = useApp();
+
+  const userRole = (profile?.role || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
   // Metrics calculations
   const totalClients = clients.length;
@@ -78,6 +81,7 @@ export default function Dashboard() {
 
   // Quick nav helper
   const navigateToChat = (clientId) => {
+    if (userRole === 'normal') return;
     setActiveChatClientId(clientId);
     setActiveModule('conversas');
   };

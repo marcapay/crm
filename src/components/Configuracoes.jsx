@@ -477,6 +477,16 @@ export default function Configuracoes() {
       }
       return u;
     }));
+
+    if ((editingUser.email || '').trim().toLowerCase() === (profile?.email || '').trim().toLowerCase()) {
+      updateProfile({
+        name: editUserName.trim(),
+        email: editUserEmail.trim().toLowerCase(),
+        role: editUserRole,
+        password: editUserPassword || profile.password
+      });
+    }
+
     setEditingUser(null);
   };
 

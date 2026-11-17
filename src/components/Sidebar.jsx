@@ -60,8 +60,8 @@ export default function Sidebar({ isOpen, onClose }) {
 
   const menuItems = allMenuItems.filter(item => {
     if (userRole === 'normal') {
-      // Usuário Normal não vê Configurações
-      return item.id !== 'configuracoes';
+      // Usuário Normal vê apenas Dashboard e Atalhos Rápidos
+      return item.id === 'dashboard' || item.id === 'links-rapidos';
     }
     if (userRole === 'proprietario' || userRole === 'inquilino') {
       // Proprietário e Inquilino veem apenas o módulo de Portais
@@ -134,31 +134,33 @@ export default function Sidebar({ isOpen, onClose }) {
           </div>
 
           {/* Notification Bell Icon on Far Right */}
-          <div 
-            style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px', cursor: 'pointer', marginLeft: 'auto' }}
-            onClick={(e) => {
-              e.stopPropagation();
-              setActiveModule('conversas');
-              if (onClose) onClose();
-            }}
-            title={hasUnreadMessages ? `${unreadChats.length} nova(s) mensagem(ns) não lida(s)` : 'Sem novas mensagens'}
-          >
-            <Bell size={16} style={{ color: 'var(--text-tertiary)' }} />
-            {hasUnreadMessages && (
-              <span 
-                style={{
-                  position: 'absolute',
-                  top: '2px',
-                  right: '2px',
-                  width: '7px',
-                  height: '7px',
-                  backgroundColor: '#ef4444',
-                  borderRadius: '50%',
-                  boxShadow: '0 0 6px #ef4444'
-                }}
-              />
-            )}
-          </div>
+          {userRole !== 'normal' && (
+            <div 
+              style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px', cursor: 'pointer', marginLeft: 'auto' }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveModule('conversas');
+                if (onClose) onClose();
+              }}
+              title={hasUnreadMessages ? `${unreadChats.length} nova(s) mensagem(ns) não lida(s)` : 'Sem novas mensagens'}
+            >
+              <Bell size={16} style={{ color: 'var(--text-tertiary)' }} />
+              {hasUnreadMessages && (
+                <span 
+                  style={{
+                    position: 'absolute',
+                    top: '2px',
+                    right: '2px',
+                    width: '7px',
+                    height: '7px',
+                    backgroundColor: '#ef4444',
+                    borderRadius: '50%',
+                    boxShadow: '0 0 6px #ef4444'
+                  }}
+                />
+              )}
+            </div>
+          )}
         </div>
 
         {/* Context Menu (Dropdown) triggered by Profile Click */}

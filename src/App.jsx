@@ -47,8 +47,8 @@ export default function App() {
 
   // 2. Admin / Imobiliária View
   const renderActiveModule = () => {
-    // Bloqueia acesso a Configurações para usuário de cargo 'Normal'
-    if (normalizedRole === 'normal' && activeModule === 'configuracoes') {
+    // Usuário de cargo 'Normal' vê apenas Dashboard, Atalhos Rápidos e Perfil
+    if (normalizedRole === 'normal' && !['dashboard', 'links-rapidos', 'perfil'].includes(activeModule)) {
       return <Dashboard />;
     }
 

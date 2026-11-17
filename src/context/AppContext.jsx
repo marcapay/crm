@@ -653,17 +653,7 @@ export const AppProvider = ({ children }) => {
       return { success: true };
     }
 
-    // 2. Check against active profile fallback
-    const activeEmail = (profile?.email || 'admin@admin.com').trim().toLowerCase();
-    const activePassword = (profile?.password || 'admin').trim();
-    if (cleanEmail === activeEmail && cleanPassword === activePassword) {
-      setIsAuthenticated(true);
-      localStorage.setItem('eloos_auth', 'true');
-      registerActivityLog(`${profile.name || 'Admin User'} (Administrador)`, 'Fez login na plataforma CRM');
-      return { success: true };
-    }
-
-    // 3. Check against global systemUsers list
+    // 2. Check against global systemUsers list
     const matched = systemUsers.find(u =>
       (u.email || '').trim().toLowerCase() === cleanEmail &&
       (u.password || '').trim() === cleanPassword
@@ -673,15 +663,27 @@ export const AppProvider = ({ children }) => {
         id: matched.id,
         name: matched.name,
         email: matched.email,
-        role: matched.role || 'Administrador',
+        role: matched.role || 'Normal',
         phone: matched.phone || '',
-        avatar: matched.avatar || '',
+        avatar: matched.avatar || initialProfile.avatar,
         password: matched.password
       };
       setProfile(newProfile);
+      setActiveModule('dashboard');
       setIsAuthenticated(true);
       localStorage.setItem('eloos_auth', 'true');
       registerActivityLog(matched.name, 'Fez login na plataforma');
+      return { success: true };
+    }
+
+    // 3. Check against active profile fallback
+    const activeEmail = (profile?.email || 'admin@admin.com').trim().toLowerCase();
+    const activePassword = (profile?.password || 'admin').trim();
+    if (cleanEmail === activeEmail && cleanPassword === activePassword) {
+      setActiveModule('dashboard');
+      setIsAuthenticated(true);
+      localStorage.setItem('eloos_auth', 'true');
+      registerActivityLog(`${profile.name || 'Admin User'} (${profile.role || 'Administrador'})`, 'Fez login na plataforma CRM');
       return { success: true };
     }
 
@@ -2776,7 +2778,7 @@ export const AppProvider = ({ children }) => {
       id: `u_${Date.now()}`,
       name,
       email: email.trim(),
-      role: 'Administrador',
+      role: 'Normal',
       status: 'Ativo',
       password: password.trim()
     };
