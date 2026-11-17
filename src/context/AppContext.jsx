@@ -75,19 +75,22 @@ export const AppProvider = ({ children }) => {
   const [activeChatClientId, setActiveChatClientId] = useState(null);
   const isSyncingRef = useRef(false);
 
-  // Auto-authenticate via URL parameters (e.g., from sitearaujoimoveis.vercel.app/entrar)
+  // Auto-authenticate via URL parameters (e.g., from www.araujoimoveiscaratinga.com.br/entrar)
   useEffect(() => {
     try {
       if (typeof window !== 'undefined' && window.location.search) {
         const params = new URLSearchParams(window.location.search);
         const emailParam = params.get('email') || params.get('identifier');
         const passParam = params.get('password') || params.get('pass');
-        const roleParam = params.get('role') || params.get('portal');
+        const roleParam = params.get('role') || params.get('portal') || params.get('area');
 
         if (emailParam) {
           const cleanEmail = emailParam.trim().toLowerCase();
           const cleanPass = passParam ? passParam.trim() : '';
-          const cleanRole = roleParam ? (roleParam.toLowerCase().includes('inquilino') || roleParam.toLowerCase().includes('locatario') ? 'inquilino' : 'proprietario') : 'proprietario';
+          const rawRoleLower = (roleParam || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+          const cleanRole = rawRoleLower.includes('admin') ? 'Administrador' :
+                            rawRoleLower.includes('normal') ? 'Normal' :
+                            (rawRoleLower.includes('inquilino') || rawRoleLower.includes('locatario')) ? 'inquilino' : 'proprietario';
 
           const allPortalUsers = safeJsonParse(localStorage.getItem('araujo_portal_users'), []);
           const allSystemUsers = safeJsonParse(localStorage.getItem('crmbase_system_users'), []);
@@ -111,10 +114,14 @@ export const AppProvider = ({ children }) => {
           });
 
           if (matchedUser) {
-            setProfile(matchedUser);
+            const resolvedUser = {
+              ...matchedUser,
+              role: matchedUser.role || matchedUser.cargo || cleanRole
+            };
+            setProfile(resolvedUser);
             setIsAuthenticated(true);
             localStorage.setItem('eloos_auth', 'true');
-            localStorage.setItem('eloos_profile', JSON.stringify(matchedUser));
+            localStorage.setItem('eloos_profile', JSON.stringify(resolvedUser));
           } else {
             // Dynamically construct profile for this email & role so user lands in their own portal
             const rawName = cleanEmail.split('@')[0];

@@ -1,4 +1,4 @@
-// Serverless API endpoint for external site authentication (sitearaujoimoveis.vercel.app)
+// Serverless API endpoint for external site authentication (www.araujoimoveiscaratinga.com.br)
 const BUCKET_ID = process.env.KV_BUCKET_ID || "araujo_imoveis_crm_users_v2";
 
 function decodeBase64Url(safeStr) {
@@ -9,7 +9,7 @@ function decodeBase64Url(safeStr) {
 }
 
 export default async function handler(req, res) {
-  // CORS Headers allowing cross-origin requests from sitearaujoimoveis.vercel.app
+  // CORS Headers allowing cross-origin requests from www.araujoimoveiscaratinga.com.br
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -74,7 +74,9 @@ export default async function handler(req, res) {
     });
 
     if (matched) {
-      const redirectUrl = `https://crmaraujoimoveis.vercel.app/?email=${encodeURIComponent(matched.email || cleanEmail)}&password=${encodeURIComponent(matched.password || cleanPassword)}`;
+      const rawRole = (matched.role || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      const roleParam = rawRole.includes('admin') ? 'admin' : rawRole.includes('inquilino') ? 'inquilino' : 'proprietario';
+      const redirectUrl = `https://crmaraujoimoveis.vercel.app/?role=${encodeURIComponent(roleParam)}&portal=${encodeURIComponent(roleParam)}&email=${encodeURIComponent(matched.email || cleanEmail)}&password=${encodeURIComponent(matched.password || cleanPassword)}`;
       
       return res.status(200).json({
         success: true,
