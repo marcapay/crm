@@ -141,6 +141,12 @@ export default function FichaPrintTemplate({ ficha, isBlank = false, onClose, on
                 {renderRadioBox('Sim', data.dificuldadeAcesso === 'Sim' || data.dificuldadeAcesso === true)}
               </div>
             </div>
+            {data.observacoesAcesso && (
+              <div className="field-group span-2">
+                <span className="field-label">Obs. sobre o Acesso:</span>
+                <span className="field-content">{data.observacoesAcesso}</span>
+              </div>
+            )}
             <div className="field-group span-2 flex-row-wrap">
               <div className="check-item">
                 <span className="field-label">Água ligada:</span>
@@ -169,6 +175,21 @@ export default function FichaPrintTemplate({ ficha, isBlank = false, onClose, on
                 ) : (data.observacoesImovel || 'Nenhuma observação registrada.')}
               </span>
             </div>
+            {data.imagensImovel && data.imagensImovel.length > 0 && (
+              <div className="field-group span-2 no-print-break" style={{ marginTop: '6px' }}>
+                <span className="field-label">Fotos Anexadas do Imóvel ({data.imagensImovel.length}):</span>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '4px' }}>
+                  {data.imagensImovel.slice(0, 6).map((imgUrl, i) => (
+                    <img 
+                      key={i} 
+                      src={imgUrl} 
+                      alt={`Foto ${i + 1}`} 
+                      style={{ width: '56px', height: '56px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #cbd5e1' }} 
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </section>
 

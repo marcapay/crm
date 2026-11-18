@@ -11,7 +11,11 @@ import {
   Phone,
   MapPin,
   Clock,
-  Sparkles
+  Sparkles,
+  Camera,
+  Upload,
+  X,
+  Trash2
 } from 'lucide-react';
 
 export default function FichaPublicaCliente() {
@@ -34,10 +38,12 @@ export default function FichaPublicaCliente() {
     nomeAcesso: '',
     telefoneAcesso: '',
     dificuldadeAcesso: 'Não',
+    observacoesAcesso: '',
     aguaLigada: 'Sim',
     energiaLigada: 'Sim',
     animaisImovel: 'Não',
     observacoesImovel: '',
+    imagensImovel: [],
 
     dataVisita: defaultToday,
     horarioVisita: '09:00',
@@ -60,6 +66,54 @@ export default function FichaPublicaCliente() {
     if (formErrors[field]) {
       setFormErrors(prev => ({ ...prev, [field]: null }));
     }
+  };
+
+  const handleImageUpload = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
+    files.forEach(file => {
+      if (!file.type.startsWith('image/')) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          const maxDim = 1200;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+
+          setFormData(prev => ({
+            ...prev,
+            imagensImovel: [...(prev.imagensImovel || []), compressedDataUrl]
+          }));
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = '';
+  };
+
+  const handleRemoveImage = (indexToRemove) => {
+    setFormData(prev => ({
+      ...prev,
+      imagensImovel: (prev.imagensImovel || []).filter((_, idx) => idx !== indexToRemove)
+    }));
   };
 
   const validateForm = () => {
@@ -415,6 +469,17 @@ export default function FichaPublicaCliente() {
               </div>
 
               <div className="form-group span-2">
+                <label className="form-label">Observações sobre o Acesso / Local:</label>
+                <input 
+                  type="text"
+                  className="form-input"
+                  placeholder={formData.dificuldadeAcesso === 'Sim' ? "Descreva a dificuldade de acesso (chave dura, interfone quebrado, código, portão...)" : "Observações ou detalhes adicionais sobre o acesso (opcional)..."}
+                  value={formData.observacoesAcesso}
+                  onChange={e => handleFieldChange('observacoesAcesso', e.target.value)}
+                />
+              </div>
+
+              <div className="form-group span-2">
                 <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
                     <span className="form-label" style={{ margin: 0 }}>Água ligada:</span>
@@ -466,6 +531,118 @@ export default function FichaPublicaCliente() {
                   value={formData.observacoesImovel}
                   onChange={e => handleFieldChange('observacoesImovel', e.target.value)}
                 />
+              </div>
+
+              {/* Fotos e Imagens do Imóvel */}
+              <div className="form-group span-2" style={{ marginTop: '0.5rem' }}>
+                <label className="form-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: '600' }}>
+                    <Camera size={16} style={{ color: 'var(--accent-cyan)' }} />
+                    Fotos e Imagens do Imóvel:
+                  </span>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
+                    {(formData.imagensImovel || []).length} foto(s) anexada(s)
+                  </span>
+                </label>
+
+                {/* Upload Area */}
+                <div style={{
+                  border: '2px dashed var(--glass-border)',
+                  borderRadius: '12px',
+                  padding: '1.25rem',
+                  textAlign: 'center',
+                  backgroundColor: 'var(--bg-secondary)',
+                  position: 'relative',
+                  cursor: 'pointer',
+                  transition: 'border-color 0.2s ease',
+                }}>
+                  <input 
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleImageUpload}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '100%',
+                      opacity: 0,
+                      cursor: 'pointer'
+                    }}
+                  />
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', pointerEvents: 'none' }}>
+                    <div style={{
+                      width: '42px',
+                      height: '42px',
+                      borderRadius: '50%',
+                      backgroundColor: 'rgba(56, 189, 248, 0.12)',
+                      color: 'var(--accent-cyan)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      <Upload size={20} />
+                    </div>
+                    <div style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--text-primary)' }}>
+                      Clique ou arraste para adicionar fotos do imóvel
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
+                      Você pode tirar fotos pela câmera do celular ou escolher da galeria
+                    </div>
+                  </div>
+                </div>
+
+                {/* Previews Grid */}
+                {(formData.imagensImovel || []).length > 0 && (
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(85px, 1fr))',
+                    gap: '0.75rem',
+                    marginTop: '0.875rem'
+                  }}>
+                    {(formData.imagensImovel || []).map((imgUrl, idx) => (
+                      <div key={idx} style={{
+                        position: 'relative',
+                        aspectRatio: '1',
+                        borderRadius: '8px',
+                        overflow: 'hidden',
+                        border: '1px solid var(--glass-border)',
+                        backgroundColor: 'var(--bg-tertiary)'
+                      }}>
+                        <img 
+                          src={imgUrl} 
+                          alt={`Foto ${idx + 1}`}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }} 
+                          onClick={() => window.open(imgUrl, '_blank')}
+                          title="Clique para abrir em tamanho real"
+                        />
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); handleRemoveImage(idx); }}
+                          style={{
+                            position: 'absolute',
+                            top: '4px',
+                            right: '4px',
+                            width: '22px',
+                            height: '22px',
+                            borderRadius: '50%',
+                            backgroundColor: 'rgba(239, 68, 68, 0.9)',
+                            color: '#ffffff',
+                            border: 'none',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer'
+                          }}
+                          title="Remover foto"
+                        >
+                          <X size={13} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
