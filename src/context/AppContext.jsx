@@ -3546,14 +3546,14 @@ ${fullSearchContext.substring(0, 4000)}
         xhrAi.setRequestHeader('Content-Type', 'application/json');
         xhrAi.setRequestHeader('Authorization', `Bearer ${openAiApiKey}`);
         
+        const isReasoningModel = /^(o1|o3)/i.test(openAiModel);
         const payload = {
           model: openAiModel,
           messages: [
-            { role: 'system', content: systemPrompt },
+            { role: (openAiModel.startsWith('o1-mini') || openAiModel.startsWith('o1-preview')) ? 'user' : 'system', content: systemPrompt },
             { role: 'user', content: formattedUserContent }
           ],
-          temperature: 0.2,
-          max_tokens: 300
+          ...(isReasoningModel ? { max_completion_tokens: 500 } : { temperature: 0.2, max_tokens: 300 })
         };
 
         xhrAi.send(JSON.stringify(payload));

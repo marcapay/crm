@@ -43,6 +43,45 @@ const EVO_CONFIG = {
   encodedInstanceName: encodeURIComponent(instanceName)
 };
 
+export const KNOWN_AI_MODELS = {
+  openai: [
+    { value: 'gpt-4o', label: 'gpt-4o (Recomendado - Multimodal & Visão)' },
+    { value: 'gpt-4o-mini', label: 'gpt-4o-mini (Ultra Rápido & Econômico)' },
+    { value: 'o3-mini', label: 'o3-mini (Raciocínio Rápido & Lógica Avançada)' },
+    { value: 'o1', label: 'o1 (Raciocínio Profundo & Resolução Complexa)' },
+    { value: 'o1-mini', label: 'o1-mini (Raciocínio Especializado em Lógica & Código)' },
+    { value: 'o1-preview', label: 'o1-preview (Raciocínio Preview)' },
+    { value: 'gpt-4.5-preview', label: 'gpt-4.5-preview (Maior Modelo OpenAI)' },
+    { value: 'chatgpt-4o-latest', label: 'chatgpt-4o-latest (Versão Dinâmica Atualizada)' },
+    { value: 'gpt-4-turbo', label: 'gpt-4-turbo (GPT-4 Turbo)' },
+    { value: 'gpt-3.5-turbo', label: 'gpt-3.5-turbo (Legado Rápido)' }
+  ],
+  gemini: [
+    { value: 'gemini-2.5-flash', label: 'gemini-2.5-flash (Mais Recente, Ultra Rápido & Eficiente)' },
+    { value: 'gemini-2.5-pro', label: 'gemini-2.5-pro (Raciocínio Avançado & Código)' },
+    { value: 'gemini-2.0-flash', label: 'gemini-2.0-flash (Nova Geração Multimodal)' },
+    { value: 'gemini-2.0-flash-lite', label: 'gemini-2.0-flash-lite (Ultra Leve & Baixa Latência)' },
+    { value: 'gemini-1.5-pro', label: 'gemini-1.5-pro (Contexto Extenso de 2M Tokens)' },
+    { value: 'gemini-1.5-flash', label: 'gemini-1.5-flash (Alta Velocidade & Econômico)' },
+    { value: 'gemini-1.5-flash-8b', label: 'gemini-1.5-flash-8b (Super Econômico)' }
+  ],
+  groq: [
+    { value: 'deepseek-r1-distill-llama-70b', label: 'deepseek-r1-distill-llama-70b (DeepSeek R1 - Raciocínio)' },
+    { value: 'llama-3.3-70b-versatile', label: 'llama-3.3-70b-versatile (Meta Llama 3.3 70B Versatile)' },
+    { value: 'llama-3.1-70b-versatile', label: 'llama-3.1-70b-versatile (Meta Llama 3.1 70B Versatile)' },
+    { value: 'llama-3.1-8b-instant', label: 'llama-3.1-8b-instant (Meta Llama 3.1 8B Instantâneo)' },
+    { value: 'mixtral-8x7b-32768', label: 'mixtral-8x7b-32768 (Mistral 8x7B 32k)' },
+    { value: 'gemma2-9b-it', label: 'gemma2-9b-it (Google Gemma 2 9B)' },
+    { value: 'qwen-qwq-32b', label: 'qwen-qwq-32b (Qwen QwQ 32B Raciocínio)' }
+  ],
+  anthropic: [
+    { value: 'claude-3-7-sonnet-latest', label: 'claude-3-7-sonnet-latest (Claude 3.7 Sonnet - Raciocínio Híbrido)' },
+    { value: 'claude-3-5-sonnet-latest', label: 'claude-3-5-sonnet-latest (Claude 3.5 Sonnet - Alta Precisão)' },
+    { value: 'claude-3-5-haiku-latest', label: 'claude-3-5-haiku-latest (Claude 3.5 Haiku - Ultra Rápido)' },
+    { value: 'claude-3-opus-latest', label: 'claude-3-opus-latest (Claude 3 Opus - Conhecimento Profundo)' }
+  ]
+};
+
 export default function Configuracoes() {
   const { 
     theme, 
@@ -304,6 +343,8 @@ export default function Configuracoes() {
   const [sdrModel, setSdrModel] = useState(() => {
     return localStorage.getItem('crmbase_sdr_model') || 'gpt-4o';
   });
+  const currentProviderModels = KNOWN_AI_MODELS[sdrProvider] || [];
+  const isCustomModel = sdrModel === 'custom' || (!currentProviderModels.some(m => m.value === sdrModel) && sdrModel !== '');
   const [sdrReplyWithAgent, setSdrReplyWithAgent] = useState(() => {
     return localStorage.getItem('crmbase_sdr_reply_agent') === 'true';
   });
@@ -1755,10 +1796,10 @@ Seu cadastro foi realizado com sucesso e seu acesso ao sistema *${clientName}* e
                         onChange={e => {
                           const newProvider = e.target.value;
                           setSdrProvider(newProvider);
-                          if (newProvider === 'openai') setSdrModel('gpt-4o-mini');
+                          if (newProvider === 'openai') setSdrModel('gpt-4o');
                           else if (newProvider === 'groq') setSdrModel('llama-3.3-70b-versatile');
                           else if (newProvider === 'gemini') setSdrModel('gemini-2.5-flash');
-                          else if (newProvider === 'anthropic') setSdrModel('claude-3-5-sonnet-latest');
+                          else if (newProvider === 'anthropic') setSdrModel('claude-3-7-sonnet-latest');
                         }}
                         style={{
                           width: '100%',
@@ -1871,8 +1912,14 @@ Seu cadastro foi realizado com sucesso e seu acesso ao sistema *${clientName}* e
                       </label>
                       <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                         <select
-                          value={sdrModel}
-                          onChange={e => setSdrModel(e.target.value)}
+                          value={isCustomModel ? 'custom' : sdrModel}
+                          onChange={e => {
+                            if (e.target.value === 'custom') {
+                              setSdrModel('custom');
+                            } else {
+                              setSdrModel(e.target.value);
+                            }
+                          }}
                           style={{
                             width: '100%',
                             backgroundColor: 'transparent',
@@ -1888,39 +1935,14 @@ Seu cadastro foi realizado com sucesso e seu acesso ao sistema *${clientName}* e
                             MozAppearance: 'none'
                           }}
                         >
-                          {sdrProvider === 'openai' && (
-                            <>
-                              <option value="gpt-4o" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>gpt-4o (Recomendado - Multimodal & Visão)</option>
-                              <option value="gpt-4o-mini" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>gpt-4o-mini (Ultra Rápido & Econômico)</option>
-                              <option value="o3-mini" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>o3-mini (Raciocínio Rápido & Lógica)</option>
-                              <option value="o1" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>o1 (Raciocínio Profundo)</option>
-                              <option value="gpt-4.5-preview" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>gpt-4.5-preview (Alta Capacidade)</option>
-                              <option value="gpt-4-turbo" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>gpt-4-turbo</option>
-                            </>
-                          )}
-                          {sdrProvider === 'groq' && (
-                            <>
-                              <option value="llama-3.3-70b-versatile" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>llama-3.3-70b-versatile</option>
-                              <option value="deepseek-r1-distill-llama-70b" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>deepseek-r1-distill-llama-70b</option>
-                              <option value="llama-3.1-8b-instant" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>llama-3.1-8b-instant</option>
-                              <option value="mixtral-8x7b-32768" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>mixtral-8x7b-32768</option>
-                            </>
-                          )}
-                          {sdrProvider === 'gemini' && (
-                            <>
-                              <option value="gemini-2.5-flash" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>gemini-2.5-flash (Mais Recente & Rápido)</option>
-                              <option value="gemini-2.5-pro" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>gemini-2.5-pro (Raciocínio Completo)</option>
-                              <option value="gemini-2.0-flash" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>gemini-2.0-flash</option>
-                              <option value="gemini-1.5-pro" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>gemini-1.5-pro</option>
-                            </>
-                          )}
-                          {sdrProvider === 'anthropic' && (
-                            <>
-                              <option value="claude-3-5-sonnet-latest" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>claude-3.5-sonnet</option>
-                              <option value="claude-3-5-haiku-latest" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>claude-3.5-haiku</option>
-                              <option value="claude-3-opus-latest" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>claude-3-opus</option>
-                            </>
-                          )}
+                          {currentProviderModels.map(m => (
+                            <option key={m.value} value={m.value} style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
+                              {m.label}
+                            </option>
+                          ))}
+                          <option value="custom" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--accent-primary)', fontWeight: '600' }}>
+                            + Personalizado (Digitar outro modelo...)
+                          </option>
                         </select>
                         <button
                           type="button"
@@ -1946,6 +1968,38 @@ Seu cadastro foi realizado com sucesso e seu acesso ao sistema *${clientName}* e
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                         </button>
                       </div>
+                      {isCustomModel && (
+                        <div style={{ marginTop: '0.625rem', position: 'relative' }}>
+                          <label style={{
+                            position: 'absolute',
+                            top: '-8px',
+                            left: '10px',
+                            backgroundColor: 'var(--bg-tertiary)',
+                            padding: '0 4px',
+                            fontSize: '0.6875rem',
+                            fontWeight: '500',
+                            color: 'var(--accent-primary)'
+                          }}>
+                            ID do Modelo Personalizado
+                          </label>
+                          <input
+                            type="text"
+                            value={sdrModel === 'custom' ? '' : sdrModel}
+                            onChange={e => setSdrModel(e.target.value)}
+                            placeholder="Digite o ID exato do modelo (ex: gpt-4o-2024-11-20)"
+                            style={{
+                              width: '100%',
+                              backgroundColor: 'transparent',
+                              border: '1px solid var(--accent-primary)',
+                              borderRadius: '6px',
+                              padding: '0.625rem 0.75rem',
+                              fontSize: '0.8125rem',
+                              color: 'var(--text-primary)',
+                              outline: 'none'
+                            }}
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
 
