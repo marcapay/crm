@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useApp } from '../context/AppContext';
+import { useApp, isMessageUnder30Days } from '../context/AppContext';
 import ClientLogo from './ClientLogo';
 import {
   Home,
@@ -83,7 +83,7 @@ export default function AreaInquilino() {
   );
 
   const isTenantAdmin = (safeProfile.role || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') === 'administrador' || (safeProfile.role || '').toLowerCase() === 'admin';
-  const myMessages = (portalMessages || []).filter(m => {
+  const myMessages = (portalMessages || []).filter(isMessageUnder30Days).filter(m => {
     if (!m) return false;
     if (isTenantAdmin) return true;
 

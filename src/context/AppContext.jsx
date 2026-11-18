@@ -54,6 +54,58 @@ const safeJsonParse = (str, fallback) => {
   }
 };
 
+export const isMessageUnder30Days = (msg) => {
+  if (!msg) return false;
+  const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+  const now = Date.now();
+
+  let msgTime = null;
+
+  if (typeof msg.timestamp === 'number' && !isNaN(msg.timestamp)) {
+    msgTime = msg.timestamp;
+  } else if (msg.createdAt) {
+    const t = new Date(msg.createdAt).getTime();
+    if (!isNaN(t)) msgTime = t;
+  } else if (typeof msg.id === 'string' && msg.id.startsWith('msg_')) {
+    const rawNum = Number(msg.id.replace('msg_', ''));
+    if (!isNaN(rawNum) && rawNum > 1000000000000) {
+      msgTime = rawNum;
+    }
+  }
+
+  if (!msgTime && typeof msg.date === 'string') {
+    const direct = new Date(msg.date).getTime();
+    if (!isNaN(direct) && direct > 1000000000000) {
+      msgTime = direct;
+    } else {
+      // Parse pt-BR "DD/MM/YYYY, HH:mm:ss" or "DD/MM/YYYY"
+      const match = msg.date.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[,\s]+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+      if (match) {
+        const d = parseInt(match[1], 10);
+        const m = parseInt(match[2], 10) - 1;
+        const y = parseInt(match[3], 10);
+        const h = match[4] ? parseInt(match[4], 10) : 0;
+        const min = match[5] ? parseInt(match[5], 10) : 0;
+        const s = match[6] ? parseInt(match[6], 10) : 0;
+        const parsed = new Date(y, m, d, h, min, s).getTime();
+        if (!isNaN(parsed)) msgTime = parsed;
+      }
+    }
+  }
+
+  // If timestamp could not be determined at all, keep it
+  if (!msgTime) {
+    return true;
+  }
+
+  return (now - msgTime) <= THIRTY_DAYS_MS;
+};
+
+export const filterMessagesUnder30Days = (messages) => {
+  if (!Array.isArray(messages)) return [];
+  return messages.filter(isMessageUnder30Days);
+};
+
 export const getDeletedUsers = () => {
   try {
     const saved = localStorage.getItem('crmbase_deleted_users');
@@ -534,7 +586,8 @@ export const AppProvider = ({ children }) => {
   const [portalMessages, setPortalMessages] = useState(() => {
     const saved = localStorage.getItem('araujo_portal_messages');
     const list = safeJsonParse(saved, initialPortalMessages);
-    return list.filter(m => m.id !== 'msg_1' && m.id !== 'msg_2');
+    const cleaned = list.filter(m => m.id !== 'msg_1' && m.id !== 'msg_2');
+    return filterMessagesUnder30Days(cleaned);
   });
 
   const [activityLogs, setActivityLogs] = useState(() => {
@@ -553,9 +606,35 @@ export const AppProvider = ({ children }) => {
   useEffect(() => { localStorage.setItem('araujo_portal_contracts', JSON.stringify(contracts)); }, [contracts]);
   useEffect(() => { localStorage.setItem('araujo_portal_financial_records', JSON.stringify(financialRecords)); }, [financialRecords]);
   useEffect(() => { localStorage.setItem('araujo_portal_maintenance_requests', JSON.stringify(maintenanceRequests)); }, [maintenanceRequests]);
-  useEffect(() => { localStorage.setItem('araujo_portal_messages', JSON.stringify(portalMessages)); }, [portalMessages]);
+  useEffect(() => { 
+    const filtered = filterMessagesUnder30Days(portalMessages);
+    localStorage.setItem('araujo_portal_messages', JSON.stringify(filtered)); 
+  }, [portalMessages]);
   useEffect(() => { localStorage.setItem('araujo_portal_activity_logs', JSON.stringify(activityLogs)); }, [activityLogs]);
   useEffect(() => { localStorage.setItem('crmbase_fichas_visita', JSON.stringify(fichasVisita)); }, [fichasVisita]);
+
+  // Rotina de limpeza automática: remove mensagens da central de recados com mais de 30 dias
+  useEffect(() => {
+    const purgeOldPortalMessages = () => {
+      setPortalMessages(prev => {
+        const filtered = filterMessagesUnder30Days(prev);
+        if (filtered.length !== prev.length) {
+          localStorage.setItem('araujo_portal_messages', JSON.stringify(filtered));
+          return filtered;
+        }
+        return prev;
+      });
+    };
+
+    purgeOldPortalMessages();
+    const interval = setInterval(purgeOldPortalMessages, 30 * 60 * 1000); // Roda a cada 30 minutos
+    window.addEventListener('focus', purgeOldPortalMessages);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', purgeOldPortalMessages);
+    };
+  }, []);
 
   // Auto-sync non-deleted users to cloud KV API for site authentication
   useEffect(() => {
@@ -811,8 +890,9 @@ export const AppProvider = ({ children }) => {
   };
 
   const sendPortalMessage = (msg) => {
+    const nowTs = Date.now();
     const newMsg = {
-      id: 'msg_' + Date.now(),
+      id: 'msg_' + nowTs,
       senderId: msg.senderId || profile?.id || '',
       senderEmail: msg.senderEmail || profile?.email || '',
       senderRole: msg.senderRole || profile?.role || 'inquilino',
@@ -823,10 +903,20 @@ export const AppProvider = ({ children }) => {
       subject: msg.subject || 'Mensagem do Portal',
       body: msg.body || '',
       date: new Date().toLocaleString('pt-BR'),
+      createdAt: new Date().toISOString(),
+      timestamp: nowTs,
       read: false
     };
-    setPortalMessages(prev => [newMsg, ...prev]);
+    setPortalMessages(prev => filterMessagesUnder30Days([newMsg, ...prev]));
     registerActivityLog(profile?.name || 'Usuário', `Enviou mensagem no portal: "${newMsg.subject}"`);
+  };
+
+  const deletePortalMessage = (msgId) => {
+    setPortalMessages(prev => {
+      const next = prev.filter(m => m.id !== msgId);
+      localStorage.setItem('araujo_portal_messages', JSON.stringify(next));
+      return next;
+    });
   };
 
   const updateMaintenanceStatus = (requestId, newStatus, budgetValue, budgetSupplier, scheduledDate, scheduledTime) => {
@@ -4604,6 +4694,7 @@ ${fullSearchContext.substring(0, 4000)}
       authorizeMaintenance,
       createMaintenanceRequest,
       sendPortalMessage,
+      deletePortalMessage,
       updateMaintenanceStatus,
       registerActivityLog,
       quickLoginPortal,

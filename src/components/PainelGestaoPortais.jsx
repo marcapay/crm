@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useApp } from '../context/AppContext';
+import { useApp, isMessageUnder30Days } from '../context/AppContext';
 import {
   Users,
   Building2,
@@ -35,6 +35,7 @@ export default function PainelGestaoPortais() {
     activityLogs = [],
     updateMaintenanceStatus,
     sendPortalMessage,
+    deletePortalMessage,
     quickLoginPortal,
     deletePortalUser,
     deleteUser,
@@ -92,7 +93,7 @@ export default function PainelGestaoPortais() {
 
   const isUserAdmin = (profile?.role || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') === 'administrador' || (profile?.role || '').toLowerCase() === 'admin';
 
-  const visiblePortalMessages = (portalMessages || []).filter(msg => {
+  const visiblePortalMessages = (portalMessages || []).filter(isMessageUnder30Days).filter(msg => {
     if (!msg) return false;
     if (isUserAdmin) return true;
 
@@ -660,7 +661,24 @@ export default function PainelGestaoPortais() {
       {activeSubTab === 'mensagens' && (
         <div style={styles.tabSection}>
           <div style={styles.sectionTitleRow}>
-            <h3>Central de Mensagens do Portal</h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <h3 style={{ margin: 0 }}>Central de Mensagens do Portal</h3>
+              <span style={{
+                fontSize: '0.6875rem',
+                padding: '0.2rem 0.55rem',
+                borderRadius: '12px',
+                backgroundColor: 'rgba(56, 189, 248, 0.12)',
+                color: 'var(--accent-cyan)',
+                border: '1px solid rgba(56, 189, 248, 0.25)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                fontWeight: '500'
+              }}>
+                <Clock size={11} />
+                Limpeza automática a cada 30 dias ativa
+              </span>
+            </div>
             <button style={styles.btnActionPrimary} onClick={() => setShowMessageModal(true)}>
               <Send size={14} />
               <span>Nova Mensagem</span>
@@ -670,14 +688,39 @@ export default function PainelGestaoPortais() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             {visiblePortalMessages.length === 0 ? (
               <div style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-tertiary)', background: 'var(--glass-highlight)', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
-                Nenhuma mensagem na central de recados.
+                Nenhuma mensagem na central de recados nos últimos 30 dias.
               </div>
             ) : (
               visiblePortalMessages.map(msg => (
                 <div key={msg.id} style={styles.msgAdminCard}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <strong style={{ color: '#ffffff' }}>{msg.senderName} ({msg.senderRole})</strong>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>{msg.date}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>{msg.date}</span>
+                      {deletePortalMessage && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (window.confirm('Deseja apagar esta mensagem da central de recados?')) {
+                              deletePortalMessage(msg.id);
+                            }
+                          }}
+                          title="Apagar mensagem"
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            color: 'var(--text-tertiary)',
+                            cursor: 'pointer',
+                            padding: '2px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            transition: 'opacity 0.2s'
+                          }}
+                        >
+                          <Trash2 size={13} style={{ color: 'var(--accent-danger)' }} />
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <h4 style={{ color: 'var(--accent-cyan)', margin: '0.25rem 0' }}>{msg.subject}</h4>
                   <p style={{ color: 'var(--text-secondary)', fontSize: '0.8125rem' }}>{msg.body}</p>
