@@ -20,7 +20,7 @@ function decodeBase64Url(safeStr) {
 export default async function handler(req, res) {
   // CORS Headers
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
@@ -85,12 +85,12 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      const users = req.body;
-      if (!Array.isArray(users)) {
+      const users = Array.isArray(req.body) ? req.body : (req.body?.users && Array.isArray(req.body.users) ? req.body.users : null);
+      if (!users) {
         return res.status(400).json({ error: 'Body must be an array of users' });
       }
 
-      const ids = users.map(u => u.id);
+      const ids = users.map(u => u && u.id).filter(Boolean);
       const encodedList = encodeBase64Url(JSON.stringify(ids));
       
       // Update the user list index
@@ -101,6 +101,7 @@ export default async function handler(req, res) {
 
       // Save each user in parallel
       await Promise.all(users.map(async (user) => {
+        if (!user || !user.id) return;
         const encodedUser = encodeBase64Url(JSON.stringify(user));
         const uRes = await fetch(`https://keyvalue.immanuel.co/api/KeyVal/UpdateValue/${BUCKET_ID}/user_${user.id}/${encodedUser}`, { method: 'POST' });
         if (!uRes.ok) {
@@ -109,6 +110,25 @@ export default async function handler(req, res) {
       }));
 
       return res.status(200).json({ success: true, count: users.length });
+    }
+
+    if (req.method === 'DELETE') {
+      const targetId = req.query?.id || req.body?.id;
+      if (!targetId) return res.status(400).json({ error: 'Missing user id' });
+
+      const listRes = await fetch(`https://keyvalue.immanuel.co/api/KeyVal/GetValue/${BUCKET_ID}/users_list`);
+      if (listRes.ok) {
+        const rawListText = await listRes.text();
+        if (rawListText && rawListText !== '""' && rawListText !== '"null"') {
+          try {
+            const userIds = JSON.parse(decodeBase64Url(rawListText));
+            const updatedIds = (userIds || []).filter(id => id !== targetId);
+            const encodedList = encodeBase64Url(JSON.stringify(updatedIds));
+            await fetch(`https://keyvalue.immanuel.co/api/KeyVal/UpdateValue/${BUCKET_ID}/users_list/${encodedList}`, { method: 'POST' });
+          } catch (e) {}
+        }
+      }
+      return res.status(200).json({ success: true });
     }
 
     return res.status(405).json({ error: 'Method not allowed' });

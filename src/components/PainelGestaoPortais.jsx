@@ -37,6 +37,7 @@ export default function PainelGestaoPortais() {
     sendPortalMessage,
     quickLoginPortal,
     deletePortalUser,
+    deleteUser,
     createProperty,
     createContract,
     recordTenantPayment,
@@ -380,8 +381,13 @@ export default function PainelGestaoPortais() {
                       style={{ padding: '0.5rem', borderRadius: '6px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444', cursor: 'pointer' }}
                       onClick={() => {
                         if (confirm(`Deseja remover o acesso de "${u.name}"?`)) {
-                          setSystemUsers(prev => (prev || []).filter(x => x.id !== u.id && x.email !== u.email));
-                          setPortalUsers(prev => (prev || []).filter(x => x.id !== u.id && x.email !== u.email));
+                          if (typeof deleteUser === 'function') {
+                            deleteUser(u.id, u.email);
+                          } else if (typeof deletePortalUser === 'function') {
+                            deletePortalUser(u.id, u.email);
+                          } else {
+                            setSystemUsers(prev => (prev || []).filter(x => x.id !== u.id && x.email !== u.email));
+                          }
                           setActionNotice(`Acesso de ${u.name} removido.`);
                           setTimeout(() => setActionNotice(''), 3000);
                         }

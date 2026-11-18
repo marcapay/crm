@@ -54,6 +54,7 @@ export default function Configuracoes() {
     updateProfile,
     systemUsers,
     setSystemUsers,
+    deleteUser,
     chats,
     sendMessage,
     clearChat,
@@ -494,7 +495,11 @@ export default function Configuracoes() {
     const user = systemUsers.find(u => u.id === userId);
     if (!user) return;
     if (confirm(`Deseja realmente revogar o acesso de "${user.name}"?`)) {
-      setSystemUsers(prev => prev.filter(u => u.id !== userId));
+      if (typeof deleteUser === 'function') {
+        deleteUser(user.id, user.email);
+      } else {
+        setSystemUsers(prev => prev.filter(u => u.id !== userId));
+      }
     }
   };
 

@@ -54,6 +54,40 @@ const safeJsonParse = (str, fallback) => {
   }
 };
 
+export const getDeletedUsers = () => {
+  try {
+    const saved = localStorage.getItem('crmbase_deleted_users');
+    if (!saved) return [];
+    const parsed = JSON.parse(saved);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    return [];
+  }
+};
+
+export const isUserDeleted = (u, customDeletedList = null) => {
+  if (!u) return false;
+  const list = customDeletedList || getDeletedUsers();
+  if (!Array.isArray(list) || list.length === 0) return false;
+  const uId = (u.id || '').toString().toLowerCase();
+  const uEmail = (u.email || '').trim().toLowerCase();
+  return list.some(d => {
+    if (!d) return false;
+    const dStr = d.toString().trim().toLowerCase();
+    return (uId && dStr === uId) || (uEmail && dStr === uEmail);
+  });
+};
+
+export const unmarkDeletedUser = (emailOrId) => {
+  if (!emailOrId) return;
+  const cleanTarget = emailOrId.toString().trim().toLowerCase();
+  const current = getDeletedUsers();
+  const filtered = current.filter(d => d && d.toString().trim().toLowerCase() !== cleanTarget);
+  try {
+    localStorage.setItem('crmbase_deleted_users', JSON.stringify(filtered));
+  } catch (e) {}
+};
+
 export const AppProvider = ({ children }) => {
   // Authentication State
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
@@ -465,7 +499,7 @@ export const AppProvider = ({ children }) => {
     if (saved) {
       const parsed = safeJsonParse(saved, []);
       if (parsed && Array.isArray(parsed)) {
-        return parsed.filter(u => !isMockPortalUser(u));
+        return parsed.filter(u => !isMockPortalUser(u) && !isUserDeleted(u));
       }
     }
     return [];
@@ -521,31 +555,19 @@ export const AppProvider = ({ children }) => {
   useEffect(() => { localStorage.setItem('araujo_portal_activity_logs', JSON.stringify(activityLogs)); }, [activityLogs]);
   useEffect(() => { localStorage.setItem('crmbase_fichas_visita', JSON.stringify(fichasVisita)); }, [fichasVisita]);
 
-  // Auto-sync all registered users (portalUsers, clients, systemUsers) to cloud KV API for site authentication
+  // Auto-sync non-deleted users to cloud KV API for site authentication
   useEffect(() => {
     const syncUsersToCloud = async () => {
       try {
-        const allPortalUsers = safeJsonParse(localStorage.getItem('araujo_portal_users'), []);
-        const allSystemUsers = safeJsonParse(localStorage.getItem('crmbase_system_users'), []);
-        const allClients = safeJsonParse(localStorage.getItem('eloos_clients'), []);
+        const deleted = getDeletedUsers();
+        const allPortalUsers = safeJsonParse(localStorage.getItem('araujo_portal_users'), []).filter(u => !isUserDeleted(u, deleted));
+        const allSystemUsers = safeJsonParse(localStorage.getItem('crmbase_system_users'), []).filter(u => !isUserDeleted(u, deleted));
 
-        const clientAsUsers = (allClients || [])
-          .filter(c => c && c.email && c.email.includes('@'))
-          .map(c => ({
-            id: c.id,
-            name: c.name || c.nome || 'Cliente CRM',
-            email: c.email.trim().toLowerCase(),
-            role: (c.role || c.tipo || c.situacaoComercial || '').toLowerCase().includes('inquilino') ? 'inquilino' : 
-                  (c.role || c.tipo || c.situacaoComercial || '').toLowerCase().includes('proprietario') ? 'proprietario' : 'proprietario',
-            phone: c.phone || c.telefone || '',
-            password: c.password || '123456'
-          }));
-
-        const unified = [...allPortalUsers, ...allSystemUsers, ...clientAsUsers];
+        const unified = [...allPortalUsers, ...allSystemUsers];
         const uniqueMap = new Map();
         unified.forEach(u => {
-          if (u && u.email) {
-            const key = u.email.trim().toLowerCase();
+          if (u && (u.email || u.id) && !isUserDeleted(u, deleted)) {
+            const key = (u.email || u.id).toString().toLowerCase();
             if (!uniqueMap.has(key)) {
               uniqueMap.set(key, u);
             }
@@ -566,7 +588,7 @@ export const AppProvider = ({ children }) => {
     };
 
     syncUsersToCloud();
-  }, [portalUsers, clients]);
+  }, [portalUsers]);
 
 
 
@@ -823,6 +845,7 @@ export const AppProvider = ({ children }) => {
   };
 
   const createPortalUser = (userData) => {
+    if (userData.email) unmarkDeletedUser(userData.email);
     const newUser = {
       id: 'user_' + Date.now(),
       name: userData.name || 'Novo Usuário',
@@ -841,9 +864,78 @@ export const AppProvider = ({ children }) => {
     return newUser;
   };
 
-  const deletePortalUser = (userId) => {
-    setPortalUsers(prev => prev.filter(u => u.id !== userId));
-    registerActivityLog(profile?.name || 'Imobiliária', `Removeu acesso de usuário id: ${userId}`);
+  const deleteUser = (userId, userEmail = null) => {
+    const idStr = (userId || '').toString();
+    const emailStr = (userEmail || '').trim().toLowerCase();
+
+    // 1. Locate user in systemUsers or portalUsers to capture both id and email
+    const allKnown = [...systemUsers, ...portalUsers];
+    const foundUser = allKnown.find(u => 
+      (idStr && (u.id || '').toString() === idStr) || 
+      (emailStr && (u.email || '').trim().toLowerCase() === emailStr)
+    );
+
+    const targetId = (foundUser?.id || idStr || '').toString().toLowerCase();
+    const targetEmail = (foundUser?.email || emailStr || '').trim().toLowerCase();
+
+    // 2. Persist to crmbase_deleted_users tombstone list
+    const currentDeleted = getDeletedUsers();
+    const toAdd = [];
+    if (targetId) toAdd.push(targetId);
+    if (targetEmail) toAdd.push(targetEmail);
+    const updatedDeleted = Array.from(new Set([...currentDeleted, ...toAdd]));
+    try {
+      localStorage.setItem('crmbase_deleted_users', JSON.stringify(updatedDeleted));
+    } catch (e) {}
+
+    // 3. Remove from systemUsers
+    const nextSystem = systemUsers.filter(u => !isUserDeleted(u, updatedDeleted));
+    setSystemUsersState(nextSystem);
+    try {
+      localStorage.setItem('crmbase_system_users', JSON.stringify(nextSystem));
+    } catch (e) {}
+
+    // 4. Remove from portalUsers
+    const nextPortal = portalUsers.filter(u => !isUserDeleted(u, updatedDeleted));
+    setPortalUsers(nextPortal);
+    try {
+      localStorage.setItem('araujo_portal_users', JSON.stringify(nextPortal));
+    } catch (e) {}
+
+    // 5. If this email belonged to a client, clear its credentials
+    if (targetEmail) {
+      setClients(prev => (prev || []).map(c => {
+        if ((c.email || '').trim().toLowerCase() === targetEmail) {
+          return { ...c, email: '', role: '', password: '' };
+        }
+        return c;
+      }));
+    }
+
+    // 6. Prune cloud KV store /api/users immediately
+    const cleanCombined = [...nextSystem, ...nextPortal];
+    const uniqueMap = new Map();
+    cleanCombined.forEach(u => {
+      if (u && (u.id || u.email) && !isUserDeleted(u, updatedDeleted)) {
+        const key = (u.email || u.id).toString().toLowerCase();
+        if (!uniqueMap.has(key)) {
+          uniqueMap.set(key, u);
+        }
+      }
+    });
+    const listToSync = Array.from(uniqueMap.values());
+
+    fetch('/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(listToSync)
+    }).catch(err => console.error("Error updating cloud after user deletion:", err));
+
+    registerActivityLog(profile?.name || 'Administrador', `Excluiu o usuário ${foundUser?.name || targetEmail || targetId}`);
+  };
+
+  const deletePortalUser = (userId, userEmail = null) => {
+    deleteUser(userId, userEmail);
   };
 
   const createProperty = (propData) => {
@@ -926,12 +1018,14 @@ export const AppProvider = ({ children }) => {
     if (saved) {
       try {
         let parsed = JSON.parse(saved);
-        // Filter out legacy default user accounts
+        const deleted = getDeletedUsers();
+        // Filter out legacy default user accounts and deleted users
         parsed = parsed.filter(u => 
           u && u.email !== 'mqssolucao@gmail.com' && 
           u.email !== 'atg.contador@gmail.com' && 
           u.email !== 'miguelmr.business@gmail.com' &&
-          u.id !== 'default_u2' && u.id !== 'default_u3' && u.id !== 'default_u4' && u.id !== 'u1' && u.id !== 'u3' && u.id !== 'u4'
+          u.id !== 'default_u2' && u.id !== 'default_u3' && u.id !== 'default_u4' && u.id !== 'u1' && u.id !== 'u3' && u.id !== 'u4' &&
+          !isUserDeleted(u, deleted)
         );
         return parsed;
       } catch (e) {
@@ -943,7 +1037,9 @@ export const AppProvider = ({ children }) => {
 
   const setSystemUsers = (newUsersOrFn) => {
     setSystemUsersState(prev => {
-      const next = typeof newUsersOrFn === 'function' ? newUsersOrFn(prev) : newUsersOrFn;
+      const nextRaw = typeof newUsersOrFn === 'function' ? newUsersOrFn(prev) : newUsersOrFn;
+      const deleted = getDeletedUsers();
+      const next = (nextRaw || []).filter(u => !isUserDeleted(u, deleted));
       try {
         localStorage.setItem('crmbase_system_users', JSON.stringify(next));
       } catch (e) {
@@ -965,19 +1061,22 @@ export const AppProvider = ({ children }) => {
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data) && data.length > 0) {
+            const deleted = getDeletedUsers();
+            const cleanCloudUsers = data.filter(u => !isUserDeleted(u, deleted));
+
             setSystemUsersState(prev => {
-              const localUsers = prev || [];
+              const localUsers = (prev || []).filter(u => !isUserDeleted(u, deleted));
               const mergedMap = new Map();
 
-              // 1. Add cloud users to map
-              data.forEach(u => {
+              // 1. Add non-deleted cloud users to map
+              cleanCloudUsers.forEach(u => {
                 if (u && (u.id || u.email)) {
                   const key = (u.id || u.email).toString().toLowerCase();
                   mergedMap.set(key, u);
                 }
               });
 
-              // 2. Overlay local users so newly added/edited local users are NEVER overwritten
+              // 2. Overlay non-deleted local users
               localUsers.forEach(u => {
                 if (u && (u.id || u.email)) {
                   const key = (u.id || u.email).toString().toLowerCase();
@@ -986,13 +1085,13 @@ export const AppProvider = ({ children }) => {
                 }
               });
 
-              const mergedUsers = Array.from(mergedMap.values());
+              const mergedUsers = Array.from(mergedMap.values()).filter(u => !isUserDeleted(u, deleted));
               try {
                 localStorage.setItem('crmbase_system_users', JSON.stringify(mergedUsers));
               } catch (e) {}
 
-              // 3. If local has users cloud didn't have, sync back to cloud
-              if (mergedUsers.length > data.length) {
+              // 3. If cloud returned deleted users, purge them from cloud immediately
+              if (data.length > cleanCloudUsers.length) {
                 fetch('/api/users', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
@@ -2770,6 +2869,7 @@ export const AppProvider = ({ children }) => {
 
   const register = (name, email, password) => {
     const cleanEmail = email.trim().toLowerCase();
+    unmarkDeletedUser(cleanEmail);
     if (systemUsers.some(u => (u.email || '').trim().toLowerCase() === cleanEmail)) {
       return { success: false, message: 'Este e-mail já está cadastrado.' };
     }
@@ -4480,6 +4580,7 @@ ${fullSearchContext.substring(0, 4000)}
       quickLoginPortal,
       createPortalUser,
       deletePortalUser,
+      deleteUser,
       createProperty,
       createContract,
       recordTenantPayment,
