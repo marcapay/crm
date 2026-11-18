@@ -925,7 +925,7 @@ const styles = {
   greetingTitle: {
     fontSize: '1.25rem',
     fontWeight: '700',
-    color: '#ffffff',
+    color: 'var(--text-primary)',
   },
   greetingSub: {
     fontSize: '0.8125rem',
@@ -1735,7 +1735,7 @@ const styles = {
     gap: '0.125rem',
     background: 'none',
     border: 'none',
-    color: active ? '#ffffff' : 'var(--text-tertiary)',
+    color: active ? 'var(--text-primary)' : 'var(--text-tertiary)',
     fontSize: '0.6875rem',
     fontWeight: active ? '700' : '400',
     cursor: 'pointer',

@@ -495,7 +495,7 @@ export default function PainelGestaoPortais() {
                       )}
                     </div>
                     <div>
-                      <strong style={{ color: '#ffffff', fontSize: '1rem' }}>{u.name}</strong>
+                      <strong style={{ color: 'var(--text-primary)', fontSize: '1rem' }}>{u.name}</strong>
                       <div style={{ color: 'var(--accent-cyan)', fontSize: '0.8125rem' }}>{u.email}</div>
                       <div style={styles.roleTag(u.role)}>
                         {u.role}
@@ -552,7 +552,7 @@ export default function PainelGestaoPortais() {
           {showPropModal && (
             <div style={styles.modalOverlay}>
               <div style={styles.modalCard}>
-                <h3 style={{ color: '#ffffff', marginBottom: '1rem' }}>Cadastrar Novo Imóvel de Locação</h3>
+                <h3 style={{ color: 'var(--text-primary)', marginBottom: '1rem' }}>Cadastrar Novo Imóvel de Locação</h3>
                 <form onSubmit={handleCreatePropSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                   <div className="input-group">
                     <label>Título do Imóvel</label>
@@ -567,7 +567,7 @@ export default function PainelGestaoPortais() {
                     <input type="number" step="0.01" className="input-field" value={newPropRent} onChange={e => setNewPropRent(e.target.value)} required />
                   </div>
                   <div className="input-group">
-                    <label style={{ color: '#ffffff', marginBottom: '0.375rem', display: 'block', fontSize: '0.875rem' }}>Proprietário Responsável</label>
+                    <label style={{ color: 'var(--text-primary)', marginBottom: '0.375rem', display: 'block', fontSize: '0.875rem' }}>Proprietário Responsável</label>
                     <select 
                       className="input-field" 
                       value={newPropOwnerId} 
@@ -575,25 +575,25 @@ export default function PainelGestaoPortais() {
                       style={{
                         width: '100%',
                         padding: '0.75rem',
-                        backgroundColor: '#1e293b',
-                        color: '#ffffff',
-                        border: '1px solid #334155',
+                        backgroundColor: 'var(--bg-secondary)',
+                        color: 'var(--text-primary)',
+                        border: '1px solid var(--glass-border)',
                         borderRadius: '0.5rem',
                         fontSize: '0.875rem',
                         outline: 'none',
                         cursor: 'pointer'
                       }}
                     >
-                      <option value="" style={{ backgroundColor: '#1e293b', color: '#94a3b8' }}>Selecione o proprietário...</option>
+                      <option value="" style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-tertiary)' }}>Selecione o proprietário...</option>
                       {ownerOptions.map(p => (
-                        <option key={p.id || p.email} value={p.id} style={{ backgroundColor: '#1e293b', color: '#ffffff' }}>
+                        <option key={p.id || p.email} value={p.id} style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>
                           {p.name || p.nome || 'Proprietário'} ({p.email || p.phone || 'Sem e-mail'})
                         </option>
                       ))}
                     </select>
                   </div>
                   <div className="input-group">
-                    <label style={{ color: '#ffffff', marginBottom: '0.375rem', display: 'block', fontSize: '0.875rem' }}>Inquilino / Locatário Responsável (Opcional)</label>
+                    <label style={{ color: 'var(--text-primary)', marginBottom: '0.375rem', display: 'block', fontSize: '0.875rem' }}>Inquilino / Locatário Responsável (Opcional)</label>
                     <select 
                       className="input-field" 
                       value={newPropTenantId} 
@@ -601,18 +601,18 @@ export default function PainelGestaoPortais() {
                       style={{
                         width: '100%',
                         padding: '0.75rem',
-                        backgroundColor: '#1e293b',
-                        color: '#ffffff',
-                        border: '1px solid #334155',
+                        backgroundColor: 'var(--bg-secondary)',
+                        color: 'var(--text-primary)',
+                        border: '1px solid var(--glass-border)',
                         borderRadius: '0.5rem',
                         fontSize: '0.875rem',
                         outline: 'none',
                         cursor: 'pointer'
                       }}
                     >
-                      <option value="" style={{ backgroundColor: '#1e293b', color: '#94a3b8' }}>Selecione o inquilino (se alugado)...</option>
+                      <option value="" style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-tertiary)' }}>Selecione o inquilino (se alugado)...</option>
                       {tenantOptions.map(t => (
-                        <option key={t.id || t.email} value={t.id} style={{ backgroundColor: '#1e293b', color: '#ffffff' }}>
+                        <option key={t.id || t.email} value={t.id} style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>
                           {t.name || t.nome || 'Inquilino'} ({t.email || t.phone || 'Sem e-mail'})
                         </option>
                       ))}
@@ -647,7 +647,7 @@ export default function PainelGestaoPortais() {
                   <div style={styles.maintAdminHeader}>
                     <div>
                       <span style={{ fontSize: '0.75rem', color: 'var(--accent-cyan)', fontWeight: '700' }}>{maint.protocol}</span>
-                      <h4 style={{ color: '#ffffff', fontSize: '1rem', marginTop: '0.125rem' }}>{maint.title}</h4>
+                      <h4 style={{ color: 'var(--text-primary)', fontSize: '1rem', marginTop: '0.125rem' }}>{maint.title}</h4>
                       <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
                         Imóvel: {maint.propertyName} | Inquilino: {maint.tenantName} | Proprietário: {maint.ownerName}
                       </span>
@@ -702,7 +702,7 @@ export default function PainelGestaoPortais() {
           {selectedMaint && (
             <div style={styles.modalOverlay}>
               <div style={styles.modalCard}>
-                <h3 style={{ color: '#ffffff', marginBottom: '1rem' }}>Orçamento da Manutenção {selectedMaint.protocol}</h3>
+                <h3 style={{ color: 'var(--text-primary)', marginBottom: '1rem' }}>Orçamento da Manutenção {selectedMaint.protocol}</h3>
                 <form onSubmit={handleSaveBudgetAndForward} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                   <div className="input-group">
                     <label>Valor Estimado R$</label>
@@ -754,7 +754,7 @@ export default function PainelGestaoPortais() {
               financialRecords.map(rec => (
                 <div key={rec.id} style={styles.finRow}>
                   <div>
-                    <strong style={{ color: '#ffffff', fontSize: '0.9375rem' }}>{rec.competence}</strong>
+                    <strong style={{ color: 'var(--text-primary)', fontSize: '0.9375rem' }}>{rec.competence}</strong>
                     <div style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem' }}>{rec.propertyName}</div>
                     <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginTop: '0.25rem' }}>
                       Valor Aluguel: <strong>R$ {formatMoney(rec.grossRent)}</strong> | Repasse Líquido: <strong style={{ color: 'var(--accent-cyan)' }}>R$ {formatMoney(rec.netRepasse)}</strong>
@@ -763,10 +763,10 @@ export default function PainelGestaoPortais() {
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '0.8125rem', color: '#ffffff' }}>
+                      <div style={{ fontSize: '0.8125rem', color: 'var(--text-primary)' }}>
                         Inquilino: <strong style={{ color: rec.tenantStatus === 'Pago' ? '#34d399' : '#f59e0b' }}>{rec.tenantStatus}</strong>
                       </div>
-                      <div style={{ fontSize: '0.8125rem', color: '#ffffff' }}>
+                      <div style={{ fontSize: '0.8125rem', color: 'var(--text-primary)' }}>
                         Proprietário: <strong style={{ color: rec.ownerStatus === 'Pago' ? '#34d399' : '#f59e0b' }}>{rec.ownerStatus}</strong>
                       </div>
                     </div>
@@ -847,7 +847,7 @@ export default function PainelGestaoPortais() {
               gap: '0.75rem'
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.8125rem', fontWeight: '700', color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <span style={{ fontSize: '0.8125rem', fontWeight: '700', color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                   <Users size={14} style={{ color: 'var(--accent-cyan)' }} />
                   Filtrar por Usuário
                 </span>
@@ -869,7 +869,7 @@ export default function PainelGestaoPortais() {
                     borderRadius: '6px',
                     border: 'none',
                     backgroundColor: msgRoleFilter === 'todos' ? 'var(--accent-primary)' : 'transparent',
-                    color: msgRoleFilter === 'todos' ? '#000000' : 'var(--text-secondary)',
+                    color: msgRoleFilter === 'todos' ? 'var(--bg-primary)' : 'var(--text-secondary)',
                     cursor: 'pointer',
                     transition: 'all 0.2s ease',
                     textAlign: 'center'
@@ -960,8 +960,8 @@ export default function PainelGestaoPortais() {
                       width: '30px',
                       height: '30px',
                       borderRadius: '8px',
-                      backgroundColor: selectedMsgContactId === 'all' ? 'var(--accent-primary)' : 'rgba(255, 255, 255, 0.08)',
-                      color: selectedMsgContactId === 'all' ? '#000000' : 'var(--text-secondary)',
+                      backgroundColor: selectedMsgContactId === 'all' ? 'var(--accent-primary)' : 'var(--bg-tertiary)',
+                      color: selectedMsgContactId === 'all' ? 'var(--bg-primary)' : 'var(--text-secondary)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -970,7 +970,7 @@ export default function PainelGestaoPortais() {
                       <MessageSquare size={14} />
                     </div>
                     <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: '0.8125rem', fontWeight: '600', color: selectedMsgContactId === 'all' ? '#ffffff' : 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <div style={{ fontSize: '0.8125rem', fontWeight: '600', color: selectedMsgContactId === 'all' ? 'var(--bg-primary)' : 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         Todos os Recados
                       </div>
                       <div style={{ fontSize: '0.625rem', color: 'var(--text-tertiary)' }}>
@@ -983,7 +983,7 @@ export default function PainelGestaoPortais() {
                     fontWeight: '700',
                     padding: '0.15rem 0.45rem',
                     borderRadius: '10px',
-                    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                    backgroundColor: 'var(--bg-tertiary)',
                     color: 'var(--text-secondary)',
                     flexShrink: 0
                   }}>
@@ -1040,7 +1040,7 @@ export default function PainelGestaoPortais() {
                             <div style={{
                               fontSize: '0.8125rem',
                               fontWeight: '600',
-                              color: isSelected ? '#ffffff' : 'var(--text-primary)',
+                              color: 'var(--text-primary)',
                               whiteSpace: 'nowrap',
                               overflow: 'hidden',
                               textOverflow: 'ellipsis'
@@ -1124,7 +1124,7 @@ export default function PainelGestaoPortais() {
                     </div>
                     <div style={{ minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                        <strong style={{ color: '#ffffff', fontSize: '0.9375rem' }}>{selectedContact.name}</strong>
+                        <strong style={{ color: 'var(--text-primary)', fontSize: '0.9375rem' }}>{selectedContact.name}</strong>
                         <span style={{
                           fontSize: '0.625rem',
                           fontWeight: '700',
@@ -1144,7 +1144,7 @@ export default function PainelGestaoPortais() {
                   </div>
                 ) : (
                   <div>
-                    <div style={{ fontSize: '0.9375rem', fontWeight: '700', color: '#ffffff' }}>
+                    <div style={{ fontSize: '0.9375rem', fontWeight: '700', color: 'var(--text-primary)' }}>
                       {msgRoleFilter === 'inquilinos' ? 'Recados de Todos os Inquilinos' : msgRoleFilter === 'proprietarios' ? 'Recados de Todos os Proprietários' : 'Todos os Recados do Portal'}
                     </div>
                     <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
@@ -1219,7 +1219,7 @@ export default function PainelGestaoPortais() {
                       <div key={msg.id} style={styles.msgAdminCard}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <strong style={{ color: '#ffffff', fontSize: '0.875rem' }}>{msg.senderName}</strong>
+                            <strong style={{ color: 'var(--text-primary)', fontSize: '0.875rem' }}>{msg.senderName}</strong>
                             <span style={{
                               fontSize: '0.625rem',
                               fontWeight: '700',
@@ -1299,7 +1299,7 @@ export default function PainelGestaoPortais() {
           {showMessageModal && (
             <div style={styles.modalOverlay}>
               <div style={styles.modalCard}>
-                <h3 style={{ color: '#ffffff', marginBottom: '1rem' }}>Enviar Mensagem pelo Portal</h3>
+                <h3 style={{ color: 'var(--text-primary)', marginBottom: '1rem' }}>Enviar Mensagem pelo Portal</h3>
                 <form onSubmit={handleSendAdminMessage} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                   <div className="input-group">
                     <label>Destinatário</label>
@@ -1371,7 +1371,7 @@ export default function PainelGestaoPortais() {
 
             <div style={styles.logsList}>
               {todayLogs.length === 0 ? (
-                <div style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-tertiary)', background: 'var(--glass-highlight)', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
+                <div style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-secondary)', background: 'var(--bg-secondary)', borderRadius: '12px', border: '1px solid var(--glass-border)', boxShadow: 'var(--card-shadow)' }}>
                   Nenhuma atividade registrada no log hoje (os registros são zerados automaticamente ao final de cada dia).
                 </div>
               ) : (
@@ -1381,7 +1381,7 @@ export default function PainelGestaoPortais() {
                       <Clock size={16} color="var(--accent-cyan)" />
                       <span style={{ fontSize: '0.8125rem', color: 'var(--text-tertiary)' }}>{log.timestamp}</span>
                     </div>
-                    <div style={{ fontSize: '0.875rem', color: '#ffffff' }}>
+                    <div style={{ fontSize: '0.875rem', color: 'var(--text-primary)' }}>
                       <strong>{log.userName}</strong>: {log.action}
                     </div>
                   </div>
@@ -1410,7 +1410,7 @@ const styles = {
   title: {
     fontSize: '1.5rem',
     fontWeight: '700',
-    color: '#ffffff',
+    color: 'var(--text-primary)',
   },
   subtitle: {
     fontSize: '0.875rem',
@@ -1442,12 +1442,14 @@ const styles = {
     gap: '0.5rem',
     padding: '0.625rem 1.25rem',
     borderRadius: '10px',
-    backgroundColor: active ? 'var(--accent-primary)' : 'rgba(255,255,255,0.04)',
-    color: active ? '#000000' : 'var(--text-secondary)',
+    backgroundColor: active ? 'var(--accent-primary)' : 'var(--bg-secondary)',
+    color: active ? 'var(--bg-primary)' : 'var(--text-secondary)',
     border: '1px solid var(--glass-border)',
     fontSize: '0.875rem',
     fontWeight: '600',
     cursor: 'pointer',
+    boxShadow: active ? '0 2px 8px rgba(0,0,0,0.1)' : 'none',
+    transition: 'all 0.2s ease',
   }),
   tabSection: {
     display: 'flex',
@@ -1506,7 +1508,7 @@ const styles = {
     justifyContent: 'center',
     gap: '0.5rem',
     backgroundColor: 'var(--accent-primary)',
-    color: '#000000',
+    color: 'var(--bg-primary)',
     border: 'none',
     borderRadius: '8px',
     padding: '0.625rem',
@@ -1541,7 +1543,7 @@ const styles = {
   }),
   budgetBoxAdmin: {
     padding: '0.75rem',
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    backgroundColor: 'var(--bg-tertiary)',
     borderRadius: '8px',
     fontSize: '0.8125rem',
     color: 'var(--text-secondary)',
@@ -1556,7 +1558,7 @@ const styles = {
     alignItems: 'center',
     gap: '0.375rem',
     backgroundColor: 'var(--accent-primary)',
-    color: '#000000',
+    color: 'var(--bg-primary)',
     border: 'none',
     borderRadius: '8px',
     padding: '0.5rem 0.875rem',
