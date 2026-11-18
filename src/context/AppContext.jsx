@@ -106,6 +106,60 @@ export const filterMessagesUnder30Days = (messages) => {
   return messages.filter(isMessageUnder30Days);
 };
 
+export const isLogFromToday = (log) => {
+  if (!log) return false;
+  const now = new Date();
+  const currentDay = now.getDate();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+
+  // 1. If explicit timestamp string
+  if (log.timestamp && typeof log.timestamp === 'string') {
+    const match = log.timestamp.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if (match) {
+      const d = parseInt(match[1], 10);
+      const m = parseInt(match[2], 10) - 1;
+      const y = parseInt(match[3], 10);
+      return d === currentDay && m === currentMonth && y === currentYear;
+    }
+  }
+
+  // 2. If createdAt or ISO date
+  if (log.createdAt && typeof log.createdAt === 'string') {
+    const logDate = new Date(log.createdAt);
+    if (!isNaN(logDate.getTime())) {
+      return logDate.getDate() === currentDay &&
+             logDate.getMonth() === currentMonth &&
+             logDate.getFullYear() === currentYear;
+    }
+  }
+
+  // 3. If id has timestamp (act_1795...)
+  if (typeof log.id === 'string' && log.id.startsWith('act_')) {
+    const rawNum = Number(log.id.replace('act_', ''));
+    if (!isNaN(rawNum) && rawNum > 1000000000000) {
+      const logDate = new Date(rawNum);
+      return logDate.getDate() === currentDay &&
+             logDate.getMonth() === currentMonth &&
+             logDate.getFullYear() === currentYear;
+    }
+  }
+
+  // 4. If dateOnly (YYYY-MM-DD or DD/MM/YYYY)
+  if (log.dateOnly && typeof log.dateOnly === 'string') {
+    const todayIso = now.toISOString().split('T')[0];
+    const todayPtBr = now.toLocaleDateString('pt-BR');
+    return log.dateOnly === todayIso || log.dateOnly === todayPtBr;
+  }
+
+  return false;
+};
+
+export const filterLogsFromToday = (logs) => {
+  if (!Array.isArray(logs)) return [];
+  return logs.filter(isLogFromToday);
+};
+
 export const getDeletedUsers = () => {
   try {
     const saved = localStorage.getItem('crmbase_deleted_users');
@@ -593,7 +647,8 @@ export const AppProvider = ({ children }) => {
   const [activityLogs, setActivityLogs] = useState(() => {
     const saved = localStorage.getItem('araujo_portal_activity_logs');
     const list = safeJsonParse(saved, initialActivityLogs);
-    return list.filter(a => !['act_1', 'act_2', 'act_3'].includes(a.id));
+    const cleaned = list.filter(a => !['act_1', 'act_2', 'act_3'].includes(a.id));
+    return filterLogsFromToday(cleaned);
   });
 
   const [fichasVisita, setFichasVisita] = useState(() => {
@@ -610,8 +665,34 @@ export const AppProvider = ({ children }) => {
     const filtered = filterMessagesUnder30Days(portalMessages);
     localStorage.setItem('araujo_portal_messages', JSON.stringify(filtered)); 
   }, [portalMessages]);
-  useEffect(() => { localStorage.setItem('araujo_portal_activity_logs', JSON.stringify(activityLogs)); }, [activityLogs]);
+  useEffect(() => { 
+    const filtered = filterLogsFromToday(activityLogs);
+    localStorage.setItem('araujo_portal_activity_logs', JSON.stringify(filtered)); 
+  }, [activityLogs]);
   useEffect(() => { localStorage.setItem('crmbase_fichas_visita', JSON.stringify(fichasVisita)); }, [fichasVisita]);
+
+  // Rotina de expiração diária: os logs de atividade somem automaticamente ao final do dia
+  useEffect(() => {
+    const purgeOldLogs = () => {
+      setActivityLogs(prev => {
+        const filtered = filterLogsFromToday(prev);
+        if (filtered.length !== prev.length) {
+          localStorage.setItem('araujo_portal_activity_logs', JSON.stringify(filtered));
+          return filtered;
+        }
+        return prev;
+      });
+    };
+
+    purgeOldLogs();
+    const interval = setInterval(purgeOldLogs, 5 * 60 * 1000); // Verifica a cada 5 minutos
+    window.addEventListener('focus', purgeOldLogs);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', purgeOldLogs);
+    };
+  }, []);
 
   // Rotina de limpeza automática: remove mensagens da central de recados com mais de 30 dias
   useEffect(() => {
@@ -719,13 +800,21 @@ export const AppProvider = ({ children }) => {
   };
 
   const registerActivityLog = (userName, actionText) => {
+    const now = new Date();
     const newLog = {
       id: 'act_' + Date.now(),
-      timestamp: new Date().toLocaleString('pt-BR'),
+      timestamp: now.toLocaleString('pt-BR'),
+      createdAt: now.toISOString(),
+      dateOnly: now.toISOString().split('T')[0],
       userName: userName || profile?.name || 'Usuário',
       action: actionText
     };
-    setActivityLogs(prev => [newLog, ...prev]);
+    setActivityLogs(prev => filterLogsFromToday([newLog, ...prev]));
+  };
+
+  const clearActivityLogs = () => {
+    setActivityLogs([]);
+    localStorage.setItem('araujo_portal_activity_logs', JSON.stringify([]));
   };
 
   const login = (email, password) => {
@@ -4697,6 +4786,7 @@ ${fullSearchContext.substring(0, 4000)}
       deletePortalMessage,
       updateMaintenanceStatus,
       registerActivityLog,
+      clearActivityLogs,
       quickLoginPortal,
       createPortalUser,
       deletePortalUser,

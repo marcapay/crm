@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useApp, isMessageUnder30Days } from '../context/AppContext';
+import { useApp, isMessageUnder30Days, isLogFromToday } from '../context/AppContext';
 import {
   Users,
   Building2,
@@ -36,6 +36,7 @@ export default function PainelGestaoPortais() {
     maintenanceRequests = [],
     portalMessages = [],
     activityLogs = [],
+    clearActivityLogs,
     updateMaintenanceStatus,
     sendPortalMessage,
     deletePortalMessage,
@@ -1328,33 +1329,68 @@ export default function PainelGestaoPortais() {
       )}
 
       {/* ================= SUB-TAB 5: LOG DE ATIVIDADES ================= */}
-      {activeSubTab === 'logs' && (
-        <div style={styles.tabSection}>
-          <div style={styles.sectionTitleRow}>
-            <h3>Log de Auditoria e Atividades do Portal</h3>
-          </div>
-
-          <div style={styles.logsList}>
-            {activityLogs.length === 0 ? (
-              <div style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-tertiary)', background: 'var(--glass-highlight)', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
-                Nenhuma atividade registrada no log até o momento.
+      {activeSubTab === 'logs' && (() => {
+        const todayLogs = (activityLogs || []).filter(isLogFromToday);
+        return (
+          <div style={styles.tabSection}>
+            <div style={styles.sectionTitleRow}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <h3 style={{ margin: 0 }}>Log de Auditoria e Atividades do Portal</h3>
+                <span style={{
+                  fontSize: '0.6875rem',
+                  padding: '0.2rem 0.55rem',
+                  borderRadius: '12px',
+                  backgroundColor: 'rgba(56, 189, 248, 0.12)',
+                  color: 'var(--accent-cyan)',
+                  border: '1px solid rgba(56, 189, 248, 0.25)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  fontWeight: '500'
+                }}>
+                  <Clock size={11} />
+                  Limpeza diária ativa • Logs expiram ao fim do dia (23:59)
+                </span>
               </div>
-            ) : (
-              activityLogs.map(log => (
-                <div key={log.id} style={styles.logRow}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <Clock size={16} color="var(--accent-cyan)" />
-                    <span style={{ fontSize: '0.8125rem', color: 'var(--text-tertiary)' }}>{log.timestamp}</span>
-                  </div>
-                  <div style={{ fontSize: '0.875rem', color: '#ffffff' }}>
-                    <strong>{log.userName}</strong>: {log.action}
-                  </div>
+              {todayLogs.length > 0 && clearActivityLogs && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm('Deseja limpar todos os registros de log de hoje?')) {
+                      clearActivityLogs();
+                    }
+                  }}
+                  className="btn btn-secondary"
+                  style={{ fontSize: '0.75rem', padding: '0.35rem 0.65rem', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+                >
+                  <Trash2 size={13} style={{ color: 'var(--accent-danger)' }} />
+                  <span>Limpar Logs de Hoje</span>
+                </button>
+              )}
+            </div>
+
+            <div style={styles.logsList}>
+              {todayLogs.length === 0 ? (
+                <div style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-tertiary)', background: 'var(--glass-highlight)', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
+                  Nenhuma atividade registrada no log hoje (os registros são zerados automaticamente ao final de cada dia).
                 </div>
-              ))
-            )}
+              ) : (
+                todayLogs.map(log => (
+                  <div key={log.id} style={styles.logRow}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <Clock size={16} color="var(--accent-cyan)" />
+                      <span style={{ fontSize: '0.8125rem', color: 'var(--text-tertiary)' }}>{log.timestamp}</span>
+                    </div>
+                    <div style={{ fontSize: '0.875rem', color: '#ffffff' }}>
+                      <strong>{log.userName}</strong>: {log.action}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
