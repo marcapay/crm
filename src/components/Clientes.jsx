@@ -189,7 +189,7 @@ export default function Clientes() {
               onClick={() => setStatusFilter(st)}
               style={{
                 ...styles.filterTabBtn,
-                color: statusFilter === st ? '#ffffff' : 'var(--text-secondary)',
+                color: statusFilter === st ? 'var(--bg-primary)' : 'var(--text-secondary)',
                 backgroundColor: statusFilter === st ? 'var(--accent-primary)' : 'var(--glass-highlight)',
                 borderColor: statusFilter === st ? 'var(--accent-primary)' : 'var(--glass-border)',
               }}

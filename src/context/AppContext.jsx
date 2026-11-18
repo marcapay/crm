@@ -753,52 +753,6 @@ export const AppProvider = ({ children }) => {
   }, [portalUsers]);
 
 
-
-  const addFichaVisita = (fichaData) => {
-    const now = new Date().toISOString();
-    const count = fichasVisita.length + 1;
-    const autoCodigo = fichaData.codigoImovel || `VT-${String(count).padStart(4, '0')}`;
-    const newFicha = {
-      id: 'ficha_' + Date.now(),
-      codigoImovel: autoCodigo,
-      createdAt: now,
-      updatedAt: now,
-      createdBy: profile?.name || 'Usuário Sistema',
-      updatedBy: profile?.name || 'Usuário Sistema',
-      ...fichaData
-    };
-    setFichasVisita(prev => [newFicha, ...prev]);
-    if (typeof registerActivityLog === 'function') {
-      registerActivityLog(profile?.name, `Criou Ficha 01 de Visita Técnica ${autoCodigo} (${fichaData.nomeProprietario || 'Proprietário'})`);
-    }
-    return newFicha;
-  };
-
-  const updateFichaVisita = (id, updatedFields) => {
-    const now = new Date().toISOString();
-    setFichasVisita(prev => prev.map(f => {
-      if (f.id === id) {
-        return {
-          ...f,
-          ...updatedFields,
-          updatedAt: now,
-          updatedBy: profile?.name || 'Usuário Sistema'
-        };
-      }
-      return f;
-    }));
-    if (typeof registerActivityLog === 'function') {
-      registerActivityLog(profile?.name, `Atualizou Ficha 01 de Visita Técnica ${updatedFields.codigoImovel || id}`);
-    }
-  };
-
-  const deleteFichaVisita = (id) => {
-    setFichasVisita(prev => prev.filter(f => f.id !== id));
-    if (typeof registerActivityLog === 'function') {
-      registerActivityLog(profile?.name, `Excluiu Ficha 01 de Visita Técnica ${id}`);
-    }
-  };
-
   const registerActivityLog = (userName, actionText) => {
     const now = new Date();
     const newLog = {
@@ -3129,8 +3083,18 @@ export const AppProvider = ({ children }) => {
   };
 
   const mapStatusToColumn = (status) => {
-    if (!status) return 'pessoal_a_fazer';
+    if (!status) return 'col_novo_lead';
     const statusLower = status.trim().toLowerCase();
+
+    if (statusLower.includes('novo lead') || statusLower.includes('qualifica')) {
+      return 'col_novo_lead';
+    }
+    if (statusLower.includes('interesse') || statusLower.includes('oportunidade')) {
+      return 'col_imoveis_selecionados';
+    }
+    if (statusLower.includes('negocia') || statusLower.includes('fechamento')) {
+      return 'col_em_negociacao';
+    }
 
     // Normalized direct matching to tolerate accents, casing, and trailing whitespace
     if (statusLower === 'pessoal') {
@@ -3288,6 +3252,123 @@ export const AppProvider = ({ children }) => {
     // Passo 7: Garantir que o contato não seja reidratado ou recriado automaticamente
     // (Garantido pelo filtro 'crmbase_deleted_contact_suffix' em syncWhatsAppChats)
     logToDisk(`deleteClient: Deletion process completed successfully for ${client.name}`);
+  };
+
+  const addFichaVisita = (fichaData) => {
+    const now = new Date().toISOString();
+    const count = (fichasVisita?.length || 0) + 1;
+    const autoCodigo = fichaData.codigoImovel || `VT-${String(count).padStart(4, '0')}`;
+    const newFicha = {
+      id: 'ficha_' + Date.now(),
+      codigoImovel: autoCodigo,
+      createdAt: now,
+      updatedAt: now,
+      createdBy: profile?.name || 'Usuário Sistema',
+      updatedBy: profile?.name || 'Usuário Sistema',
+      ...fichaData
+    };
+    setFichasVisita(prev => [newFicha, ...(prev || [])]);
+    if (typeof registerActivityLog === 'function') {
+      registerActivityLog(profile?.name, `Criou Ficha 01 de Visita Técnica ${autoCodigo} (${fichaData.nomeProprietario || 'Proprietário'})`);
+    }
+
+    // Auto-create client in CRM and website user for the property owner
+    try {
+      const ownerName = (fichaData.nomeProprietario || '').trim();
+      const ownerPhone = (fichaData.telefoneProprietario || '').trim();
+      const cleanPhone = ownerPhone.replace(/\D/g, '');
+      const ownerEmail = (fichaData.emailProprietario || '').trim() || 
+        (cleanPhone ? `proprietario_${cleanPhone}@araujoimoveis.com.br` : `proprietario_${Date.now()}@araujoimoveis.com.br`);
+
+      if (ownerName) {
+        // 1. Verify if client already exists in clients
+        const currentClients = clientsRef?.current || clients || [];
+        const clientExists = currentClients.some(c => {
+          const cPhone = (c.phone || '').replace(/\D/g, '');
+          const cEmail = (c.email || '').trim().toLowerCase();
+          const cName = (c.name || '').trim().toLowerCase();
+          return (cleanPhone && cPhone && (cPhone === cleanPhone || cPhone.slice(-8) === cleanPhone.slice(-8))) ||
+                 (ownerEmail && cEmail && cEmail === ownerEmail.toLowerCase()) ||
+                 (cName === ownerName.toLowerCase());
+        });
+
+        if (!clientExists) {
+          const clientTags = ['Ficha de Visita'];
+          if (fichaData.tipoImovel) clientTags.push(fichaData.tipoImovel);
+          if (fichaData.bairroImovel) clientTags.push(fichaData.bairroImovel);
+
+          addClient({
+            name: ownerName,
+            phone: ownerPhone,
+            email: ownerEmail,
+            role: 'Proprietário',
+            status: 'Novo Lead / Qualificação',
+            tags: clientTags,
+            empreendimento: fichaData.tipoImovel || 'Imóvel para Locação',
+            situacaoComercial: 'Visita Técnica Agendada',
+            linkWhatsapp: fichaData.linkWhatsapp || '',
+            camposPersonalizados: {
+              codigoFicha: autoCodigo,
+              tipoImovel: fichaData.tipoImovel || '',
+              enderecoImovel: fichaData.enderecoImovel || '',
+              bairro: fichaData.bairroImovel || '',
+              dataVisita: fichaData.dataVisita || '',
+              horarioVisita: fichaData.horarioVisita || '',
+              linkWhatsapp: fichaData.linkWhatsapp || ''
+            }
+          });
+        }
+
+        // 2. Verify and create portal/system user on the website
+        const allUsers = [...(portalUsers || []), ...(systemUsers || [])];
+        const userExists = allUsers.some(u => {
+          const uEmail = (u.email || '').trim().toLowerCase();
+          const uPhone = (u.phone || '').replace(/\D/g, '');
+          return (ownerEmail && uEmail && uEmail === ownerEmail.toLowerCase()) ||
+                 (cleanPhone && uPhone && (uPhone === cleanPhone || uPhone.slice(-8) === cleanPhone.slice(-8)));
+        });
+
+        if (!userExists) {
+          createPortalUser({
+            name: ownerName,
+            email: ownerEmail,
+            phone: ownerPhone,
+            role: 'proprietario',
+            password: '123456',
+            status: 'Ativo'
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Erro ao cadastrar cliente/usuário a partir da ficha:', err);
+    }
+
+    return newFicha;
+  };
+
+  const updateFichaVisita = (id, updatedFields) => {
+    const now = new Date().toISOString();
+    setFichasVisita(prev => (prev || []).map(f => {
+      if (f.id === id) {
+        return {
+          ...f,
+          ...updatedFields,
+          updatedAt: now,
+          updatedBy: profile?.name || 'Usuário Sistema'
+        };
+      }
+      return f;
+    }));
+    if (typeof registerActivityLog === 'function') {
+      registerActivityLog(profile?.name, `Atualizou Ficha 01 de Visita Técnica ${updatedFields.codigoImovel || id}`);
+    }
+  };
+
+  const deleteFichaVisita = (id) => {
+    setFichasVisita(prev => (prev || []).filter(f => f.id !== id));
+    if (typeof registerActivityLog === 'function') {
+      registerActivityLog(profile?.name, `Excluiu Ficha 01 de Visita Técnica ${id}`);
+    }
   };
 
   // Utility to clear testing cache specifically for any contact with name containing "Miguel Marques"

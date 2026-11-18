@@ -22,6 +22,7 @@ export default function FichaPublicaCliente() {
   const defaultToday = new Date().toISOString().split('T')[0];
   const [submitted, setSubmitted] = useState(false);
   const [generatedCode, setGeneratedCode] = useState('');
+  const [accountCreatedInfo, setAccountCreatedInfo] = useState(null);
 
   const [formData, setFormData] = useState({
     nomeProprietario: '',
@@ -173,7 +174,7 @@ export default function FichaPublicaCliente() {
     }
 
     try {
-      // Load saved fichas from localStorage
+      // 1. Load saved fichas from localStorage
       const savedRaw = localStorage.getItem('crmbase_fichas_visita');
       let existingFichas = [];
       try {
@@ -200,6 +201,142 @@ export default function FichaPublicaCliente() {
       const updatedList = [newFicha, ...existingFichas];
       localStorage.setItem('crmbase_fichas_visita', JSON.stringify(updatedList));
 
+      // 2. Auto-create Client in eloos_clients and card in eloos_kanban
+      const ownerName = (formData.nomeProprietario || '').trim();
+      const ownerPhone = (formData.telefoneProprietario || '').trim();
+      const cleanPhone = ownerPhone.replace(/\D/g, '');
+      const ownerEmail = (formData.emailProprietario || '').trim() || 
+        (cleanPhone ? `proprietario_${cleanPhone}@araujoimoveis.com.br` : `proprietario_${Date.now()}@araujoimoveis.com.br`);
+
+      if (ownerName) {
+        let existingClients = [];
+        try {
+          const rawClients = localStorage.getItem('eloos_clients');
+          existingClients = rawClients ? JSON.parse(rawClients) : [];
+        } catch (e) {
+          existingClients = [];
+        }
+
+        const clientExists = existingClients.some(c => {
+          const cPhone = (c.phone || '').replace(/\D/g, '');
+          const cEmail = (c.email || '').trim().toLowerCase();
+          const cName = (c.name || '').trim().toLowerCase();
+          return (cleanPhone && cPhone && (cPhone === cleanPhone || cPhone.slice(-8) === cleanPhone.slice(-8))) ||
+                 (ownerEmail && cEmail && cEmail === ownerEmail.toLowerCase()) ||
+                 (cName === ownerName.toLowerCase());
+        });
+
+        const clientId = `c_${Date.now()}`;
+        if (!clientExists) {
+          const clientTags = ['Ficha de Visita'];
+          if (formData.tipoImovel) clientTags.push(formData.tipoImovel);
+          if (formData.bairroImovel) clientTags.push(formData.bairroImovel);
+
+          const newClient = {
+            id: clientId,
+            name: ownerName,
+            phone: ownerPhone,
+            email: ownerEmail,
+            role: 'Proprietário',
+            status: 'Novo Lead / Qualificação',
+            tags: clientTags,
+            empreendimento: formData.tipoImovel || 'Imóvel para Locação',
+            situacaoComercial: 'Visita Técnica Agendada',
+            linkWhatsapp: formData.linkWhatsapp || '',
+            createdAt: new Date().toISOString().split('T')[0],
+            camposPersonalizados: {
+              codigoFicha: autoCode,
+              tipoImovel: formData.tipoImovel || '',
+              enderecoImovel: formData.enderecoImovel || '',
+              bairro: formData.bairroImovel || '',
+              dataVisita: formData.dataVisita || '',
+              horarioVisita: formData.horarioVisita || '',
+              linkWhatsapp: formData.linkWhatsapp || ''
+            }
+          };
+
+          const updatedClients = [newClient, ...existingClients];
+          localStorage.setItem('eloos_clients', JSON.stringify(updatedClients));
+
+          // Create Kanban Card
+          let existingCards = [];
+          try {
+            const rawCards = localStorage.getItem('eloos_kanban');
+            existingCards = rawCards ? JSON.parse(rawCards) : [];
+          } catch (e) {
+            existingCards = [];
+          }
+
+          const newCard = {
+            id: `k_${Date.now()}`,
+            clientId: clientId,
+            title: `${ownerName} - Ficha de Visita (${autoCode})`,
+            desc: `Imóvel: ${formData.tipoImovel || 'Imóvel'} em ${formData.bairroImovel || ''}. Telefone: ${ownerPhone}`,
+            column: 'col_novo_lead',
+            priority: 'Alta',
+            date: formData.dataVisita || new Date().toISOString().split('T')[0]
+          };
+
+          localStorage.setItem('eloos_kanban', JSON.stringify([...existingCards, newCard]));
+        }
+
+        // 3. Auto-create portal and system user account on the website
+        let existingPortalUsers = [];
+        try {
+          const rawPortal = localStorage.getItem('araujo_portal_users');
+          existingPortalUsers = rawPortal ? JSON.parse(rawPortal) : [];
+        } catch (e) {
+          existingPortalUsers = [];
+        }
+
+        let existingSystemUsers = [];
+        try {
+          const rawSys = localStorage.getItem('crmbase_system_users');
+          existingSystemUsers = rawSys ? JSON.parse(rawSys) : [];
+        } catch (e) {
+          existingSystemUsers = [];
+        }
+
+        const userExists = [...existingPortalUsers, ...existingSystemUsers].some(u => {
+          const uEmail = (u.email || '').trim().toLowerCase();
+          const uPhone = (u.phone || '').replace(/\D/g, '');
+          return (ownerEmail && uEmail && uEmail === ownerEmail.toLowerCase()) ||
+                 (cleanPhone && uPhone && (uPhone === cleanPhone || uPhone.slice(-8) === cleanPhone.slice(-8)));
+        });
+
+        if (!userExists) {
+          const newUser = {
+            id: `user_${Date.now()}`,
+            name: ownerName,
+            email: ownerEmail,
+            phone: ownerPhone,
+            role: 'proprietario',
+            password: '123456',
+            status: 'Ativo'
+          };
+
+          const updatedPortal = [...existingPortalUsers, newUser];
+          localStorage.setItem('araujo_portal_users', JSON.stringify(updatedPortal));
+
+          const updatedSystem = [...existingSystemUsers, newUser];
+          localStorage.setItem('crmbase_system_users', JSON.stringify(updatedSystem));
+
+          // Also trigger async cloud KV sync
+          try {
+            fetch('/api/users', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(updatedPortal)
+            }).catch(e => console.warn('Could not sync to cloud KV:', e));
+          } catch (e) {}
+        }
+
+        setAccountCreatedInfo({
+          email: ownerEmail,
+          password: '123456'
+        });
+      }
+
       setGeneratedCode(autoCode);
       setSubmitted(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -224,10 +361,26 @@ export default function FichaPublicaCliente() {
             Obrigado, <strong>{formData.nomeProprietario}</strong>. Suas informações foram registradas no sistema da Araújo Imóveis.
           </p>
 
-          <div className="glass-card" style={{ padding: '1rem', marginBottom: '1.5rem', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid var(--glass-border)' }}>
+          <div className="glass-card" style={{ padding: '1rem', marginBottom: '1rem', backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid var(--glass-border)' }}>
             <span style={{ fontSize: '0.875rem', color: 'var(--text-tertiary)', display: 'block' }}>Código do Agendamento:</span>
             <strong style={{ fontSize: '1.5rem', color: 'var(--accent-cyan)', letterSpacing: '1px' }}>{generatedCode}</strong>
           </div>
+
+          {accountCreatedInfo && (
+            <div className="glass-card" style={{ padding: '1.25rem', marginBottom: '1.5rem', backgroundColor: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: '12px', textAlign: 'left' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: 'var(--accent-primary)', fontWeight: '700', fontSize: '0.95rem' }}>
+                <Sparkles size={18} />
+                <span>Acesso Criado ao Portal do Proprietário</span>
+              </div>
+              <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', margin: '0 0 0.5rem 0', lineHeight: '1.4' }}>
+                Seu usuário foi liberado automaticamente no site para acompanhar sua locação e agendamentos:
+              </p>
+              <div style={{ fontSize: '0.875rem', backgroundColor: 'var(--glass-highlight)', padding: '0.5rem 0.75rem', borderRadius: '6px', fontFamily: 'monospace' }}>
+                <div><strong>E-mail:</strong> {accountCreatedInfo.email}</div>
+                <div><strong>Senha padrão:</strong> {accountCreatedInfo.password}</div>
+              </div>
+            </div>
+          )}
 
           <p style={{ fontSize: '0.875rem', color: 'var(--text-tertiary)', marginBottom: '2rem' }}>
             Nossa equipe de atendimento/corretores entrará em contato em breve via WhatsApp ({formData.telefoneProprietario}) para confirmar os detalhes da visita técnica.
@@ -247,6 +400,7 @@ export default function FichaPublicaCliente() {
             <button 
               onClick={() => {
                 setSubmitted(false);
+                setAccountCreatedInfo(null);
                 setFormData(prev => ({ ...prev, nomeProprietario: '', telefoneProprietario: '', enderecoImovel: '' }));
               }}
               className="btn-glass-secondary"

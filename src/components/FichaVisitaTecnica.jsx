@@ -347,7 +347,7 @@ export default function FichaVisitaTecnica() {
     } else {
       const newFicha = addFichaVisita(formData);
       setEditingId(newFicha.id);
-      setSuccessMsg('Ficha de Visita Técnica salva com sucesso!');
+      setSuccessMsg('Ficha salva com sucesso! Cliente e usuário do proprietário criados no site.');
     }
 
     setTimeout(() => {
