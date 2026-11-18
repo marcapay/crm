@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useApp, isMessageUnder30Days } from '../context/AppContext';
 import {
   Users,
@@ -17,7 +17,10 @@ import {
   Calendar,
   Filter,
   Plus,
-  Trash2
+  Trash2,
+  Search,
+  User,
+  Reply
 } from 'lucide-react';
 
 export default function PainelGestaoPortais() {
@@ -141,6 +144,147 @@ export default function PainelGestaoPortais() {
   const [msgTargetUser, setMsgTargetUser] = useState('');
   const [msgSubjectInput, setMsgSubjectInput] = useState('');
   const [msgBodyInput, setMsgBodyInput] = useState('');
+
+  // Central de Recados - Estados e Separação por Inquilino e Proprietário
+  const [msgRoleFilter, setMsgRoleFilter] = useState('todos'); // 'todos', 'inquilinos', 'proprietarios'
+  const [selectedMsgContactId, setSelectedMsgContactId] = useState('all');
+  const [msgSearchContact, setMsgSearchContact] = useState('');
+
+  const isTenantRole = (role) => {
+    const r = (role || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    return r.includes('inquilino') || r.includes('locatario') || r.includes('morador');
+  };
+
+  const isOwnerRole = (role) => {
+    const r = (role || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    return r.includes('proprietar') || r.includes('locador') || r.includes('dono');
+  };
+
+  const doesMsgMatchUser = (msg, u) => {
+    if (!msg || !u) return false;
+    const uId = (u.id || '').toString();
+    const uEmail = (u.email || '').toLowerCase().trim();
+    const uName = (u.name || u.nome || '').toLowerCase().trim();
+
+    const senderId = (msg.senderId || '').toString();
+    const senderEmail = (msg.senderEmail || '').toLowerCase().trim();
+    const senderName = (msg.senderName || '').toLowerCase().trim();
+
+    const recipientId = (msg.recipientId || '').toString();
+    const recipientEmail = (msg.recipientEmail || '').toLowerCase().trim();
+
+    const isSender = (uId && senderId && uId === senderId) ||
+                     (uEmail && senderEmail && uEmail === senderEmail) ||
+                     (uName && senderName && uName === senderName);
+
+    const isRecipient = (uId && recipientId && uId === recipientId) ||
+                        (uEmail && recipientEmail && uEmail === recipientEmail);
+
+    const isBroadcast = (msg.recipientId === 'all' || !msg.recipientId) &&
+      ((msg.recipientRole === 'inquilino' && isTenantRole(u.role)) ||
+       (msg.recipientRole === 'proprietario' && isOwnerRole(u.role)));
+
+    return isSender || isRecipient || isBroadcast;
+  };
+
+  const portalContacts = useMemo(() => {
+    const map = new Map();
+
+    activePortalUsers.forEach(u => {
+      if (!u) return;
+      const key = (u.email || u.id || u.name || '').toLowerCase().trim();
+      if (!key) return;
+      const isTenant = isTenantRole(u.role);
+      const isOwner = isOwnerRole(u.role);
+      map.set(key, {
+        id: u.id || key,
+        name: u.name || u.nome || 'Contato',
+        email: u.email || '',
+        phone: u.phone || u.telefone || '',
+        role: isTenant ? 'inquilino' : isOwner ? 'proprietario' : (u.role || 'inquilino'),
+        roleLabel: isTenant ? 'Inquilino' : isOwner ? 'Proprietário' : (u.role || 'Inquilino'),
+        messageCount: 0,
+        lastMessageDate: ''
+      });
+    });
+
+    visiblePortalMessages.forEach(msg => {
+      if (!msg) return;
+      const sRole = (msg.senderRole || '').toLowerCase();
+      const isSenderClient = !sRole.includes('admin') && !sRole.includes('imobiliaria');
+      const candidateKey = isSenderClient
+        ? (msg.senderEmail || msg.senderId || msg.senderName || '').toLowerCase().trim()
+        : (msg.recipientEmail || msg.recipientId || '').toLowerCase().trim();
+
+      if (candidateKey && !map.has(candidateKey)) {
+        const role = isTenantRole(msg.senderRole || msg.recipientRole) ? 'inquilino' : 'proprietario';
+        map.set(candidateKey, {
+          id: isSenderClient ? (msg.senderId || candidateKey) : (msg.recipientId || candidateKey),
+          name: isSenderClient ? (msg.senderName || 'Contato') : 'Contato',
+          email: isSenderClient ? (msg.senderEmail || '') : (msg.recipientEmail || ''),
+          phone: '',
+          role: role,
+          roleLabel: role === 'inquilino' ? 'Inquilino' : 'Proprietário',
+          messageCount: 0,
+          lastMessageDate: ''
+        });
+      }
+    });
+
+    const list = Array.from(map.values());
+    list.forEach(c => {
+      const msgs = visiblePortalMessages.filter(m => doesMsgMatchUser(m, c));
+      c.messageCount = msgs.length;
+      if (msgs.length > 0) {
+        c.lastMessageDate = msgs[0]?.date || '';
+      }
+    });
+
+    return list.sort((a, b) => {
+      if (a.messageCount > 0 && b.messageCount === 0) return -1;
+      if (a.messageCount === 0 && b.messageCount > 0) return 1;
+      return a.name.localeCompare(b.name);
+    });
+  }, [activePortalUsers, visiblePortalMessages]);
+
+  const filteredContacts = useMemo(() => {
+    return portalContacts.filter(c => {
+      if (msgRoleFilter === 'inquilinos' && c.role !== 'inquilino') return false;
+      if (msgRoleFilter === 'proprietarios' && c.role !== 'proprietario') return false;
+      if (msgSearchContact.trim()) {
+        const q = msgSearchContact.toLowerCase().trim();
+        const mName = c.name.toLowerCase().includes(q);
+        const mEmail = c.email.toLowerCase().includes(q);
+        const mPhone = (c.phone || '').includes(q);
+        return mName || mEmail || mPhone;
+      }
+      return true;
+    });
+  }, [portalContacts, msgRoleFilter, msgSearchContact]);
+
+  const selectedContact = useMemo(() => {
+    if (selectedMsgContactId === 'all') return null;
+    return portalContacts.find(c => c.id === selectedMsgContactId || (c.email && c.email.toLowerCase() === selectedMsgContactId.toLowerCase())) || null;
+  }, [portalContacts, selectedMsgContactId]);
+
+  const displayedPortalMessages = useMemo(() => {
+    return visiblePortalMessages.filter(msg => {
+      if (selectedContact) {
+        return doesMsgMatchUser(msg, selectedContact);
+      }
+      if (msgRoleFilter === 'inquilinos') {
+        const sRole = (msg.senderRole || '').toLowerCase();
+        const rRole = (msg.recipientRole || '').toLowerCase();
+        return isTenantRole(sRole) || isTenantRole(rRole);
+      }
+      if (msgRoleFilter === 'proprietarios') {
+        const sRole = (msg.senderRole || '').toLowerCase();
+        const rRole = (msg.recipientRole || '').toLowerCase();
+        return isOwnerRole(sRole) || isOwnerRole(rRole);
+      }
+      return true;
+    });
+  }, [visiblePortalMessages, selectedContact, msgRoleFilter]);
 
   const handleCreatePropSubmit = (e) => {
     e.preventDefault();
@@ -685,48 +829,469 @@ export default function PainelGestaoPortais() {
             </button>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {visiblePortalMessages.length === 0 ? (
-              <div style={{ padding: '2.5rem', textAlign: 'center', color: 'var(--text-tertiary)', background: 'var(--glass-highlight)', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
-                Nenhuma mensagem na central de recados nos últimos 30 dias.
+          <div className="portal-recados-grid" style={{
+            display: 'grid',
+            gridTemplateColumns: 'minmax(280px, 330px) 1fr',
+            gap: '1.25rem',
+            alignItems: 'start'
+          }}>
+            {/* PAINEL LATERAL ESQUERDO: CONTATOS (INQUILINOS E PROPRIETÁRIOS) */}
+            <div style={{
+              backgroundColor: 'var(--bg-secondary)',
+              border: '1px solid var(--glass-border)',
+              borderRadius: 'var(--border-radius-md)',
+              padding: '1rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.75rem'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.8125rem', fontWeight: '700', color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <Users size={14} style={{ color: 'var(--accent-cyan)' }} />
+                  Filtrar por Usuário
+                </span>
+                <span style={{ fontSize: '0.6875rem', color: 'var(--text-tertiary)' }}>
+                  {filteredContacts.length} contato(s)
+                </span>
               </div>
-            ) : (
-              visiblePortalMessages.map(msg => (
-                <div key={msg.id} style={styles.msgAdminCard}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <strong style={{ color: '#ffffff' }}>{msg.senderName} ({msg.senderRole})</strong>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>{msg.date}</span>
-                      {deletePortalMessage && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (window.confirm('Deseja apagar esta mensagem da central de recados?')) {
-                              deletePortalMessage(msg.id);
-                            }
-                          }}
-                          title="Apagar mensagem"
-                          style={{
-                            background: 'transparent',
-                            border: 'none',
-                            color: 'var(--text-tertiary)',
-                            cursor: 'pointer',
-                            padding: '2px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            transition: 'opacity 0.2s'
-                          }}
-                        >
-                          <Trash2 size={13} style={{ color: 'var(--accent-danger)' }} />
-                        </button>
-                      )}
+
+              {/* Botões de Filtro: Todos, Inquilinos, Proprietários */}
+              <div style={{ display: 'flex', gap: '0.375rem', backgroundColor: 'var(--bg-tertiary)', padding: '3px', borderRadius: '8px' }}>
+                <button
+                  type="button"
+                  onClick={() => { setMsgRoleFilter('todos'); setSelectedMsgContactId('all'); }}
+                  style={{
+                    flex: 1,
+                    padding: '0.375rem 0.25rem',
+                    fontSize: '0.6875rem',
+                    fontWeight: '600',
+                    borderRadius: '6px',
+                    border: 'none',
+                    backgroundColor: msgRoleFilter === 'todos' ? 'var(--accent-primary)' : 'transparent',
+                    color: msgRoleFilter === 'todos' ? '#000000' : 'var(--text-secondary)',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    textAlign: 'center'
+                  }}
+                >
+                  Todos ({portalContacts.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setMsgRoleFilter('inquilinos'); setSelectedMsgContactId('all'); }}
+                  style={{
+                    flex: 1,
+                    padding: '0.375rem 0.25rem',
+                    fontSize: '0.6875rem',
+                    fontWeight: '600',
+                    borderRadius: '6px',
+                    border: 'none',
+                    backgroundColor: msgRoleFilter === 'inquilinos' ? '#f472b6' : 'transparent',
+                    color: msgRoleFilter === 'inquilinos' ? '#000000' : '#f472b6',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    textAlign: 'center'
+                  }}
+                >
+                  Inquilinos ({portalContacts.filter(c => c.role === 'inquilino').length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setMsgRoleFilter('proprietarios'); setSelectedMsgContactId('all'); }}
+                  style={{
+                    flex: 1,
+                    padding: '0.375rem 0.25rem',
+                    fontSize: '0.6875rem',
+                    fontWeight: '600',
+                    borderRadius: '6px',
+                    border: 'none',
+                    backgroundColor: msgRoleFilter === 'proprietarios' ? '#c084fc' : 'transparent',
+                    color: msgRoleFilter === 'proprietarios' ? '#000000' : '#c084fc',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    textAlign: 'center'
+                  }}
+                >
+                  Proprietários ({portalContacts.filter(c => c.role === 'proprietario').length})
+                </button>
+              </div>
+
+              {/* Busca de Contato */}
+              <div style={{ position: 'relative' }}>
+                <Search size={13} style={{ position: 'absolute', left: '9px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }} />
+                <input
+                  type="text"
+                  placeholder="Buscar por nome ou e-mail..."
+                  value={msgSearchContact}
+                  onChange={e => setMsgSearchContact(e.target.value)}
+                  style={{
+                    width: '100%',
+                    backgroundColor: 'var(--bg-tertiary)',
+                    border: '1px solid var(--glass-border)',
+                    borderRadius: '6px',
+                    padding: '0.4rem 0.625rem 0.4rem 1.85rem',
+                    fontSize: '0.75rem',
+                    color: 'var(--text-primary)',
+                    outline: 'none'
+                  }}
+                />
+              </div>
+
+              {/* Lista com Opção Todos + Contatos */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', maxHeight: '480px', overflowY: 'auto', paddingRight: '2px' }}>
+                {/* Opção Todos os Recados */}
+                <div
+                  onClick={() => setSelectedMsgContactId('all')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '0.55rem 0.65rem',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    backgroundColor: selectedMsgContactId === 'all' ? 'rgba(56, 189, 248, 0.15)' : 'transparent',
+                    border: selectedMsgContactId === 'all' ? '1px solid var(--accent-cyan)' : '1px solid transparent',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
+                    <div style={{
+                      width: '30px',
+                      height: '30px',
+                      borderRadius: '8px',
+                      backgroundColor: selectedMsgContactId === 'all' ? 'var(--accent-primary)' : 'rgba(255, 255, 255, 0.08)',
+                      color: selectedMsgContactId === 'all' ? '#000000' : 'var(--text-secondary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}>
+                      <MessageSquare size={14} />
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: '0.8125rem', fontWeight: '600', color: selectedMsgContactId === 'all' ? '#ffffff' : 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        Todos os Recados
+                      </div>
+                      <div style={{ fontSize: '0.625rem', color: 'var(--text-tertiary)' }}>
+                        {msgRoleFilter === 'inquilinos' ? 'Todos os Inquilinos' : msgRoleFilter === 'proprietarios' ? 'Todos os Proprietários' : 'Geral do Portal'}
+                      </div>
                     </div>
                   </div>
-                  <h4 style={{ color: 'var(--accent-cyan)', margin: '0.25rem 0' }}>{msg.subject}</h4>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.8125rem' }}>{msg.body}</p>
+                  <span style={{
+                    fontSize: '0.6875rem',
+                    fontWeight: '700',
+                    padding: '0.15rem 0.45rem',
+                    borderRadius: '10px',
+                    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                    color: 'var(--text-secondary)',
+                    flexShrink: 0
+                  }}>
+                    {visiblePortalMessages.length}
+                  </span>
                 </div>
-              ))
-            )}
+
+                {filteredContacts.length === 0 ? (
+                  <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: '0.75rem' }}>
+                    Nenhum contato encontrado.
+                  </div>
+                ) : (
+                  filteredContacts.map(contact => {
+                    const isSelected = selectedMsgContactId === contact.id;
+                    const isTenant = contact.role === 'inquilino';
+                    return (
+                      <div
+                        key={contact.id}
+                        onClick={() => setSelectedMsgContactId(contact.id)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '0.55rem 0.65rem',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          backgroundColor: isSelected 
+                            ? (isTenant ? 'rgba(244, 114, 182, 0.16)' : 'rgba(192, 132, 252, 0.16)') 
+                            : 'transparent',
+                          border: isSelected 
+                            ? (isTenant ? '1px solid #f472b6' : '1px solid #c084fc') 
+                            : '1px solid transparent',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
+                          <div style={{
+                            width: '30px',
+                            height: '30px',
+                            borderRadius: '50%',
+                            backgroundColor: isTenant ? 'rgba(244, 114, 182, 0.2)' : 'rgba(192, 132, 252, 0.2)',
+                            color: isTenant ? '#f472b6' : '#c084fc',
+                            border: isTenant ? '1px solid rgba(244, 114, 182, 0.35)' : '1px solid rgba(192, 132, 252, 0.35)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontWeight: '700',
+                            fontSize: '0.7rem',
+                            flexShrink: 0
+                          }}>
+                            {(contact.name || 'C').substring(0, 2).toUpperCase()}
+                          </div>
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{
+                              fontSize: '0.8125rem',
+                              fontWeight: '600',
+                              color: isSelected ? '#ffffff' : 'var(--text-primary)',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis'
+                            }}>
+                              {contact.name}
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', marginTop: '1px' }}>
+                              <span style={{
+                                fontSize: '0.5625rem',
+                                fontWeight: '700',
+                                padding: '1px 5px',
+                                borderRadius: '4px',
+                                textTransform: 'uppercase',
+                                backgroundColor: isTenant ? 'rgba(244, 114, 182, 0.2)' : 'rgba(192, 132, 252, 0.2)',
+                                color: isTenant ? '#f472b6' : '#c084fc'
+                              }}>
+                                {contact.roleLabel}
+                              </span>
+                              {contact.lastMessageDate && (
+                                <span style={{ fontSize: '0.625rem', color: 'var(--text-tertiary)', whiteSpace: 'nowrap' }}>
+                                  {contact.lastMessageDate.split(',')[0]}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        {contact.messageCount > 0 ? (
+                          <span style={{
+                            fontSize: '0.6875rem',
+                            fontWeight: '700',
+                            padding: '0.15rem 0.45rem',
+                            borderRadius: '10px',
+                            backgroundColor: isTenant ? 'rgba(244, 114, 182, 0.25)' : 'rgba(192, 132, 252, 0.25)',
+                            color: isTenant ? '#f472b6' : '#c084fc',
+                            flexShrink: 0
+                          }}>
+                            {contact.messageCount}
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: '0.625rem', color: 'var(--text-tertiary)', flexShrink: 0 }}>
+                            0
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+            {/* PAINEL DIREITO: MENSAGENS DO USUÁRIO SELECIONADO OU GERAL */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', minWidth: 0 }}>
+              {/* Barra de Status do Contato Selecionado */}
+              <div style={{
+                backgroundColor: 'var(--bg-secondary)',
+                border: '1px solid var(--glass-border)',
+                borderRadius: 'var(--border-radius-md)',
+                padding: '0.75rem 1rem',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '0.5rem'
+              }}>
+                {selectedContact ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', minWidth: 0 }}>
+                    <div style={{
+                      width: '34px',
+                      height: '34px',
+                      borderRadius: '50%',
+                      backgroundColor: selectedContact.role === 'inquilino' ? 'rgba(244, 114, 182, 0.2)' : 'rgba(192, 132, 252, 0.2)',
+                      color: selectedContact.role === 'inquilino' ? '#f472b6' : '#c084fc',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: '700',
+                      fontSize: '0.75rem',
+                      flexShrink: 0
+                    }}>
+                      {(selectedContact.name || 'C').substring(0, 2).toUpperCase()}
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        <strong style={{ color: '#ffffff', fontSize: '0.9375rem' }}>{selectedContact.name}</strong>
+                        <span style={{
+                          fontSize: '0.625rem',
+                          fontWeight: '700',
+                          padding: '2px 7px',
+                          borderRadius: '6px',
+                          textTransform: 'uppercase',
+                          backgroundColor: selectedContact.role === 'inquilino' ? 'rgba(244, 114, 182, 0.2)' : 'rgba(192, 132, 252, 0.2)',
+                          color: selectedContact.role === 'inquilino' ? '#f472b6' : '#c084fc'
+                        }}>
+                          {selectedContact.roleLabel}
+                        </span>
+                      </div>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
+                        {selectedContact.email || selectedContact.phone || 'Sem contato adicional'} • {displayedPortalMessages.length} recado(s) encontrado(s)
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <div style={{ fontSize: '0.9375rem', fontWeight: '700', color: '#ffffff' }}>
+                      {msgRoleFilter === 'inquilinos' ? 'Recados de Todos os Inquilinos' : msgRoleFilter === 'proprietarios' ? 'Recados de Todos os Proprietários' : 'Todos os Recados do Portal'}
+                    </div>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
+                      Exibindo {displayedPortalMessages.length} mensagem(ns) nos últimos 30 dias
+                    </span>
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  {selectedContact && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedMsgContactId('all')}
+                      className="btn btn-secondary"
+                      style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem' }}
+                    >
+                      Ver Todos
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    style={styles.btnActionPrimary}
+                    onClick={() => {
+                      if (selectedContact) {
+                        setMsgTargetUser(selectedContact.id);
+                      }
+                      setShowMessageModal(true);
+                    }}
+                  >
+                    <Send size={13} />
+                    <span>{selectedContact ? `Recado para ${selectedContact.name.split(' ')[0]}` : 'Nova Mensagem'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Lista de Mensagens */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {displayedPortalMessages.length === 0 ? (
+                  <div style={{
+                    padding: '3rem 1.5rem',
+                    textAlign: 'center',
+                    color: 'var(--text-tertiary)',
+                    background: 'var(--glass-highlight)',
+                    borderRadius: '10px',
+                    border: '1px solid var(--glass-border)'
+                  }}>
+                    <MessageSquare size={30} style={{ margin: '0 auto 0.75rem auto', opacity: 0.35 }} />
+                    <div style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--text-secondary)' }}>
+                      {selectedContact 
+                        ? `Nenhum recado encontrado para ${selectedContact.name} nos últimos 30 dias.`
+                        : 'Nenhuma mensagem na central de recados nos últimos 30 dias.'}
+                    </div>
+                    {selectedContact && (
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        style={{ marginTop: '1rem', fontSize: '0.8125rem' }}
+                        onClick={() => {
+                          setMsgTargetUser(selectedContact.id);
+                          setShowMessageModal(true);
+                        }}
+                      >
+                        <Send size={13} style={{ marginRight: '0.35rem' }} />
+                        Enviar Recado para {selectedContact.name.split(' ')[0]}
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  displayedPortalMessages.map(msg => {
+                    const isMsgTenant = isTenantRole(msg.senderRole);
+                    return (
+                      <div key={msg.id} style={styles.msgAdminCard}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <strong style={{ color: '#ffffff', fontSize: '0.875rem' }}>{msg.senderName}</strong>
+                            <span style={{
+                              fontSize: '0.625rem',
+                              fontWeight: '700',
+                              padding: '1px 6px',
+                              borderRadius: '4px',
+                              textTransform: 'uppercase',
+                              backgroundColor: isMsgTenant ? 'rgba(244, 114, 182, 0.2)' : 'rgba(192, 132, 252, 0.2)',
+                              color: isMsgTenant ? '#f472b6' : '#c084fc'
+                            }}>
+                              {isMsgTenant ? 'Inquilino' : 'Proprietário'}
+                            </span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>{msg.date}</span>
+                            {deletePortalMessage && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (window.confirm('Deseja apagar esta mensagem da central de recados?')) {
+                                    deletePortalMessage(msg.id);
+                                  }
+                                }}
+                                title="Apagar mensagem"
+                                style={{
+                                  background: 'transparent',
+                                  border: 'none',
+                                  color: 'var(--text-tertiary)',
+                                  cursor: 'pointer',
+                                  padding: '2px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  transition: 'opacity 0.2s'
+                                }}
+                              >
+                                <Trash2 size={13} style={{ color: 'var(--accent-danger)' }} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        <h4 style={{ color: 'var(--accent-cyan)', margin: '0.375rem 0 0.25rem 0', fontSize: '0.875rem' }}>{msg.subject}</h4>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.8125rem', lineHeight: '1.45', margin: 0 }}>{msg.body}</p>
+                        <div style={{ marginTop: '0.625rem', display: 'flex', justifyContent: 'flex-end' }}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const target = portalContacts.find(c => doesMsgMatchUser(msg, c));
+                              if (target) setMsgTargetUser(target.id);
+                              setMsgSubjectInput(msg.subject?.startsWith('Re:') ? msg.subject : `Re: ${msg.subject || 'Recado'}`);
+                              setShowMessageModal(true);
+                            }}
+                            style={{
+                              background: 'transparent',
+                              border: '1px solid var(--glass-border)',
+                              color: 'var(--text-secondary)',
+                              borderRadius: '6px',
+                              padding: '3px 8px',
+                              fontSize: '0.6875rem',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.3rem',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            <Reply size={11} />
+                            Responder
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Modal Nova Mensagem */}

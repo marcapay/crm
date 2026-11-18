@@ -1586,6 +1586,20 @@ img {
   }
 }
 
+/* Central de Recados do Portal - Layout Responsivo */
+.portal-recados-grid {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .portal-recados-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 
 
 
