@@ -28,6 +28,7 @@ export default function FichaPublicaCliente() {
     telefoneProprietario: '',
     emailProprietario: '',
     horarioContatoProprietario: 'Comercial (08:00 às 18:00)',
+    linkWhatsapp: '',
 
     tipoImovel: 'Casa',
     enderecoImovel: '',
@@ -336,14 +337,25 @@ export default function FichaPublicaCliente() {
                 {formErrors.emailProprietario && <span className="error-text">{formErrors.emailProprietario}</span>}
               </div>
 
-              <div className="form-group span-2">
-                <label className="form-label">Melhor horário para entrarmos em contato:</label>
+              <div className="form-group">
+                <label className="form-label">Melhor horário para contato:</label>
                 <input 
                   type="text"
                   className="form-input"
-                  placeholder="Ex: Período da manhã, após 18h, etc."
+                  placeholder="Ex: Comercial, manhã, após 18h..."
                   value={formData.horarioContatoProprietario}
                   onChange={e => handleFieldChange('horarioContatoProprietario', e.target.value)}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Link do seu WhatsApp (opcional):</label>
+                <input 
+                  type="url"
+                  className="form-input"
+                  placeholder="https://wa.me/55..."
+                  value={formData.linkWhatsapp}
+                  onChange={e => handleFieldChange('linkWhatsapp', e.target.value)}
                 />
               </div>
             </div>

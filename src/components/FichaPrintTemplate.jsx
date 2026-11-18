@@ -88,9 +88,13 @@ export default function FichaPrintTemplate({ ficha, isBlank = false, onClose, on
               <span className="field-label">E-mail:</span>
               <span className="field-content">{renderValue(data.emailProprietario, '________________________')}</span>
             </div>
-            <div className="field-group span-2">
+            <div className="field-group">
               <span className="field-label">Melhor Horário para Contato:</span>
-              <span className="field-content">{renderValue(data.horarioContatoProprietario, '____________________________________________________')}</span>
+              <span className="field-content">{renderValue(data.horarioContatoProprietario, '________________________')}</span>
+            </div>
+            <div className="field-group">
+              <span className="field-label">Link do WhatsApp:</span>
+              <span className="field-content">{renderValue(data.linkWhatsapp, '________________________')}</span>
             </div>
           </div>
         </section>

@@ -80,6 +80,7 @@ export default function FichaVisitaTecnica() {
     telefoneProprietario: '',
     emailProprietario: '',
     horarioContatoProprietario: 'Comercial (08:00 às 18:00)',
+    linkWhatsapp: '',
     
     tipoImovel: 'Casa',
     enderecoImovel: '',
@@ -135,6 +136,7 @@ export default function FichaVisitaTecnica() {
       telefoneProprietario: '',
       emailProprietario: '',
       horarioContatoProprietario: 'Comercial (08:00 às 18:00)',
+      linkWhatsapp: '',
       
       tipoImovel: 'Casa',
       enderecoImovel: '',
@@ -181,6 +183,7 @@ export default function FichaVisitaTecnica() {
       telefoneProprietario: ficha.telefoneProprietario || '',
       emailProprietario: ficha.emailProprietario || '',
       horarioContatoProprietario: ficha.horarioContatoProprietario || '',
+      linkWhatsapp: ficha.linkWhatsapp || '',
       
       tipoImovel: ficha.tipoImovel || 'Casa',
       enderecoImovel: ficha.enderecoImovel || '',
@@ -800,15 +803,57 @@ export default function FichaVisitaTecnica() {
                 {formErrors.emailProprietario && <span className="error-text">{formErrors.emailProprietario}</span>}
               </div>
 
-              <div className="form-group span-2">
+              <div className="form-group">
                 <label className="form-label">Melhor Horário para Contato:</label>
                 <input 
                   type="text"
                   className="form-input"
-                  placeholder="Ex: Período da manhã, após 14h, etc."
+                  placeholder="Ex: Comercial (08:00 às 18:00), após 14h, etc."
                   value={formData.horarioContatoProprietario}
                   onChange={e => handleFieldChange('horarioContatoProprietario', e.target.value)}
                 />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span>Link do WhatsApp:</span>
+                  {formData.linkWhatsapp && (
+                    <a 
+                      href={formData.linkWhatsapp.startsWith('http') ? formData.linkWhatsapp : `https://${formData.linkWhatsapp}`}
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      style={{ fontSize: '0.75rem', color: '#22c55e', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '3px', fontWeight: '600' }}
+                    >
+                      Abrir conversa ↗
+                    </a>
+                  )}
+                </label>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <input 
+                    type="url"
+                    className="form-input"
+                    placeholder="https://wa.me/5537999999999"
+                    value={formData.linkWhatsapp || ''}
+                    onChange={e => handleFieldChange('linkWhatsapp', e.target.value)}
+                  />
+                  {formData.telefoneProprietario && !formData.linkWhatsapp && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const digits = formData.telefoneProprietario.replace(/\D/g, '');
+                        if (digits) {
+                          const fullNumber = digits.length <= 11 ? `55${digits}` : digits;
+                          handleFieldChange('linkWhatsapp', `https://wa.me/${fullNumber}`);
+                        }
+                      }}
+                      className="btn-glass-secondary"
+                      style={{ fontSize: '0.75rem', padding: '0.5rem 0.75rem', whiteSpace: 'nowrap' }}
+                      title="Gerar link automaticamente a partir do telefone informado"
+                    >
+                      Gerar Link
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
