@@ -46,6 +46,7 @@ export default function Clientes() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [status, setStatus] = useState(pipelinesList[0]?.name || 'Pessoal');
+  const [role, setRole] = useState('Normal');
   const [tagsInput, setTagsInput] = useState('');
 
   // Filter clients list
@@ -64,6 +65,7 @@ export default function Clientes() {
     setEmail('');
     setPhone('');
     setStatus(pipelinesList[0]?.name || 'Pessoal');
+    setRole('Normal');
     setTagsInput('');
     setIsAddOpen(true);
   };
@@ -74,6 +76,7 @@ export default function Clientes() {
     setEmail(client.email);
     setPhone(client.phone);
     setStatus(client.status);
+    setRole(client.role || 'Normal');
     setTagsInput(client.tags ? client.tags.join(', ') : '');
     setIsEditOpen(true);
   };
@@ -92,6 +95,7 @@ export default function Clientes() {
       email,
       phone,
       status,
+      role,
       tags
     });
 
@@ -112,6 +116,7 @@ export default function Clientes() {
       email,
       phone,
       status,
+      role,
       tags
     });
 
@@ -203,6 +208,7 @@ export default function Clientes() {
               <tr style={styles.tableHeaderRow}>
                 <th style={styles.th}>Nome / E-mail</th>
                 <th style={styles.th}>Telefone</th>
+                <th style={styles.th}>Função</th>
                 <th style={styles.th}>Estágio</th>
                 <th style={styles.th}>Tags</th>
                 <th style={styles.th}>Criado em</th>
@@ -224,6 +230,25 @@ export default function Clientes() {
                     </div>
                   </td>
                   <td style={{ ...styles.td, color: 'var(--text-secondary)' }}>{client.phone}</td>
+                  <td style={styles.td}>
+                    <span style={{
+                      padding: '0.2rem 0.6rem',
+                      borderRadius: '12px',
+                      fontSize: '0.75rem',
+                      fontWeight: '500',
+                      display: 'inline-block',
+                      backgroundColor: (client.role === 'Administrador' || client.role === 'admin') ? 'rgba(59, 130, 246, 0.15)' :
+                                       (client.role === 'Proprietário' || client.role === 'proprietario') ? 'rgba(168, 85, 247, 0.15)' :
+                                       (client.role === 'Inquilino' || client.role === 'inquilino') ? 'rgba(236, 72, 153, 0.15)' :
+                                       'rgba(100, 116, 139, 0.15)',
+                      color: (client.role === 'Administrador' || client.role === 'admin') ? '#60a5fa' :
+                             (client.role === 'Proprietário' || client.role === 'proprietario') ? '#c084fc' :
+                             (client.role === 'Inquilino' || client.role === 'inquilino') ? '#f472b6' :
+                             '#94a3b8'
+                    }}>
+                      {client.role || 'Normal'}
+                    </span>
+                  </td>
                   <td style={styles.td}>
                     <span className={`badge ${getStatusBadgeClass(client.status)}`}>
                       {client.status}
@@ -272,7 +297,7 @@ export default function Clientes() {
 
               {filteredClients.length === 0 && (
                 <tr>
-                  <td colSpan="6" style={styles.emptyTableCell}>
+                  <td colSpan="7" style={styles.emptyTableCell}>
                     Nenhum cliente cadastrado com os filtros atuais.
                   </td>
                 </tr>
@@ -336,6 +361,21 @@ export default function Clientes() {
                   {pipelinesList.map(p => (
                     <option key={p.id} value={p.name}>{p.name}</option>
                   ))}
+                </select>
+              </div>
+
+              <div className="input-group">
+                <label>Função do Usuário</label>
+                <select 
+                  className="input-field" 
+                  value={role} 
+                  onChange={e => setRole(e.target.value)}
+                  style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
+                >
+                  <option value="Normal">Normal</option>
+                  <option value="Inquilino">Inquilino</option>
+                  <option value="Proprietário">Proprietário</option>
+                  <option value="Administrador">Administrador</option>
                 </select>
               </div>
 
@@ -410,6 +450,21 @@ export default function Clientes() {
                   {pipelinesList.map(p => (
                     <option key={p.id} value={p.name}>{p.name}</option>
                   ))}
+                </select>
+              </div>
+
+              <div className="input-group">
+                <label>Função do Usuário</label>
+                <select 
+                  className="input-field" 
+                  value={role} 
+                  onChange={e => setRole(e.target.value)}
+                  style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
+                >
+                  <option value="Normal">Normal</option>
+                  <option value="Inquilino">Inquilino</option>
+                  <option value="Proprietário">Proprietário</option>
+                  <option value="Administrador">Administrador</option>
                 </select>
               </div>
 

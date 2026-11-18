@@ -135,7 +135,9 @@ export const AppProvider = ({ children }) => {
             name: c.name || c.nome || 'Cliente CRM',
             email: c.email ? c.email.trim().toLowerCase() : '',
             role: (c.role || c.tipo || c.situacaoComercial || '').toLowerCase().includes('inquilino') ? 'inquilino' : 
-                  (c.role || c.tipo || c.situacaoComercial || '').toLowerCase().includes('proprietario') ? 'proprietario' : 'proprietario',
+                  (c.role || c.tipo || c.situacaoComercial || '').toLowerCase().includes('proprietario') ? 'proprietario' :
+                  (c.role || c.tipo || c.situacaoComercial || '').toLowerCase().includes('admin') ? 'Administrador' :
+                  (c.role || 'Normal'),
             phone: c.phone || c.telefone || '',
             password: c.password || '123456'
           }));
@@ -2898,6 +2900,7 @@ export const AppProvider = ({ children }) => {
       historicoAtividades: [],
       camposPersonalizados: client.camposPersonalizados || {},
       interesseDemonstrado: client.interesseDemonstrado || false,
+      role: client.role || 'Normal',
       ...client,
       id: newId,
       createdAt: new Date().toISOString().split('T')[0],
@@ -2908,6 +2911,19 @@ export const AppProvider = ({ children }) => {
       const cleanPhone = client.phone.replace(/\D/g, '');
       const suffix = cleanPhone.slice(-8);
       localStorage.removeItem(`crmbase_deleted_contact_${suffix}`);
+    }
+
+    if (newClient.email) {
+      setSystemUsers(prev => {
+        const cleanEmail = newClient.email.trim().toLowerCase();
+        const idx = prev.findIndex(u => (u.email || '').trim().toLowerCase() === cleanEmail);
+        if (idx >= 0) {
+          const copy = [...prev];
+          copy[idx] = { ...copy[idx], role: newClient.role || copy[idx].role };
+          return copy;
+        }
+        return prev;
+      });
     }
 
     setClients(prev => [...prev, newClient]);
@@ -2974,6 +2990,19 @@ export const AppProvider = ({ children }) => {
   const updateClient = (updatedClient) => {
     setClients(prev => prev.map(c => c.id === updatedClient.id ? updatedClient : c));
     
+    if (updatedClient.email && updatedClient.role) {
+      setSystemUsers(prev => {
+        const cleanEmail = updatedClient.email.trim().toLowerCase();
+        const idx = prev.findIndex(u => (u.email || '').trim().toLowerCase() === cleanEmail);
+        if (idx >= 0) {
+          const copy = [...prev];
+          copy[idx] = { ...copy[idx], role: updatedClient.role };
+          return copy;
+        }
+        return prev;
+      });
+    }
+
     // Update or create client card on Kanban
     setKanbanCards(prev => {
       const targetColumn = mapStatusToColumn(updatedClient.status);
