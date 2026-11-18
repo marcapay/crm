@@ -125,11 +125,14 @@ export default function LinksRapidos() {
           className="btn"
           style={{
             backgroundColor: activeTab === 'replies' ? 'var(--accent-primary)' : 'var(--bg-secondary)',
-            color: activeTab === 'replies' ? '#0a0a0a' : '#ffffff',
-            fontWeight: activeTab === 'replies' ? '700' : '500',
+            color: activeTab === 'replies' ? 'var(--bg-primary)' : 'var(--text-secondary)',
+            fontWeight: activeTab === 'replies' ? '700' : '600',
             border: '1px solid var(--glass-border)',
             gap: '0.5rem',
-            padding: '0.6rem 1.25rem'
+            padding: '0.6rem 1.25rem',
+            boxShadow: activeTab === 'replies' ? '0 2px 8px rgba(0,0,0,0.1)' : 'none',
+            transition: 'all 0.2s ease',
+            cursor: 'pointer'
           }}
         >
           <MessageSquareCode size={16} />
@@ -142,11 +145,14 @@ export default function LinksRapidos() {
           className="btn"
           style={{
             backgroundColor: activeTab === 'links' ? 'var(--accent-primary)' : 'var(--bg-secondary)',
-            color: activeTab === 'links' ? '#0a0a0a' : '#ffffff',
-            fontWeight: activeTab === 'links' ? '700' : '500',
+            color: activeTab === 'links' ? 'var(--bg-primary)' : 'var(--text-secondary)',
+            fontWeight: activeTab === 'links' ? '700' : '600',
             border: '1px solid var(--glass-border)',
             gap: '0.5rem',
-            padding: '0.6rem 1.25rem'
+            padding: '0.6rem 1.25rem',
+            boxShadow: activeTab === 'links' ? '0 2px 8px rgba(0,0,0,0.1)' : 'none',
+            transition: 'all 0.2s ease',
+            cursor: 'pointer'
           }}
         >
           <Link2 size={16} />
@@ -187,11 +193,11 @@ export default function LinksRapidos() {
                   </div>
                 </div>
 
-                <h3 style={{ ...styles.cardTitle, marginTop: '0.5rem', fontSize: '0.9375rem', color: '#ffffff' }}>{reply.title}</h3>
+                <h3 style={{ ...styles.cardTitle, marginTop: '0.5rem', fontSize: '0.9375rem', color: 'var(--text-primary)' }}>{reply.title}</h3>
                 
                 <p style={{
                   fontSize: '0.85rem',
-                  color: '#e5e5e5',
+                  color: 'var(--text-secondary)',
                   marginTop: '0.5rem',
                   lineHeight: '1.5',
                   whiteSpace: 'pre-wrap',
@@ -202,7 +208,7 @@ export default function LinksRapidos() {
                 </p>
 
                 <div style={{ ...styles.cardFooter, marginTop: '1rem', paddingTop: '0.5rem', borderTop: '1px solid var(--glass-border)' }}>
-                  <span style={{ fontSize: '0.75rem', color: '#a3a3a3' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
                     Digite <strong>/{reply.shortcut}</strong> no chat
                   </span>
                 </div>

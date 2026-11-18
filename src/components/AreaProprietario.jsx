@@ -1215,8 +1215,8 @@ const styles = {
   compPillBtn: (active) => ({
     padding: '0.375rem 0.875rem',
     borderRadius: '20px',
-    backgroundColor: active ? 'var(--accent-primary)' : 'rgba(255,255,255,0.05)',
-    color: active ? '#000000' : 'var(--text-secondary)',
+    backgroundColor: active ? 'var(--accent-primary)' : 'var(--bg-secondary)',
+    color: active ? 'var(--bg-primary)' : 'var(--text-secondary)',
     border: '1px solid var(--glass-border)',
     fontSize: '0.8125rem',
     fontWeight: '600',

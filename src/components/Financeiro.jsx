@@ -265,8 +265,8 @@ export default function Financeiro() {
             <button
               style={{
                 ...styles.pillBtn,
-                backgroundColor: filterType === 'todos' ? '#ffffff' : 'rgba(255,255,255,0.05)',
-                color: filterType === 'todos' ? '#000000' : 'var(--text-secondary)'
+                backgroundColor: filterType === 'todos' ? 'var(--accent-primary)' : 'var(--bg-secondary)',
+                color: filterType === 'todos' ? 'var(--bg-primary)' : 'var(--text-secondary)'
               }}
               onClick={() => setFilterType('todos')}
             >
@@ -276,7 +276,7 @@ export default function Financeiro() {
             <button
               style={{
                 ...styles.pillBtn,
-                backgroundColor: filterType === 'entradas' ? 'rgba(52, 211, 153, 0.2)' : 'rgba(255,255,255,0.05)',
+                backgroundColor: filterType === 'entradas' ? 'rgba(52, 211, 153, 0.2)' : 'var(--bg-secondary)',
                 color: '#34d399'
               }}
               onClick={() => setFilterType('entradas')}
@@ -287,7 +287,7 @@ export default function Financeiro() {
             <button
               style={{
                 ...styles.pillBtn,
-                backgroundColor: filterType === 'saidas' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(255,255,255,0.05)',
+                backgroundColor: filterType === 'saidas' ? 'rgba(239, 68, 68, 0.2)' : 'var(--bg-secondary)',
                 color: '#ef4444'
               }}
               onClick={() => setFilterType('saidas')}
@@ -298,7 +298,7 @@ export default function Financeiro() {
             <button
               style={{
                 ...styles.pillBtn,
-                backgroundColor: filterType === 'docs' ? 'rgba(56, 189, 248, 0.2)' : 'rgba(255,255,255,0.05)',
+                backgroundColor: filterType === 'docs' ? 'rgba(56, 189, 248, 0.2)' : 'var(--bg-secondary)',
                 color: '#38bdf8'
               }}
               onClick={() => setFilterType('docs')}
