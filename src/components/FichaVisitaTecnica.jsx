@@ -488,8 +488,7 @@ export default function FichaVisitaTecnica() {
           ) : (
             <button 
               onClick={() => setViewMode('list')}
-              className="btn-glass-secondary"
-              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.625rem 1rem', borderRadius: 'var(--border-radius-sm)' }}
+              className="btn btn-secondary"
             >
               <ArrowLeft size={16} />
               <span>Voltar para Lista</span>
@@ -704,54 +703,58 @@ export default function FichaVisitaTecnica() {
         <form onSubmit={handleSaveFicha} className="ficha-form-container">
           
           {/* Top Floating Action Bar */}
-          <div className="glass-panel" style={{ padding: '1rem 1.25rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', position: 'sticky', top: '0', zIndex: 10 }}>
+          <div className="glass-panel" style={{ padding: '0.875rem 1.25rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', position: 'sticky', top: '0', zIndex: 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <span style={{ fontSize: '0.875rem', fontWeight: '700', color: 'var(--accent-cyan)' }}>
+              <span style={{ fontSize: '0.95rem', fontWeight: '700', color: 'var(--accent-cyan)' }}>
                 {editingId ? `Editando Ficha: ${formData.codigoImovel}` : 'Nova Ficha 01'}
               </span>
             </div>
 
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
               <button 
                 type="button" 
                 onClick={() => setViewMode('list')}
-                className="btn-glass-secondary"
-                style={{ padding: '0.5rem 0.875rem', fontSize: '0.875rem' }}
+                className="btn btn-secondary"
+                style={{ padding: '0.5rem 0.875rem', fontSize: '0.85rem' }}
               >
-                Voltar
+                <ArrowLeft size={15} />
+                <span>Voltar</span>
               </button>
 
               <button 
                 type="button" 
                 onClick={resetForm}
-                className="btn-glass-secondary"
-                style={{ padding: '0.5rem 0.875rem', fontSize: '0.875rem' }}
+                className="btn btn-secondary"
+                style={{ padding: '0.5rem 0.875rem', fontSize: '0.85rem' }}
               >
-                Cancelar
+                <X size={15} />
+                <span>Cancelar</span>
               </button>
 
               <button 
                 type="button" 
                 onClick={handlePrintBlank}
-                className="btn-glass-secondary"
-                style={{ padding: '0.5rem 0.875rem', fontSize: '0.875rem' }}
+                className="btn btn-secondary"
+                style={{ padding: '0.5rem 0.875rem', fontSize: '0.85rem' }}
               >
-                Imprimir em Branco
+                <Printer size={15} />
+                <span>Imprimir em Branco</span>
               </button>
 
               <button 
                 type="button" 
                 onClick={() => handlePrintFilled()}
-                className="btn-glass-secondary"
-                style={{ padding: '0.5rem 0.875rem', fontSize: '0.875rem' }}
+                className="btn btn-secondary"
+                style={{ padding: '0.5rem 0.875rem', fontSize: '0.85rem' }}
               >
-                Imprimir Preenchida
+                <FileSpreadsheet size={15} />
+                <span>Imprimir Preenchida</span>
               </button>
 
               <button 
                 type="submit"
-                className="btn-glass-primary"
-                style={{ padding: '0.5rem 1.25rem', fontSize: '0.875rem', backgroundColor: 'var(--accent-primary)', color: 'var(--bg-primary)', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.375rem' }}
+                className="btn btn-primary"
+                style={{ padding: '0.5rem 1.25rem', fontSize: '0.85rem', fontWeight: '700' }}
               >
                 <Save size={16} />
                 <span>Salvar Ficha</span>
@@ -846,8 +849,8 @@ export default function FichaVisitaTecnica() {
                           handleFieldChange('linkWhatsapp', `https://wa.me/${fullNumber}`);
                         }
                       }}
-                      className="btn-glass-secondary"
-                      style={{ fontSize: '0.75rem', padding: '0.5rem 0.75rem', whiteSpace: 'nowrap' }}
+                      className="btn btn-secondary"
+                      style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem', whiteSpace: 'nowrap' }}
                       title="Gerar link automaticamente a partir do telefone informado"
                     >
                       Gerar Link
@@ -1313,44 +1316,48 @@ export default function FichaVisitaTecnica() {
           </div>
 
           {/* Bottom Action Bar */}
-          <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+          <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginTop: '1.5rem' }}>
             <button 
               type="button" 
               onClick={() => setViewMode('list')}
-              className="btn-glass-secondary"
+              className="btn btn-secondary"
             >
-              Voltar para Lista
+              <ArrowLeft size={16} />
+              <span>Voltar para Lista</span>
             </button>
 
-            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
               <button 
                 type="button" 
                 onClick={resetForm}
-                className="btn-glass-secondary"
+                className="btn btn-secondary"
               >
-                Cancelar
+                <X size={16} />
+                <span>Cancelar</span>
               </button>
 
               <button 
                 type="button" 
                 onClick={handlePrintBlank}
-                className="btn-glass-secondary"
+                className="btn btn-secondary"
               >
-                Imprimir em Branco
+                <Printer size={16} />
+                <span>Imprimir em Branco</span>
               </button>
 
               <button 
                 type="button" 
                 onClick={() => handlePrintFilled()}
-                className="btn-glass-secondary"
+                className="btn btn-secondary"
               >
-                Imprimir Preenchida
+                <FileSpreadsheet size={16} />
+                <span>Imprimir Preenchida</span>
               </button>
 
               <button 
                 type="submit"
-                className="btn-glass-primary"
-                style={{ padding: '0.625rem 1.5rem', backgroundColor: 'var(--accent-primary)', color: 'var(--bg-primary)', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+                className="btn btn-primary"
+                style={{ padding: '0.625rem 1.5rem', fontWeight: '700' }}
               >
                 <Save size={18} />
                 <span>Salvar Ficha</span>
@@ -1417,8 +1424,8 @@ export default function FichaVisitaTecnica() {
 
               <button 
                 onClick={() => setShowShareModal(false)}
-                className="btn-glass-secondary"
-                style={{ padding: '0.75rem 1.25rem', borderRadius: '8px' }}
+                className="btn btn-secondary"
+                style={{ padding: '0.75rem 1.25rem' }}
               >
                 Fechar
               </button>

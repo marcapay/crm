@@ -403,8 +403,8 @@ export default function FichaPublicaCliente() {
                 setAccountCreatedInfo(null);
                 setFormData(prev => ({ ...prev, nomeProprietario: '', telefoneProprietario: '', enderecoImovel: '' }));
               }}
-              className="btn-glass-secondary"
-              style={{ padding: '0.75rem 1.5rem', borderRadius: '8px' }}
+              className="btn btn-secondary"
+              style={{ padding: '0.75rem 1.5rem' }}
             >
               Enviar Outro Imóvel
             </button>
@@ -873,14 +873,11 @@ export default function FichaPublicaCliente() {
           <div style={{ textAlign: 'center', marginTop: '2rem' }}>
             <button 
               type="submit"
-              className="btn-glass-primary"
+              className="btn btn-primary"
               style={{
                 padding: '0.875rem 2.5rem',
                 fontSize: '1rem',
                 fontWeight: '700',
-                backgroundColor: 'var(--accent-primary)',
-                color: 'var(--bg-primary)',
-                borderRadius: '12px',
                 cursor: 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
