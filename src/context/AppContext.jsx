@@ -817,10 +817,10 @@ export const AppProvider = ({ children }) => {
     let images = [];
     if (Array.isArray(ficha.imagensImovel) && ficha.imagensImovel.length > 0) {
       images = ficha.imagensImovel.map((img, idx) => {
-        if (typeof img === 'string' && img.startsWith('data:image/') && img.length > 25000) {
-          return defaultPics[idx % defaultPics.length];
+        if (typeof img === 'string' && (img.startsWith('http://') || img.startsWith('https://'))) {
+          return img;
         }
-        return img;
+        return defaultPics[idx % defaultPics.length];
       }).filter(Boolean);
     }
     if (images.length === 0) {
@@ -5058,7 +5058,8 @@ ${fullSearchContext.substring(0, 4000)}
       setFichasVisita,
       addFichaVisita,
       updateFichaVisita,
-      deleteFichaVisita
+      deleteFichaVisita,
+      convertFichaToProperty
     }}>
       {children}
     </AppContext.Provider>

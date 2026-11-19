@@ -38,6 +38,7 @@ export default function FichaVisitaTecnica() {
     addFichaVisita, 
     updateFichaVisita, 
     deleteFichaVisita, 
+    convertFichaToProperty,
     profile,
     portalUsers = []
   } = useApp();
@@ -58,9 +59,35 @@ export default function FichaVisitaTecnica() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
-  // Edit Ficha Name inline state
+  // Sync with official site
+  const [isSyncingSite, setIsSyncingSite] = useState(false);
   const [isEditingFichaName, setIsEditingFichaName] = useState(false);
   const [customFichaName, setCustomFichaName] = useState('');
+  const handleSyncWithWebsite = async () => {
+    setIsSyncingSite(true);
+    try {
+      const activeFichas = (fichasVisita || []).filter(f => f && f.publicarNoSite !== false && f.status !== 'Cancelado');
+      if (typeof convertFichaToProperty === 'function') {
+        const propertiesToSync = activeFichas.map(convertFichaToProperty).filter(Boolean);
+        const res = await fetch('/api/properties', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(propertiesToSync)
+        });
+        if (res.ok) {
+          setSuccessMsg(`Sucesso! ${propertiesToSync.length} imóvel(is) sincronizado(s) e ativos no site oficial!`);
+        } else {
+          setSuccessMsg('Aviso: Verifique a conexão com a API de imóveis.');
+        }
+      }
+    } catch (e) {
+      console.error(e);
+      setSuccessMsg('Erro ao sincronizar imóveis com o site.');
+    } finally {
+      setIsSyncingSite(false);
+      setTimeout(() => setSuccessMsg(''), 5000);
+    }
+  };
 
   const getPublicFormUrl = () => {
     const baseUrl = window.location.origin + window.location.pathname;
@@ -312,6 +339,33 @@ export default function FichaVisitaTecnica() {
             ...prev,
             imagensImovel: [...(prev.imagensImovel || []), compressedDataUrl]
           }));
+
+          // Upload to CDN in background to obtain permanent public URL for the website
+          try {
+            const form = new FormData();
+            form.append('key', '6d207e02198a847aa98d0a2a901485a5');
+            form.append('action', 'upload');
+            form.append('source', compressedDataUrl.replace(/^data:image\/[a-z]+;base64,/, ''));
+            form.append('format', 'json');
+
+            fetch('https://freeimage.host/api/1/upload', {
+              method: 'POST',
+              body: form
+            })
+              .then(res => res.json())
+              .then(data => {
+                if (data?.image?.url) {
+                  const cdnUrl = data.image.url;
+                  setFormData(prev => ({
+                    ...prev,
+                    imagensImovel: (prev.imagensImovel || []).map(img => img === compressedDataUrl ? cdnUrl : img)
+                  }));
+                }
+              })
+              .catch(err => console.warn('Image CDN upload background warning:', err));
+          } catch (uploadErr) {
+            console.warn('Background image upload error:', uploadErr);
+          }
         };
         img.src = event.target.result;
       };
@@ -539,6 +593,29 @@ export default function FichaVisitaTecnica() {
                 <Plus size={16} />
                 <span>Nova Ficha</span>
               </button>
+
+              <button 
+                type="button"
+                onClick={handleSyncWithWebsite}
+                disabled={isSyncingSite}
+                style={{ 
+                  display: 'inline-flex', 
+                  alignItems: 'center', 
+                  gap: '0.5rem', 
+                  padding: '0.625rem 1.125rem', 
+                  borderRadius: 'var(--border-radius-sm)', 
+                  backgroundColor: 'rgba(56, 189, 248, 0.12)', 
+                  color: 'var(--accent-cyan)', 
+                  border: '1px solid rgba(56, 189, 248, 0.35)',
+                  fontWeight: '700',
+                  fontSize: '0.875rem',
+                  cursor: isSyncingSite ? 'not-allowed' : 'pointer'
+                }}
+                title="Sincronizar todos os imóveis ativos com o site oficial"
+              >
+                <Globe size={16} />
+                <span>{isSyncingSite ? 'Sincronizando...' : 'Publicar no Site'}</span>
+              </button>
             </>
           ) : (
             <button 
@@ -712,6 +789,27 @@ export default function FichaVisitaTecnica() {
                               <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '0.7rem', color: 'var(--accent-cyan)', backgroundColor: 'rgba(56, 189, 248, 0.12)', padding: '1px 6px', borderRadius: '4px' }}>
                                 <Camera size={11} /> {f.imagensImovel.length} foto(s)
                               </span>
+                            </div>
+                          )}
+                          {f.publicarNoSite !== false && f.status !== 'Cancelado' && (
+                            <div style={{ marginTop: '5px' }}>
+                              <a 
+                                href={`https://www.araujoimoveiscaratinga.com.br/imoveis/${(f.codigoImovel || f.id || '').toLowerCase().replace(/^#+/, '')}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{ 
+                                  display: 'inline-flex', 
+                                  alignItems: 'center', 
+                                  gap: '4px', 
+                                  fontSize: '0.75rem', 
+                                  color: 'var(--accent-cyan)', 
+                                  textDecoration: 'none',
+                                  fontWeight: '600'
+                                }}
+                                title="Ver anúncio publicado no Site Oficial"
+                              >
+                                <Globe size={12} /> Ver no site oficial ↗
+                              </a>
                             </div>
                           )}
                         </td>

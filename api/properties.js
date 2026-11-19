@@ -37,17 +37,19 @@ function sanitizeProperty(prop) {
   const tipoKey = (prop.type || 'casa').toLowerCase();
   const fallbackList = FALLBACK_IMAGES_BY_TYPE[tipoKey] || FALLBACK_IMAGES_BY_TYPE.casa;
 
-  // Filter images: keep valid URLs, if base64 is too large, use fallback
+  // Filter images: STRICTLY keep only valid http/https URLs. Never allow base64 in cloud store.
   let cleanImages = Array.isArray(prop.images) ? prop.images.filter(Boolean) : [];
+  cleanImages = cleanImages
+    .map((img, idx) => {
+      if (typeof img === 'string' && (img.startsWith('http://') || img.startsWith('https://'))) {
+        return img;
+      }
+      return fallbackList[idx % fallbackList.length];
+    })
+    .filter(Boolean);
+
   if (cleanImages.length === 0) {
     cleanImages = fallbackList;
-  } else {
-    cleanImages = cleanImages.map((img, idx) => {
-      if (typeof img === 'string' && img.startsWith('data:image/') && img.length > 25000) {
-        return fallbackList[idx % fallbackList.length];
-      }
-      return img;
-    });
   }
 
   return {
