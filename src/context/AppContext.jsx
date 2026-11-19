@@ -752,6 +752,127 @@ export const AppProvider = ({ children }) => {
     syncUsersToCloud();
   }, [portalUsers]);
 
+  const convertFichaToProperty = (ficha) => {
+    if (!ficha) return null;
+    const rawCode = (ficha.codigoImovel || `VT-${Date.now().toString().slice(-4)}`).replace(/^#+/, '').trim().toUpperCase();
+    const id = `imovel-${rawCode.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+    const tipo = ficha.tipoImovel || 'Casa';
+    const bairroRaw = (ficha.bairroImovel || 'Centro').trim();
+    const bairro = bairroRaw.charAt(0).toUpperCase() + bairroRaw.slice(1);
+    const endereco = (ficha.enderecoImovel || `${bairro}, Caratinga - MG`).trim();
+    const cidade = 'Caratinga';
+    
+    const title = ficha.tituloImovel || `${tipo} no Bairro ${bairro}`;
+    const price = Number(ficha.valorImovel || ficha.valorAluguel || (tipo === 'Casa' ? 1800 : tipo === 'Apartamento' ? 1400 : 2500));
+    const bedrooms = Number(ficha.quartos || (tipo === 'Casa' ? 3 : tipo === 'Apartamento' ? 2 : 1));
+    const bathrooms = Number(ficha.banheiros || (tipo === 'Casa' ? 2 : 1));
+    const suites = Number(ficha.suites || (bedrooms >= 3 ? 1 : 0));
+    const parkingSpots = Number(ficha.vagas || (tipo === 'Casa' ? 2 : 1));
+    const area = Number(ficha.area || (tipo === 'Casa' ? 180 : tipo === 'Apartamento' ? 85 : 120));
+
+    let desc = (ficha.observacoesImovel || '').trim();
+    if (!desc || desc.length < 15) {
+      desc = `Excelente oportunidade de ${tipo.toLowerCase()} no bairro ${bairro}, em Caratinga. Imóvel com ${bedrooms} quarto(s), ${bathrooms} banheiro(s) e ${parkingSpots} vaga(s) de garagem. Localização privilegiada com fácil acesso ao comércio, escolas e transporte.`;
+    }
+
+    const features = [
+      `Imóvel tipo ${tipo}`,
+      `Bairro ${bairro}`,
+      ficha.aguaLigada === 'Sim' ? 'Água Ligada' : null,
+      ficha.energiaLigada === 'Sim' ? 'Energia Elétrica' : null,
+      ficha.ocupacaoImovel ? `Imóvel ${ficha.ocupacaoImovel}` : null,
+      'Documentação Regularizada',
+      'Localização Privilegiada em Caratinga',
+      'Atendimento Exclusivo Araújo Imóveis'
+    ].filter(Boolean);
+
+    const FALLBACK_PICS = {
+      casa: [
+        "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=1200&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1200&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?q=80&w=1200&auto=format&fit=crop"
+      ],
+      apartamento: [
+        "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?q=80&w=1200&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?q=80&w=1200&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?q=80&w=1200&auto=format&fit=crop"
+      ],
+      cobertura: [
+        "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?q=80&w=1200&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?q=80&w=1200&auto=format&fit=crop"
+      ],
+      comercial: [
+        "https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=1200&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1497215728101-856f4ea42174?q=80&w=1200&auto=format&fit=crop"
+      ],
+      terreno: [
+        "https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=1200&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1628624747186-a941c476b7ef?q=80&w=1200&auto=format&fit=crop"
+      ]
+    };
+
+    const tipoKey = tipo.toLowerCase();
+    const defaultPics = FALLBACK_PICS[tipoKey] || FALLBACK_PICS.casa;
+
+    let images = Array.isArray(ficha.imagensImovel) && ficha.imagensImovel.length > 0 
+      ? ficha.imagensImovel 
+      : defaultPics;
+
+    return {
+      id,
+      code: rawCode,
+      title,
+      type: tipo,
+      transaction: (ficha.finalidadeImovel || 'alugar').toLowerCase(),
+      price,
+      condoFee: Number(ficha.condominio || 0),
+      iptu: Number(ficha.iptu || 0),
+      city: cidade,
+      neighborhood: bairro,
+      address: endereco,
+      bedrooms,
+      bathrooms,
+      suites,
+      parkingSpots,
+      area,
+      description: desc,
+      features,
+      images,
+      featured: true, // Aparece em 'Imóveis em Destaque' no site
+      status: 'Disponível',
+      fichaId: ficha.id,
+      origemFicha: true,
+      nomeProprietario: ficha.nomeProprietario || '',
+      telefoneProprietario: ficha.telefoneProprietario || '',
+      createdAt: ficha.createdAt || new Date().toISOString()
+    };
+  };
+
+  // Auto-sync properties from fichas de visita to cloud API for the official website
+  useEffect(() => {
+    const syncPropsToCloud = async () => {
+      try {
+        if (!Array.isArray(fichasVisita) || fichasVisita.length === 0) return;
+        const activeProps = fichasVisita
+          .filter(f => f && f.publicarNoSite !== false && f.status !== 'Cancelado')
+          .map(convertFichaToProperty)
+          .filter(Boolean);
+
+        if (activeProps.length > 0) {
+          await fetch('/api/properties', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(activeProps)
+          });
+        }
+      } catch (err) {
+        console.error("Cloud properties sync error:", err);
+      }
+    };
+
+    syncPropsToCloud();
+  }, [fichasVisita]);
+
 
   const registerActivityLog = (userName, actionText) => {
     const now = new Date();
@@ -3365,9 +3486,17 @@ export const AppProvider = ({ children }) => {
   };
 
   const deleteFichaVisita = (id) => {
+    const foundFicha = (fichasVisita || []).find(f => f.id === id);
     setFichasVisita(prev => (prev || []).filter(f => f.id !== id));
     if (typeof registerActivityLog === 'function') {
       registerActivityLog(profile?.name, `Excluiu Ficha 01 de Visita Técnica ${id}`);
+    }
+    if (foundFicha) {
+      try {
+        const rawCode = (foundFicha.codigoImovel || '').replace(/^#+/, '').trim().toUpperCase();
+        const propId = `imovel-${rawCode.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+        fetch(`/api/properties?id=${propId}`, { method: 'DELETE' }).catch(e => {});
+      } catch (e) {}
     }
   };
 
