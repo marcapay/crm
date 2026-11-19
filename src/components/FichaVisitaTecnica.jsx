@@ -58,6 +58,10 @@ export default function FichaVisitaTecnica() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
+  // Edit Ficha Name inline state
+  const [isEditingFichaName, setIsEditingFichaName] = useState(false);
+  const [customFichaName, setCustomFichaName] = useState('');
+
   const getPublicFormUrl = () => {
     const baseUrl = window.location.origin + window.location.pathname;
     return `${baseUrl}?form=ficha-visita`;
@@ -78,6 +82,7 @@ export default function FichaVisitaTecnica() {
   const defaultToday = new Date().toISOString().split('T')[0];
   
   const [formData, setFormData] = useState({
+    nomeFicha: '',
     nomeProprietario: '',
     telefoneProprietario: '',
     emailProprietario: '',
@@ -143,6 +148,7 @@ export default function FichaVisitaTecnica() {
     setFormErrors({});
     setSuccessMsg('');
     setFormData({
+      nomeFicha: '',
       nomeProprietario: '',
       telefoneProprietario: '',
       emailProprietario: '',
@@ -198,6 +204,7 @@ export default function FichaVisitaTecnica() {
     setFormErrors({});
     setSuccessMsg('');
     setFormData({
+      nomeFicha: ficha.nomeFicha || (ficha.codigoImovel ? `Ficha ${ficha.codigoImovel}` : ''),
       nomeProprietario: ficha.nomeProprietario || '',
       telefoneProprietario: ficha.telefoneProprietario || '',
       emailProprietario: ficha.emailProprietario || '',
@@ -249,6 +256,27 @@ export default function FichaVisitaTecnica() {
     if (formErrors[field]) {
       setFormErrors(prev => ({ ...prev, [field]: null }));
     }
+  };
+
+  const handleSaveFichaName = () => {
+    const trimmed = (customFichaName || '').trim();
+    if (trimmed) {
+      setFormData(prev => {
+        const next = { ...prev, nomeFicha: trimmed };
+        if (/^[A-Za-z0-9_-]{2,15}$/.test(trimmed)) {
+          next.codigoImovel = trimmed.toUpperCase();
+        }
+        return next;
+      });
+      if (editingId) {
+        const updates = { nomeFicha: trimmed };
+        if (/^[A-Za-z0-9_-]{2,15}$/.test(trimmed)) {
+          updates.codigoImovel = trimmed.toUpperCase();
+        }
+        updateFichaVisita(editingId, updates);
+      }
+    }
+    setIsEditingFichaName(false);
   };
 
   const handleImageUpload = (e) => {
@@ -660,7 +688,14 @@ export default function FichaVisitaTecnica() {
                     {filteredFichas.map(f => (
                       <tr key={f.id} style={{ borderBottom: '1px solid var(--glass-border)' }} className="table-row-hover">
                         <td style={{ padding: '1rem' }}>
-                          <span style={{ fontWeight: '700', color: 'var(--accent-cyan)', display: 'block' }}>{f.codigoImovel}</span>
+                          <span style={{ fontWeight: '700', color: 'var(--accent-cyan)', display: 'block' }}>
+                            {f.nomeFicha || f.codigoImovel}
+                          </span>
+                          {f.nomeFicha && f.nomeFicha !== f.codigoImovel && (
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block' }}>
+                              Código: {f.codigoImovel}
+                            </span>
+                          )}
                           <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
                             {f.dataVisita ? new Date(f.dataVisita + 'T00:00:00').toLocaleDateString('pt-BR') : '-'} às {f.horarioVisita}
                           </span>
@@ -731,10 +766,102 @@ export default function FichaVisitaTecnica() {
           
           {/* Top Floating Action Bar */}
           <div className="glass-panel" style={{ padding: '0.875rem 1.25rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', position: 'sticky', top: '0', zIndex: 10 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <span style={{ fontSize: '0.95rem', fontWeight: '700', color: 'var(--accent-cyan)' }}>
-                {editingId ? `Editando Ficha: ${formData.codigoImovel}` : 'Nova Ficha 01'}
-              </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+              {isEditingFichaName ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                  <input
+                    type="text"
+                    autoFocus
+                    className="form-input"
+                    value={customFichaName}
+                    onChange={(e) => setCustomFichaName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleSaveFichaName();
+                      } else if (e.key === 'Escape') {
+                        setIsEditingFichaName(false);
+                      }
+                    }}
+                    placeholder="Nome da ficha (ex: VT-0001 ou Casa Limoeiro)..."
+                    style={{
+                      padding: '0.35rem 0.75rem',
+                      fontSize: '0.9rem',
+                      fontWeight: '700',
+                      borderRadius: '8px',
+                      border: '1px solid var(--accent-cyan)',
+                      background: 'var(--bg-primary)',
+                      color: 'var(--accent-cyan)',
+                      minWidth: '240px',
+                      boxShadow: '0 0 10px rgba(56, 189, 248, 0.25)'
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSaveFichaName}
+                    className="btn btn-primary"
+                    style={{ padding: '0.35rem 0.65rem', fontSize: '0.8rem', background: '#10b981', borderColor: '#10b981' }}
+                    title="Salvar nome da ficha"
+                  >
+                    <Check size={14} />
+                    <span>Salvar</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingFichaName(false)}
+                    className="btn btn-secondary"
+                    style={{ padding: '0.35rem 0.5rem', fontSize: '0.8rem' }}
+                    title="Cancelar"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span 
+                    onClick={() => {
+                      setCustomFichaName(formData.nomeFicha || (editingId ? `Editando Ficha: ${formData.codigoImovel}` : 'Nova Ficha 01'));
+                      setIsEditingFichaName(true);
+                    }}
+                    style={{ 
+                      fontSize: '0.95rem', 
+                      fontWeight: '700', 
+                      color: 'var(--accent-cyan)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.35rem'
+                    }}
+                    title="Clique para editar o nome da ficha"
+                  >
+                    {formData.nomeFicha || (editingId ? `Editando Ficha: ${formData.codigoImovel}` : 'Nova Ficha 01')}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCustomFichaName(formData.nomeFicha || (editingId ? (formData.nomeFicha || formData.codigoImovel) : 'Nova Ficha 01'));
+                      setIsEditingFichaName(true);
+                    }}
+                    className="btn btn-secondary"
+                    style={{
+                      padding: '0.25rem 0.5rem',
+                      fontSize: '0.75rem',
+                      borderRadius: '6px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.3rem',
+                      color: 'var(--accent-cyan)',
+                      border: '1px solid rgba(56, 189, 248, 0.35)',
+                      background: 'rgba(56, 189, 248, 0.1)',
+                      cursor: 'pointer'
+                    }}
+                    title="Trocar nome da ficha"
+                  >
+                    <Edit3 size={14} />
+                    <span>Renomear</span>
+                  </button>
+                </div>
+              )}
             </div>
 
             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>

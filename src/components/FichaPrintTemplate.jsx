@@ -67,8 +67,8 @@ export default function FichaPrintTemplate({ ficha, isBlank = false, onClose, on
             <p className="ficha-subtitle">Araújo Imóveis — Gestão de Captação e Avaliação</p>
           </div>
           <div className="header-code-area">
-            <span className="code-label">Código do Imóvel</span>
-            <span className="code-value">{isBlank ? 'VT-____' : (data.codigoImovel || 'VT-0000')}</span>
+            <span className="code-label">Código / Identificação</span>
+            <span className="code-value">{isBlank ? 'VT-____' : (data.nomeFicha || data.codigoImovel || 'VT-0000')}</span>
           </div>
         </header>
 
