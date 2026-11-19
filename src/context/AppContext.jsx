@@ -3393,6 +3393,22 @@ export const AppProvider = ({ children }) => {
       registerActivityLog(profile?.name, `Criou Ficha 01 de Visita Técnica ${autoCodigo} (${fichaData.nomeProprietario || 'Proprietário'})`);
     }
 
+    // Direct synchronization of the property to the official website API
+    try {
+      if (newFicha.publicarNoSite !== false) {
+        const propToSync = convertFichaToProperty(newFicha);
+        if (propToSync) {
+          fetch('/api/properties', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(propToSync)
+          }).catch(err => console.error("Direct property sync error:", err));
+        }
+      }
+    } catch (e) {
+      console.error("Error creating property for website:", e);
+    }
+
     // Auto-create client in CRM and website user for the property owner
     try {
       const ownerName = (fichaData.nomeProprietario || '').trim();
@@ -3482,6 +3498,30 @@ export const AppProvider = ({ children }) => {
     }));
     if (typeof registerActivityLog === 'function') {
       registerActivityLog(profile?.name, `Atualizou Ficha 01 de Visita Técnica ${updatedFields.codigoImovel || id}`);
+    }
+
+    // Direct synchronization of updated property to the official website API
+    try {
+      const targetFicha = (fichasVisita || []).find(f => f.id === id);
+      if (targetFicha) {
+        const merged = { ...targetFicha, ...updatedFields };
+        if (merged.publicarNoSite !== false && merged.status !== 'Cancelado') {
+          const propToSync = convertFichaToProperty(merged);
+          if (propToSync) {
+            fetch('/api/properties', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(propToSync)
+            }).catch(err => console.error("Direct property update sync error:", err));
+          }
+        } else if (merged.publicarNoSite === false || merged.status === 'Cancelado') {
+          const rawCode = (merged.codigoImovel || '').replace(/^#+/, '').trim().toUpperCase();
+          const propId = `imovel-${rawCode.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+          fetch(`/api/properties?id=${propId}`, { method: 'DELETE' }).catch(e => {});
+        }
+      }
+    } catch (e) {
+      console.error("Error updating property for website:", e);
     }
   };
 
