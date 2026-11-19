@@ -817,8 +817,10 @@ export const AppProvider = ({ children }) => {
     let images = [];
     if (Array.isArray(ficha.imagensImovel) && ficha.imagensImovel.length > 0) {
       images = ficha.imagensImovel.map((img, idx) => {
-        if (typeof img === 'string' && (img.startsWith('http://') || img.startsWith('https://'))) {
-          return img;
+        if (typeof img === 'string') {
+          if (img.startsWith('http://') || img.startsWith('https://') || img.startsWith('data:image/')) {
+            return img;
+          }
         }
         return defaultPics[idx % defaultPics.length];
       }).filter(Boolean);

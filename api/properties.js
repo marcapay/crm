@@ -32,24 +32,56 @@ const FALLBACK_IMAGES_BY_TYPE = {
   ]
 };
 
-function sanitizeProperty(prop) {
+async function uploadBase64ToCdn(b64String) {
+  try {
+    const clean = b64String.includes('base64,') ? b64String.split('base64,')[1] : b64String;
+    const form = new URLSearchParams();
+    form.append('key', '6d207e02198a847aa98d0a2a901485a5');
+    form.append('action', 'upload');
+    form.append('source', clean);
+    form.append('format', 'json');
+
+    const res = await fetch('https://freeimage.host/api/1/upload', {
+      method: 'POST',
+      body: form
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const url = data?.image?.url || data?.image?.display_url;
+      if (url) return url;
+    }
+  } catch (err) {
+    console.warn("uploadBase64ToCdn error:", err.message);
+  }
+  return null;
+}
+
+async function sanitizeProperty(prop) {
   if (!prop) return null;
   const tipoKey = (prop.type || 'casa').toLowerCase();
   const fallbackList = FALLBACK_IMAGES_BY_TYPE[tipoKey] || FALLBACK_IMAGES_BY_TYPE.casa;
 
-  // Filter images: STRICTLY keep only valid http/https URLs. Never allow base64 in cloud store.
-  let cleanImages = Array.isArray(prop.images) ? prop.images.filter(Boolean) : [];
-  cleanImages = cleanImages
-    .map((img, idx) => {
-      if (typeof img === 'string' && (img.startsWith('http://') || img.startsWith('https://'))) {
-        return img;
+  // Filter images: if it's already an HTTP URL, keep it. If base64, upload to CDN. Never store raw base64.
+  let rawImages = Array.isArray(prop.images) ? prop.images.filter(Boolean) : [];
+  let cleanImages = [];
+
+  if (rawImages.length === 0) {
+    cleanImages = fallbackList;
+  } else {
+    cleanImages = await Promise.all(rawImages.map(async (img, idx) => {
+      if (typeof img === 'string') {
+        if (img.startsWith('http://') || img.startsWith('https://')) {
+          return img;
+        }
+        if (img.startsWith('data:image/')) {
+          const cdnUrl = await uploadBase64ToCdn(img);
+          if (cdnUrl) return cdnUrl;
+        }
       }
       return fallbackList[idx % fallbackList.length];
-    })
-    .filter(Boolean);
-
-  if (cleanImages.length === 0) {
-    cleanImages = fallbackList;
+    }));
+    cleanImages = cleanImages.filter(Boolean);
+    if (cleanImages.length === 0) cleanImages = fallbackList;
   }
 
   return {
@@ -154,7 +186,7 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Body must be a property object or an array of properties' });
       }
 
-      const sanitizedIncoming = rawList.map(sanitizeProperty).filter(Boolean);
+      const sanitizedIncoming = (await Promise.all(rawList.map(sanitizeProperty))).filter(Boolean);
       
       let mergedList = [];
       if (isFullBatch) {

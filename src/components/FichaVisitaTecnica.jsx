@@ -340,32 +340,23 @@ export default function FichaVisitaTecnica() {
             imagensImovel: [...(prev.imagensImovel || []), compressedDataUrl]
           }));
 
-          // Upload to CDN in background to obtain permanent public URL for the website
-          try {
-            const form = new FormData();
-            form.append('key', '6d207e02198a847aa98d0a2a901485a5');
-            form.append('action', 'upload');
-            form.append('source', compressedDataUrl.replace(/^data:image\/[a-z]+;base64,/, ''));
-            form.append('format', 'json');
-
-            fetch('https://freeimage.host/api/1/upload', {
-              method: 'POST',
-              body: form
+          // Upload through CRM serverless API /api/upload-image (no browser CORS block)
+          fetch('/api/upload-image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image: compressedDataUrl })
+          })
+            .then(res => res.json())
+            .then(data => {
+              if (data?.url) {
+                console.log('Image uploaded to CDN successfully:', data.url);
+                setFormData(prev => ({
+                  ...prev,
+                  imagensImovel: (prev.imagensImovel || []).map(img => img === compressedDataUrl ? data.url : img)
+                }));
+              }
             })
-              .then(res => res.json())
-              .then(data => {
-                if (data?.image?.url) {
-                  const cdnUrl = data.image.url;
-                  setFormData(prev => ({
-                    ...prev,
-                    imagensImovel: (prev.imagensImovel || []).map(img => img === compressedDataUrl ? cdnUrl : img)
-                  }));
-                }
-              })
-              .catch(err => console.warn('Image CDN upload background warning:', err));
-          } catch (uploadErr) {
-            console.warn('Background image upload error:', uploadErr);
-          }
+            .catch(err => console.warn('Background image CDN upload error:', err));
         };
         img.src = event.target.result;
       };
