@@ -814,9 +814,18 @@ export const AppProvider = ({ children }) => {
     const tipoKey = tipo.toLowerCase();
     const defaultPics = FALLBACK_PICS[tipoKey] || FALLBACK_PICS.casa;
 
-    let images = Array.isArray(ficha.imagensImovel) && ficha.imagensImovel.length > 0 
-      ? ficha.imagensImovel 
-      : defaultPics;
+    let images = [];
+    if (Array.isArray(ficha.imagensImovel) && ficha.imagensImovel.length > 0) {
+      images = ficha.imagensImovel.map((img, idx) => {
+        if (typeof img === 'string' && img.startsWith('data:image/') && img.length > 25000) {
+          return defaultPics[idx % defaultPics.length];
+        }
+        return img;
+      }).filter(Boolean);
+    }
+    if (images.length === 0) {
+      images = defaultPics;
+    }
 
     return {
       id,

@@ -37,13 +37,13 @@ function sanitizeProperty(prop) {
   const tipoKey = (prop.type || 'casa').toLowerCase();
   const fallbackList = FALLBACK_IMAGES_BY_TYPE[tipoKey] || FALLBACK_IMAGES_BY_TYPE.casa;
 
-  // Filter images: keep valid URLs, if base64 is too huge, use fallback
+  // Filter images: keep valid URLs, if base64 is too large, use fallback
   let cleanImages = Array.isArray(prop.images) ? prop.images.filter(Boolean) : [];
   if (cleanImages.length === 0) {
     cleanImages = fallbackList;
   } else {
     cleanImages = cleanImages.map((img, idx) => {
-      if (typeof img === 'string' && img.startsWith('data:image/') && img.length > 50000) {
+      if (typeof img === 'string' && img.startsWith('data:image/') && img.length > 25000) {
         return fallbackList[idx % fallbackList.length];
       }
       return img;
@@ -105,8 +105,7 @@ async function saveToCloud(propertiesList) {
       body: JSON.stringify({
         name: 'araujo_properties_store',
         data: {
-          list: propertiesList,
-          updatedAt: new Date().toISOString()
+          list: propertiesList
         }
       })
     });
@@ -128,7 +127,7 @@ export default async function handler(req, res) {
   try {
     if (req.method === 'GET') {
       const cloudList = await fetchFromCloud();
-      if (cloudList && Array.isArray(cloudList)) {
+      if (cloudList && Array.isArray(cloudList) && cloudList.length > 0) {
         memoryCache = cloudList;
         return res.status(200).json(cloudList);
       }
@@ -142,6 +141,7 @@ export default async function handler(req, res) {
 
     if (req.method === 'POST') {
       const rawBody = req.body;
+      const isFullBatch = Array.isArray(rawBody) && rawBody.length > 1;
       const rawList = Array.isArray(rawBody) 
         ? rawBody 
         : (rawBody?.properties && Array.isArray(rawBody.properties) 
@@ -152,11 +152,42 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Body must be a property object or an array of properties' });
       }
 
-      const sanitizedList = rawList.map(sanitizeProperty).filter(Boolean);
-      memoryCache = sanitizedList;
-      await saveToCloud(sanitizedList);
+      const sanitizedIncoming = rawList.map(sanitizeProperty).filter(Boolean);
+      
+      let mergedList = [];
+      if (isFullBatch) {
+        mergedList = sanitizedIncoming;
+      } else {
+        const currentList = (await fetchFromCloud()) || memoryCache || [];
+        const map = new Map();
+        for (const p of currentList) {
+          if (p && p.id) map.set(p.id, p);
+          if (p && p.code) map.set(p.code, p);
+        }
+        for (const inc of sanitizedIncoming) {
+          map.set(inc.id, inc);
+          if (inc.code) map.set(inc.code, inc);
+        }
+        
+        const unique = [];
+        const seenIds = new Set();
+        for (const item of map.values()) {
+          if (!seenIds.has(item.id)) {
+            seenIds.add(item.id);
+            unique.push(item);
+          }
+        }
 
-      return res.status(200).json({ success: true, count: sanitizedList.length, properties: sanitizedList });
+        const incomingIds = new Set(sanitizedIncoming.map(p => p.id));
+        const head = unique.filter(p => incomingIds.has(p.id));
+        const rest = unique.filter(p => !incomingIds.has(p.id));
+        mergedList = [...head, ...rest];
+      }
+
+      memoryCache = mergedList;
+      await saveToCloud(mergedList);
+
+      return res.status(200).json({ success: true, count: mergedList.length, properties: mergedList });
     }
 
     if (req.method === 'DELETE') {
