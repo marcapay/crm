@@ -5,6 +5,7 @@ const CLOUD_STORE_URL = "https://api.restful-api.dev/objects/ff808181a09d98f701a
 
 // In-memory cache for fast serverless responses
 let memoryCache = null;
+let memoryFichasCache = null;
 
 // Fallback high-resolution photos by property type
 const FALLBACK_IMAGES_BY_TYPE = {
@@ -56,33 +57,33 @@ async function uploadBase64ToCdn(b64String) {
   return null;
 }
 
+async function sanitizeImagesArray(rawImages, fallbackList = []) {
+  const arr = Array.isArray(rawImages) ? rawImages.filter(Boolean) : [];
+  if (arr.length === 0) return fallbackList;
+
+  const processed = await Promise.all(arr.map(async (img, idx) => {
+    if (typeof img === 'string') {
+      if (img.startsWith('http://') || img.startsWith('https://')) {
+        return img;
+      }
+      if (img.startsWith('data:image/')) {
+        const cdnUrl = await uploadBase64ToCdn(img);
+        if (cdnUrl) return cdnUrl;
+        return img;
+      }
+    }
+    return fallbackList[idx % Math.max(1, fallbackList.length)] || null;
+  }));
+
+  const clean = processed.filter(Boolean);
+  return clean.length > 0 ? clean : fallbackList;
+}
+
 async function sanitizeProperty(prop) {
   if (!prop) return null;
   const tipoKey = (prop.type || 'casa').toLowerCase();
   const fallbackList = FALLBACK_IMAGES_BY_TYPE[tipoKey] || FALLBACK_IMAGES_BY_TYPE.casa;
-
-  // Filter images: if it's already an HTTP URL, keep it. If base64, upload to CDN. Never store raw base64.
-  let rawImages = Array.isArray(prop.images) ? prop.images.filter(Boolean) : [];
-  let cleanImages = [];
-
-  if (rawImages.length === 0) {
-    cleanImages = fallbackList;
-  } else {
-    cleanImages = await Promise.all(rawImages.map(async (img, idx) => {
-      if (typeof img === 'string') {
-        if (img.startsWith('http://') || img.startsWith('https://')) {
-          return img;
-        }
-        if (img.startsWith('data:image/')) {
-          const cdnUrl = await uploadBase64ToCdn(img);
-          if (cdnUrl) return cdnUrl;
-        }
-      }
-      return fallbackList[idx % fallbackList.length];
-    }));
-    cleanImages = cleanImages.filter(Boolean);
-    if (cleanImages.length === 0) cleanImages = fallbackList;
-  }
+  const cleanImages = await sanitizeImagesArray(prop.images, fallbackList);
 
   return {
     id: String(prop.id || `prop_${Date.now()}`),
@@ -113,7 +114,7 @@ async function sanitizeProperty(prop) {
   };
 }
 
-async function fetchFromCloud() {
+async function fetchFullCloudData() {
   try {
     const res = await fetch(CLOUD_STORE_URL, {
       headers: { 'Accept': 'application/json' },
@@ -121,30 +122,47 @@ async function fetchFromCloud() {
     });
     if (res.ok) {
       const json = await res.json();
-      if (json?.data?.list && Array.isArray(json.data.list)) {
-        return json.data.list;
-      }
+      const data = json?.data || {};
+      return {
+        list: Array.isArray(data.list) ? data.list : [],
+        fichas: Array.isArray(data.fichas) ? data.fichas : [],
+        deletedFichaIds: Array.isArray(data.deletedFichaIds) ? data.deletedFichaIds : []
+      };
     }
   } catch (err) {
-    console.error("fetchFromCloud error:", err);
+    console.error("fetchFullCloudData error:", err);
   }
-  return null;
+  return {
+    list: memoryCache || [],
+    fichas: memoryFichasCache || [],
+    deletedFichaIds: []
+  };
 }
 
-async function saveToCloud(propertiesList) {
+async function saveFullCloudData({ list, fichas, deletedFichaIds }) {
   try {
+    const current = await fetchFullCloudData();
+    const nextList = list !== undefined ? list : current.list;
+    const nextFichas = fichas !== undefined ? fichas : current.fichas;
+    const nextDeleted = deletedFichaIds !== undefined ? deletedFichaIds : current.deletedFichaIds;
+
+    memoryCache = nextList;
+    memoryFichasCache = nextFichas;
+
     await fetch(CLOUD_STORE_URL, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: 'araujo_properties_store',
         data: {
-          list: propertiesList
+          list: nextList,
+          fichas: nextFichas,
+          deletedFichaIds: nextDeleted
         }
       })
     });
   } catch (err) {
-    console.error("saveToCloud error:", err);
+    console.error("saveFullCloudData error:", err);
   }
 }
 
@@ -160,21 +178,95 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
-      const cloudList = await fetchFromCloud();
-      if (cloudList && Array.isArray(cloudList) && cloudList.length > 0) {
-        memoryCache = cloudList;
-        return res.status(200).json(cloudList);
+      const queryType = req.query?.type;
+      const cloudData = await fetchFullCloudData();
+
+      if (queryType === 'fichas') {
+        const deletedSet = new Set(cloudData.deletedFichaIds || []);
+        const activeFichas = (cloudData.fichas || []).filter(f => f && f.id && !deletedSet.has(f.id));
+        return res.status(200).json(activeFichas);
       }
 
-      if (memoryCache && Array.isArray(memoryCache)) {
-        return res.status(200).json(memoryCache);
-      }
-
-      return res.status(200).json([]);
+      return res.status(200).json(cloudData.list || []);
     }
 
     if (req.method === 'POST') {
-      const rawBody = req.body;
+      const rawBody = req.body || {};
+
+      // 1. Adicionar ou atualizar Ficha Provisória vinda do Site (aba Anunciar Imóvel) ou do CRM
+      if (rawBody.action === 'add_ficha' || rawBody.action === 'update_ficha') {
+        const incomingFicha = rawBody.ficha;
+        if (!incomingFicha) {
+          return res.status(400).json({ error: 'Missing ficha object' });
+        }
+
+        const cloudData = await fetchFullCloudData();
+        const currentFichas = Array.isArray(cloudData.fichas) ? cloudData.fichas : [];
+        const uploadedImages = await sanitizeImagesArray(incomingFicha.imagensImovel, []);
+
+        const nowIso = new Date().toISOString();
+        const defaultToday = nowIso.split('T')[0];
+        const nextNum = currentFichas.length + 1;
+        const autoCode = incomingFicha.codigoImovel || `VT-${String(nextNum).padStart(4, '0')}`;
+
+        const fichaToSave = {
+          id: incomingFicha.id || `ficha_site_${Date.now()}`,
+          codigoImovel: autoCode,
+          nomeFicha: incomingFicha.nomeFicha || `${autoCode} (Análise Site)`,
+          nomeProprietario: incomingFicha.nomeProprietario || 'Proprietário (Site)',
+          telefoneProprietario: incomingFicha.telefoneProprietario || '',
+          emailProprietario: incomingFicha.emailProprietario || '',
+          horarioContatoProprietario: incomingFicha.horarioContatoProprietario || 'Comercial (08:00 às 18:00)',
+          linkWhatsapp: incomingFicha.linkWhatsapp || '',
+          tipoImovel: incomingFicha.tipoImovel || 'Casa',
+          enderecoImovel: incomingFicha.enderecoImovel || incomingFicha.bairroImovel || 'Caratinga - MG',
+          bairroImovel: incomingFicha.bairroImovel || 'Centro',
+          pontoReferenciaImovel: incomingFicha.pontoReferenciaImovel || '',
+          linkLocalizacaoImovel: incomingFicha.linkLocalizacaoImovel || '',
+          ocupacaoImovel: incomingFicha.ocupacaoImovel || 'Vazio',
+          nomeAcesso: incomingFicha.nomeAcesso || incomingFicha.nomeProprietario || '',
+          telefoneAcesso: incomingFicha.telefoneAcesso || incomingFicha.telefoneProprietario || '',
+          dificuldadeAcesso: incomingFicha.dificuldadeAcesso || 'Não',
+          observacoesAcesso: incomingFicha.observacoesAcesso || '',
+          aguaLigada: incomingFicha.aguaLigada || 'Sim',
+          energiaLigada: incomingFicha.energiaLigada || 'Sim',
+          animaisImovel: incomingFicha.animaisImovel || 'Não',
+          observacoesImovel: incomingFicha.observacoesImovel || '',
+          imagensImovel: uploadedImages,
+          finalidadeImovel: incomingFicha.finalidadeImovel || 'comprar',
+          valorImovel: incomingFicha.valorImovel || '',
+          precoPretendido: incomingFicha.precoPretendido || '',
+          modalidadePretendida: incomingFicha.modalidadePretendida || '',
+          quartos: incomingFicha.quartos || '',
+          banheiros: incomingFicha.banheiros || '',
+          vagas: incomingFicha.vagas || '',
+          area: incomingFicha.area || '',
+          publicarNoSite: incomingFicha.publicarNoSite !== undefined ? Boolean(incomingFicha.publicarNoSite) : false,
+          provisoria: incomingFicha.provisoria !== undefined ? Boolean(incomingFicha.provisoria) : true,
+          dataVisita: incomingFicha.dataVisita || defaultToday,
+          horarioVisita: incomingFicha.horarioVisita || '09:00',
+          profissionalResponsavel: incomingFicha.profissionalResponsavel || 'A definir pela Imobiliária',
+          proprietarioAcompanhara: incomingFicha.proprietarioAcompanhara || 'Sim',
+          autorizacaoFotosVideos: incomingFicha.autorizacaoFotosVideos || 'Sim',
+          confirmadoWhatsapp: incomingFicha.confirmadoWhatsapp || 'Não',
+          dataCaptacao: incomingFicha.dataCaptacao || defaultToday,
+          corretorResponsavel: incomingFicha.corretorResponsavel || 'Análise Imobiliária (Site)',
+          origemCaptacao: incomingFicha.origemCaptacao || 'Site Oficial (Anunciar Imóvel)',
+          status: incomingFicha.status || 'Aguardando agendamento',
+          createdAt: incomingFicha.createdAt || nowIso,
+          updatedAt: nowIso,
+          createdBy: incomingFicha.createdBy || 'Site Oficial (Anunciar Imóvel)',
+          updatedBy: incomingFicha.updatedBy || 'Site Oficial (Anunciar Imóvel)'
+        };
+
+        const filteredFichas = currentFichas.filter(f => f && f.id !== fichaToSave.id);
+        const updatedFichas = [fichaToSave, ...filteredFichas];
+
+        await saveFullCloudData({ fichas: updatedFichas });
+        return res.status(200).json({ success: true, ficha: fichaToSave, count: updatedFichas.length });
+      }
+
+      // 2. Fluxo padrão de sincronização de imóveis publicados no site
       const isFullBatch = Array.isArray(rawBody) && rawBody.length > 1;
       const rawList = Array.isArray(rawBody) 
         ? rawBody 
@@ -187,12 +279,13 @@ export default async function handler(req, res) {
       }
 
       const sanitizedIncoming = (await Promise.all(rawList.map(sanitizeProperty))).filter(Boolean);
+      const cloudData = await fetchFullCloudData();
       
       let mergedList = [];
       if (isFullBatch) {
         mergedList = sanitizedIncoming;
       } else {
-        const currentList = (await fetchFromCloud()) || memoryCache || [];
+        const currentList = cloudData.list || [];
         const map = new Map();
         for (const p of currentList) {
           if (p && p.id) map.set(p.id, p);
@@ -218,21 +311,30 @@ export default async function handler(req, res) {
         mergedList = [...head, ...rest];
       }
 
-      memoryCache = mergedList;
-      await saveToCloud(mergedList);
+      await saveFullCloudData({ list: mergedList });
 
       return res.status(200).json({ success: true, count: mergedList.length, properties: mergedList });
     }
 
     if (req.method === 'DELETE') {
       const targetId = req.query?.id || req.body?.id;
-      if (!targetId) return res.status(400).json({ error: 'Missing property id' });
+      const targetType = req.query?.type || req.body?.type;
+      if (!targetId) return res.status(400).json({ error: 'Missing id' });
 
-      let currentList = (await fetchFromCloud()) || memoryCache || [];
-      const updatedList = currentList.filter(p => p.id !== targetId && p.code !== targetId && p.fichaId !== targetId);
+      const cloudData = await fetchFullCloudData();
 
-      memoryCache = updatedList;
-      await saveToCloud(updatedList);
+      if (targetType === 'ficha') {
+        const updatedFichas = (cloudData.fichas || []).filter(f => f && f.id !== targetId && f.codigoImovel !== targetId);
+        const updatedDeleted = Array.from(new Set([...(cloudData.deletedFichaIds || []), targetId]));
+        await saveFullCloudData({ fichas: updatedFichas, deletedFichaIds: updatedDeleted });
+        return res.status(200).json({ success: true, remaining: updatedFichas.length });
+      }
+
+      const updatedList = (cloudData.list || []).filter(p => p.id !== targetId && p.code !== targetId && p.fichaId !== targetId);
+      const updatedFichas = (cloudData.fichas || []).filter(f => f && f.id !== targetId && f.codigoImovel !== targetId);
+      const updatedDeleted = Array.from(new Set([...(cloudData.deletedFichaIds || []), targetId]));
+
+      await saveFullCloudData({ list: updatedList, fichas: updatedFichas, deletedFichaIds: updatedDeleted });
 
       return res.status(200).json({ success: true, remaining: updatedList.length });
     }

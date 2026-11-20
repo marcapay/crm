@@ -759,6 +759,11 @@ export default function FichaVisitaTecnica() {
                           <span style={{ fontWeight: '700', color: 'var(--accent-cyan)', display: 'block' }}>
                             {f.nomeFicha || f.codigoImovel}
                           </span>
+                          {(f.provisoria || (f.origemCaptacao || '').includes('Site')) && (
+                            <span style={{ display: 'inline-block', marginTop: '3px', marginBottom: '2px', fontSize: '0.68rem', fontWeight: '700', color: '#fbbf24', backgroundColor: 'rgba(245, 158, 11, 0.16)', border: '1px solid rgba(245, 158, 11, 0.35)', padding: '1px 6px', borderRadius: '4px' }}>
+                              Provisória • Análise Site
+                            </span>
+                          )}
                           {f.nomeFicha && f.nomeFicha !== f.codigoImovel && (
                             <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block' }}>
                               Código: {f.codigoImovel}
@@ -773,8 +778,16 @@ export default function FichaVisitaTecnica() {
                           <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{f.telefoneProprietario}</span>
                         </td>
                         <td style={{ padding: '1rem' }}>
-                          <span style={{ fontWeight: '500', color: 'var(--text-primary)', display: 'block' }}>{f.tipoImovel} - {f.bairroImovel}</span>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>{f.enderecoImovel}</span>
+                          <span style={{ fontWeight: '500', color: 'var(--text-primary)', display: 'block' }}>
+                            {f.tipoImovel} - {f.bairroImovel}
+                            {(f.precoPretendido || f.valorImovel) ? ` • ${f.precoPretendido || `R$ ${Number(f.valorImovel).toLocaleString('pt-BR')}`}` : ''}
+                          </span>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', display: 'block' }}>{f.enderecoImovel}</span>
+                          {f.observacoesImovel && (
+                            <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', display: 'block', marginTop: '2px', maxWidth: '280px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={f.observacoesImovel}>
+                              {f.observacoesImovel}
+                            </span>
+                          )}
                           {f.imagensImovel && f.imagensImovel.length > 0 && (
                             <div style={{ marginTop: '3px' }}>
                               <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '0.7rem', color: 'var(--accent-cyan)', backgroundColor: 'rgba(56, 189, 248, 0.12)', padding: '1px 6px', borderRadius: '4px' }}>

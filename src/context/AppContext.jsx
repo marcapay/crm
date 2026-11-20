@@ -884,6 +884,71 @@ export const AppProvider = ({ children }) => {
     syncPropsToCloud();
   }, [fichasVisita]);
 
+  // Fetch provisional/new fichas submitted by clients on the official website (www.araujoimoveiscaratinga.com.br/anunciar)
+  useEffect(() => {
+    const fetchCloudFichas = async () => {
+      try {
+        let incomingFichas = [];
+        try {
+          const res = await fetch('/api/properties?type=fichas', { cache: 'no-store' });
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data)) {
+              incomingFichas = data;
+            }
+          }
+        } catch {}
+
+        if (incomingFichas.length === 0) {
+          try {
+            const cloudRes = await fetch('https://api.restful-api.dev/objects/ff808181a09d98f701a1f4330be964d4', { cache: 'no-store' });
+            if (cloudRes.ok) {
+              const cloudJson = await cloudRes.json();
+              const deletedSet = new Set(cloudJson?.data?.deletedFichaIds || []);
+              if (Array.isArray(cloudJson?.data?.fichas)) {
+                incomingFichas = cloudJson.data.fichas.filter(f => f && f.id && !deletedSet.has(f.id));
+              }
+            }
+          } catch {}
+        }
+
+        if (incomingFichas.length > 0) {
+          setFichasVisita(prev => {
+            const localList = Array.isArray(prev) ? prev : [];
+            const localMap = new Map();
+            localList.forEach(f => {
+              if (f && f.id) localMap.set(f.id, f);
+            });
+
+            let hasNewOrUpdated = false;
+            const newEntries = [];
+
+            for (const remoteFicha of incomingFichas) {
+              if (!remoteFicha || !remoteFicha.id) continue;
+              if (!localMap.has(remoteFicha.id)) {
+                hasNewOrUpdated = true;
+                newEntries.push(remoteFicha);
+              }
+            }
+
+            if (!hasNewOrUpdated) return localList;
+            return [...newEntries, ...localList];
+          });
+        }
+      } catch (err) {
+        console.warn("Erro ao buscar fichas provisórias do site:", err);
+      }
+    };
+
+    fetchCloudFichas();
+    const intervalId = setInterval(fetchCloudFichas, 10000);
+    window.addEventListener('focus', fetchCloudFichas);
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener('focus', fetchCloudFichas);
+    };
+  }, []);
+
 
   const registerActivityLog = (userName, actionText) => {
     const now = new Date();
@@ -3537,6 +3602,11 @@ export const AppProvider = ({ children }) => {
           const propId = `imovel-${rawCode.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
           fetch(`/api/properties?id=${propId}`, { method: 'DELETE' }).catch(e => {});
         }
+        fetch('/api/properties', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'update_ficha', ficha: merged })
+        }).catch(() => {});
       }
     } catch (e) {
       console.error("Error updating property for website:", e);
@@ -3549,6 +3619,7 @@ export const AppProvider = ({ children }) => {
     if (typeof registerActivityLog === 'function') {
       registerActivityLog(profile?.name, `Excluiu Ficha 01 de Visita Técnica ${id}`);
     }
+    fetch(`/api/properties?type=ficha&id=${encodeURIComponent(id)}`, { method: 'DELETE' }).catch(() => {});
     if (foundFicha) {
       try {
         const rawCode = (foundFicha.codigoImovel || '').replace(/^#+/, '').trim().toUpperCase();
