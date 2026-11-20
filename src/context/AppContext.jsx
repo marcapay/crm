@@ -653,7 +653,8 @@ export const AppProvider = ({ children }) => {
 
   const [fichasVisita, setFichasVisita] = useState(() => {
     const saved = localStorage.getItem('crmbase_fichas_visita');
-    return safeJsonParse(saved, []);
+    const parsed = safeJsonParse(saved, []);
+    return parsed.filter(f => f && f.id !== 'ficha_site_teste' && f.nomeProprietario !== 'Carlos Araújo' && f.nomeProprietario !== 'Carlos Araújo Teste');
   });
 
   useEffect(() => { localStorage.setItem('araujo_portal_users', JSON.stringify(portalUsers)); }, [portalUsers]);
@@ -924,6 +925,10 @@ export const AppProvider = ({ children }) => {
         }
 
         if (incomingFichas.length > 0) {
+          const deletedRaw = localStorage.getItem('crmbase_deleted_fichas');
+          const localDeletedSet = new Set(safeJsonParse(deletedRaw, []));
+          localDeletedSet.add('ficha_site_teste');
+
           setFichasVisita(prev => {
             const localList = Array.isArray(prev) ? prev : [];
             const localMap = new Map();
@@ -936,6 +941,8 @@ export const AppProvider = ({ children }) => {
 
             for (const remoteFicha of incomingFichas) {
               if (!remoteFicha || !remoteFicha.id) continue;
+              if (localDeletedSet.has(remoteFicha.id)) continue;
+              if (remoteFicha.nomeProprietario === 'Carlos Araújo' || remoteFicha.id === 'ficha_site_teste') continue;
               if (!localMap.has(remoteFicha.id)) {
                 hasNewOrUpdated = true;
                 newEntries.push(remoteFicha);
@@ -952,10 +959,8 @@ export const AppProvider = ({ children }) => {
     };
 
     fetchCloudFichas();
-    const intervalId = setInterval(fetchCloudFichas, 10000);
     window.addEventListener('focus', fetchCloudFichas);
     return () => {
-      clearInterval(intervalId);
       window.removeEventListener('focus', fetchCloudFichas);
     };
   }, []);
@@ -3627,6 +3632,13 @@ export const AppProvider = ({ children }) => {
   const deleteFichaVisita = (id) => {
     const foundFicha = (fichasVisita || []).find(f => f.id === id);
     setFichasVisita(prev => (prev || []).filter(f => f.id !== id));
+    try {
+      const deletedRaw = localStorage.getItem('crmbase_deleted_fichas');
+      const deletedList = safeJsonParse(deletedRaw, []);
+      if (!deletedList.includes(id)) {
+        localStorage.setItem('crmbase_deleted_fichas', JSON.stringify([...deletedList, id]));
+      }
+    } catch {}
     if (typeof registerActivityLog === 'function') {
       registerActivityLog(profile?.name, `Excluiu Ficha 01 de Visita Técnica ${id}`);
     }
