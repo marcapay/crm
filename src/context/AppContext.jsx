@@ -654,7 +654,15 @@ export const AppProvider = ({ children }) => {
   const [fichasVisita, setFichasVisita] = useState(() => {
     const saved = localStorage.getItem('crmbase_fichas_visita');
     const parsed = safeJsonParse(saved, []);
-    return parsed.filter(f => f && f.id !== 'ficha_site_teste' && f.nomeProprietario !== 'Carlos Araújo' && f.nomeProprietario !== 'Carlos Araújo Teste');
+    const cleaned = parsed.filter(f => f && f.id !== 'ficha_site_teste' && f.nomeProprietario !== 'Carlos Araújo' && f.nomeProprietario !== 'Carlos Araújo Teste');
+    return cleaned.map(f => {
+      if (f && f.codigoImovel && f.codigoImovel.startsWith('VT-')) {
+        const newCode = f.codigoImovel.replace(/^VT-/i, 'AI-');
+        const newName = (f.nomeFicha || '').replace(/\bVT-/gi, 'AI-');
+        return { ...f, codigoImovel: newCode, nomeFicha: newName || `Ficha ${newCode}` };
+      }
+      return f;
+    });
   });
 
   useEffect(() => { localStorage.setItem('araujo_portal_users', JSON.stringify(portalUsers)); }, [portalUsers]);
@@ -755,7 +763,7 @@ export const AppProvider = ({ children }) => {
 
   const convertFichaToProperty = (ficha) => {
     if (!ficha) return null;
-    const rawCode = (ficha.codigoImovel || `VT-${Date.now().toString().slice(-4)}`).replace(/^#+/, '').trim().toUpperCase();
+    const rawCode = (ficha.codigoImovel || `AI-${Date.now().toString().slice(-4)}`).replace(/^#+/, '').trim().toUpperCase();
     const id = `imovel-${rawCode.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
     const tipo = ficha.tipoImovel || 'Casa';
     const bairroRaw = (ficha.bairroImovel || 'Centro').trim();
@@ -3477,7 +3485,7 @@ export const AppProvider = ({ children }) => {
   const addFichaVisita = (fichaData) => {
     const now = new Date().toISOString();
     const count = (fichasVisita?.length || 0) + 1;
-    const autoCodigo = fichaData.codigoImovel || `VT-${String(count).padStart(4, '0')}`;
+    const autoCodigo = fichaData.codigoImovel || `AI-${String(count).padStart(4, '0')}`;
     const newFicha = {
       id: 'ficha_' + Date.now(),
       codigoImovel: autoCodigo,

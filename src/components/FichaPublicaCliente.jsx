@@ -184,7 +184,7 @@ export default function FichaPublicaCliente() {
       }
 
       const count = existingFichas.length + 1;
-      const autoCode = `VT-${String(count).padStart(4, '0')}`;
+      const autoCode = `AI-${String(count).padStart(4, '0')}`;
       const now = new Date().toISOString();
 
       const newFicha = {

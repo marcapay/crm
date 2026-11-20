@@ -186,9 +186,9 @@ export default function FichaVisitaTecnica() {
 
   // Auto-generate code when opening form for new entry
   useEffect(() => {
-    if (viewMode === 'form' && !editingId && !formData.codigoImovel) {
+    if (viewMode === 'form' && !editingId && (!formData.codigoImovel || formData.codigoImovel.startsWith('VT-'))) {
       const count = (fichasVisita?.length || 0) + 1;
-      const autoCode = `VT-${String(count).padStart(4, '0')}`;
+      const autoCode = `AI-${String(count).padStart(4, '0')}`;
       setFormData(prev => ({ ...prev, codigoImovel: autoCode }));
     }
   }, [viewMode, editingId, fichasVisita]);
@@ -196,7 +196,7 @@ export default function FichaVisitaTecnica() {
   // Reset form
   const resetForm = () => {
     const count = (fichasVisita?.length || 0) + 1;
-    const autoCode = `VT-${String(count).padStart(4, '0')}`;
+    const autoCode = `AI-${String(count).padStart(4, '0')}`;
     setEditingId(null);
     setFormErrors({});
     setSuccessMsg('');
@@ -720,7 +720,7 @@ export default function FichaVisitaTecnica() {
                 <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }} />
                 <input 
                   type="text"
-                  placeholder="Buscar por proprietário, código (ex: VT-0001), bairro, endereço..."
+                  placeholder="Buscar por proprietário, código (ex: AI-0001), bairro, endereço..."
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   style={{
@@ -1232,7 +1232,7 @@ export default function FichaVisitaTecnica() {
                         setIsEditingFichaName(false);
                       }
                     }}
-                    placeholder="Nome da ficha (ex: VT-0001 ou Casa Limoeiro)..."
+                    placeholder="Nome da ficha (ex: AI-0001 ou Casa Limoeiro)..."
                     style={{
                       padding: '0.35rem 0.75rem',
                       fontSize: '0.9rem',

@@ -68,7 +68,7 @@ export default function FichaPrintTemplate({ ficha, isBlank = false, onClose, on
           </div>
           <div className="header-code-area">
             <span className="code-label">Código / Identificação</span>
-            <span className="code-value">{isBlank ? 'VT-____' : (data.nomeFicha || data.codigoImovel || 'VT-0000')}</span>
+            <span className="code-value">{isBlank ? 'AI-____' : (data.nomeFicha || data.codigoImovel || 'AI-0000')}</span>
           </div>
         </header>
 

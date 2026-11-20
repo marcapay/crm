@@ -102,7 +102,7 @@ async function sanitizeProperty(prop) {
 
   return {
     id: String(prop.id || `prop_${Date.now()}`),
-    code: String(prop.code || 'VT-0001').replace(/^#+/, ''),
+    code: String(prop.code || 'AI-0001').replace(/^#+/, ''),
     title: String(prop.title || 'Imóvel em Caratinga'),
     type: prop.type || 'Casa',
     transaction: (prop.transaction || 'alugar').toLowerCase(),
@@ -248,7 +248,7 @@ export default async function handler(req, res) {
         const nowIso = new Date().toISOString();
         const defaultToday = nowIso.split('T')[0];
         const nextNum = currentFichas.length + 1;
-        const autoCode = incomingFicha.codigoImovel || `VT-${String(nextNum).padStart(4, '0')}`;
+        const autoCode = incomingFicha.codigoImovel || `AI-${String(nextNum).padStart(4, '0')}`;
 
         const fichaToSave = {
           id: incomingFicha.id || `ficha_site_${Date.now()}`,
