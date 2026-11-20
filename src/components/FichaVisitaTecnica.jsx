@@ -196,6 +196,7 @@ export default function FichaVisitaTecnica() {
 
   const [formErrors, setFormErrors] = useState({});
   const [successMsg, setSuccessMsg] = useState('');
+  const [toastError, setToastError] = useState('');
 
   // Auto-generate code when opening form for new entry
   useEffect(() => {
@@ -478,17 +479,19 @@ export default function FichaVisitaTecnica() {
     if (e) e.preventDefault();
 
     if (!validateForm()) {
+      setToastError('Preencha os campos obrigatórios para salvar.');
+      setTimeout(() => setToastError(''), 4000);
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
     if (editingId) {
       updateFichaVisita(editingId, formData);
-      setSuccessMsg('Ficha de Visita atualizada e sincronizada com o site oficial!');
+      setSuccessMsg('Ficha salva');
     } else {
       const newFicha = addFichaVisita(formData);
       setEditingId(newFicha.id);
-      setSuccessMsg('Ficha salva! Imóvel publicado no site oficial e usuário do proprietário criado.');
+      setSuccessMsg('Ficha salva');
     }
 
     setTimeout(() => {
@@ -663,6 +666,57 @@ export default function FichaVisitaTecnica() {
           )}
         </div>
       </div>
+
+      {/* Toast Flutuante no Topo da Tela - Sempre visível independente do scroll */}
+      {successMsg && (
+        <div style={{
+          position: 'fixed',
+          top: '24px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          backgroundColor: '#10b981',
+          color: '#ffffff',
+          padding: '0.9rem 1.8rem',
+          borderRadius: '12px',
+          boxShadow: '0 12px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(16, 185, 129, 0.45)',
+          zIndex: 99999,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+          fontWeight: '700',
+          fontSize: '1.05rem',
+          border: '1px solid rgba(255, 255, 255, 0.3)',
+          pointerEvents: 'none'
+        }}>
+          <CheckCircle2 size={24} style={{ color: '#ffffff' }} />
+          <span>{successMsg}</span>
+        </div>
+      )}
+
+      {toastError && (
+        <div style={{
+          position: 'fixed',
+          top: '24px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          backgroundColor: '#ef4444',
+          color: '#ffffff',
+          padding: '0.9rem 1.8rem',
+          borderRadius: '12px',
+          boxShadow: '0 12px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(239, 68, 68, 0.45)',
+          zIndex: 99999,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+          fontWeight: '700',
+          fontSize: '0.95rem',
+          border: '1px solid rgba(255, 255, 255, 0.3)',
+          pointerEvents: 'none'
+        }}>
+          <AlertCircle size={22} style={{ color: '#ffffff' }} />
+          <span>{toastError}</span>
+        </div>
+      )}
 
       {/* Notifications / Alerts */}
       {successMsg && (
@@ -1369,6 +1423,11 @@ export default function FichaVisitaTecnica() {
                 <span>Imprimir Preenchida</span>
               </button>
 
+              {successMsg && (
+                <span style={{ color: '#10b981', fontWeight: '700', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  <Check size={16} /> Ficha salva
+                </span>
+              )}
               <button 
                 type="submit"
                 className="btn btn-primary"
@@ -2168,6 +2227,11 @@ export default function FichaVisitaTecnica() {
                 <span>Imprimir Preenchida</span>
               </button>
 
+              {successMsg && (
+                <span style={{ color: '#10b981', fontWeight: '700', fontSize: '0.9rem', display: 'inline-flex', alignItems: 'center', gap: '4px', marginRight: '0.5rem' }}>
+                  <Check size={18} /> Ficha salva
+                </span>
+              )}
               <button 
                 type="submit"
                 className="btn btn-primary"
