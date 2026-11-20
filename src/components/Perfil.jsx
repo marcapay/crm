@@ -33,6 +33,7 @@ export default function Perfil() {
   const [profileRole, setProfileRole] = useState(profile.role);
   const [profileAvatar, setProfileAvatar] = useState(profile.avatar);
   const [profilePhone, setProfilePhone] = useState(profile.phone || '37998072208');
+  const [profileLinkWhatsapp, setProfileLinkWhatsapp] = useState(profile.linkWhatsapp || profile.whatsappLink || '');
 
   
   // Password states
@@ -53,7 +54,7 @@ export default function Perfil() {
     setProfileRole(profile.role);
     setProfileAvatar(profile.avatar);
     setProfilePhone(profile.phone || '37998072208');
-
+    setProfileLinkWhatsapp(profile.linkWhatsapp || profile.whatsappLink || '');
   }, [profile]);
 
   const handleProfileSubmit = (e) => {
@@ -85,6 +86,8 @@ export default function Perfil() {
       role: profileRole,
       avatar: profileAvatar,
       phone: profilePhone,
+      linkWhatsapp: profileLinkWhatsapp,
+      whatsappLink: profileLinkWhatsapp,
 
       ...(newPassword ? { password: newPassword } : {})
     });
@@ -221,6 +224,48 @@ export default function Perfil() {
                     disabled 
                     style={{ opacity: 0.6, cursor: 'not-allowed' }}
                   />
+                </div>
+
+                <div className="input-group" style={{ gridColumn: 'span 2' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <label style={styles.inputLabel}>LINK DO WHATSAPP</label>
+                    {profileLinkWhatsapp && (
+                      <a 
+                        href={profileLinkWhatsapp.startsWith('http') ? profileLinkWhatsapp : `https://wa.me/55${profileLinkWhatsapp.replace(/\D/g, '')}`}
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        style={{ fontSize: '0.75rem', color: '#10b981', textDecoration: 'none', fontWeight: '600', marginBottom: '0.25rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        Abrir conversa ↗
+                      </a>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <input 
+                      type="text" 
+                      className="input-field" 
+                      value={profileLinkWhatsapp} 
+                      onChange={e => setProfileLinkWhatsapp(e.target.value)} 
+                      placeholder="https://wa.me/5537998072208 ou DDD + número"
+                    />
+                    {profilePhone && !profileLinkWhatsapp && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const digits = (profilePhone || '').replace(/\D/g, '');
+                          if (digits) {
+                            const fullNumber = digits.length <= 11 ? `55${digits}` : digits;
+                            setProfileLinkWhatsapp(`https://wa.me/${fullNumber}`);
+                          }
+                        }}
+                        className="btn btn-secondary"
+                        style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem', whiteSpace: 'nowrap' }}
+                        title="Gerar link a partir do telefone acima"
+                      >
+                        Gerar Link
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

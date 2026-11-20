@@ -189,7 +189,7 @@ export default function FichaVisitaTecnica() {
     codigoImovel: '',
     dataCaptacao: defaultToday,
     corretorResponsavel: profile?.name || 'Corretor Responsável',
-    linkWhatsappCorretor: '',
+    linkWhatsappCorretor: profile?.linkWhatsapp || profile?.whatsappLink || '',
     origemCaptacao: 'WhatsApp',
     status: 'Aguardando agendamento'
   });
@@ -256,7 +256,7 @@ export default function FichaVisitaTecnica() {
       codigoImovel: autoCode,
       dataCaptacao: defaultToday,
       corretorResponsavel: profile?.name || 'Ricardo Araújo',
-      linkWhatsappCorretor: '',
+      linkWhatsappCorretor: profile?.linkWhatsapp || profile?.whatsappLink || '',
       origemCaptacao: 'WhatsApp',
       status: 'Aguardando agendamento'
     });

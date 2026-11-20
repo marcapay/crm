@@ -16,6 +16,8 @@ const initialProfile = {
   email: 'admin@admin.com',
   role: 'Administrador',
   phone: '',
+  linkWhatsapp: '',
+  whatsappLink: '',
   instagram: '',
   pix: '',
   paymentAccount: '',
@@ -4989,6 +4991,8 @@ ${fullSearchContext.substring(0, 4000)}
             ...u,
             name: newProfile.name,
             email: newProfile.email,
+            phone: newProfile.phone,
+            linkWhatsapp: newProfile.linkWhatsapp || newProfile.whatsappLink || '',
             password: newProfile.password || u.password,
           };
         }
