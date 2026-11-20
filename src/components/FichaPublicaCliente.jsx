@@ -18,6 +18,18 @@ import {
   Trash2
 } from 'lucide-react';
 
+const formatLocationUrl = (urlOrCoords) => {
+  if (!urlOrCoords) return '';
+  const trimmed = urlOrCoords.trim();
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    return trimmed;
+  }
+  if (trimmed.startsWith('maps.') || trimmed.startsWith('www.google.') || trimmed.startsWith('goo.gl') || trimmed.startsWith('waze.')) {
+    return `https://${trimmed}`;
+  }
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(trimmed)}`;
+};
+
 export default function FichaPublicaCliente() {
   const defaultToday = new Date().toISOString().split('T')[0];
   const [submitted, setSubmitted] = useState(false);
@@ -578,14 +590,77 @@ export default function FichaPublicaCliente() {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Link da Localização (Google Maps/Waze):</label>
+                <label className="form-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span>Link da Localização (Google Maps/Waze):</span>
+                  {formData.linkLocalizacaoImovel && (
+                    <a 
+                      href={formatLocationUrl(formData.linkLocalizacaoImovel)}
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      style={{ fontSize: '0.75rem', color: '#22c55e', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '3px', fontWeight: '600' }}
+                    >
+                      Abrir mapa ↗
+                    </a>
+                  )}
+                </label>
                 <input 
-                  type="url"
+                  type="text"
                   className="form-input"
-                  placeholder="https://maps.google.com/..."
+                  placeholder="https://maps.google.com/... ou coordenadas"
                   value={formData.linkLocalizacaoImovel}
                   onChange={e => handleFieldChange('linkLocalizacaoImovel', e.target.value)}
                 />
+                {formData.linkLocalizacaoImovel ? (
+                  <div style={{ marginTop: '0.45rem' }}>
+                    <a
+                      href={formatLocationUrl(formData.linkLocalizacaoImovel)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-secondary"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        fontSize: '0.8rem',
+                        padding: '0.4rem 0.8rem',
+                        color: '#22c55e',
+                        borderColor: 'rgba(34, 197, 94, 0.4)',
+                        backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                        fontWeight: '600',
+                        textDecoration: 'none',
+                        borderRadius: '6px',
+                        width: 'fit-content'
+                      }}
+                    >
+                      <MapPin size={15} /> Abrir Localização ↗
+                    </a>
+                  </div>
+                ) : (
+                  (formData.enderecoImovel || formData.bairroImovel) && (
+                    <div style={{ marginTop: '0.45rem' }}>
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${formData.enderecoImovel || ''} ${formData.bairroImovel || ''} Caratinga MG`.trim())}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-secondary"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          fontSize: '0.75rem',
+                          padding: '0.35rem 0.75rem',
+                          color: '#94a3b8',
+                          borderColor: 'rgba(255,255,255,0.15)',
+                          textDecoration: 'none',
+                          borderRadius: '6px',
+                          width: 'fit-content'
+                        }}
+                      >
+                        <MapPin size={13} /> Buscar endereço no Maps ↗
+                      </a>
+                    </div>
+                  )
+                )}
               </div>
 
               <div className="form-group">
