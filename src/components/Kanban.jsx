@@ -263,6 +263,7 @@ export default function Kanban() {
 
   // Filter Cards list
   const filteredCards = kanbanCards.filter(card => {
+    if (card.clientId === 'client_teste_agente' || card.id === 'k_wa_teste_simulador') return false;
     const matchesPriority = priorityFilter === 'Todos' || card.priority === priorityFilter;
     if (!matchesPriority) return false;
 

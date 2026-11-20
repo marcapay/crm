@@ -215,6 +215,42 @@ export const AppProvider = ({ children }) => {
   const [activeChatClientId, setActiveChatClientId] = useState(null);
   const isSyncingRef = useRef(false);
 
+  // Purge unwanted test simulator client from local states and storage
+  useEffect(() => {
+    try {
+      setRawClients(prev => (prev || []).filter(c => c.id !== 'client_teste_agente' && !c.isSimulator && c.phone !== '37900000000' && c.email !== 'teste@agente.simulador'));
+      setKanbanCards(prev => (prev || []).filter(card => card.clientId !== 'client_teste_agente' && card.id !== 'k_wa_teste_simulador'));
+      setChats(prev => {
+        if (!prev || !prev['client_teste_agente']) return prev;
+        const copy = { ...prev };
+        delete copy['client_teste_agente'];
+        return copy;
+      });
+      const rawStored = localStorage.getItem('eloos_clients');
+      if (rawStored) {
+        const parsed = JSON.parse(rawStored);
+        if (Array.isArray(parsed)) {
+          const filtered = parsed.filter(c => c.id !== 'client_teste_agente' && !c.isSimulator && c.phone !== '37900000000' && c.email !== 'teste@agente.simulador');
+          if (filtered.length !== parsed.length) {
+            localStorage.setItem('eloos_clients', JSON.stringify(filtered));
+          }
+        }
+      }
+      const rawKanban = localStorage.getItem('eloos_kanban');
+      if (rawKanban) {
+        const parsedK = JSON.parse(rawKanban);
+        if (Array.isArray(parsedK)) {
+          const filteredK = parsedK.filter(card => card.clientId !== 'client_teste_agente' && card.id !== 'k_wa_teste_simulador');
+          if (filteredK.length !== parsedK.length) {
+            localStorage.setItem('eloos_kanban', JSON.stringify(filteredK));
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Cleanup error for client_teste_agente:", e);
+    }
+  }, []);
+
   // Auto-authenticate via URL parameters (e.g., from www.araujoimoveiscaratinga.com.br/entrar)
   useEffect(() => {
     try {
@@ -424,27 +460,13 @@ export const AppProvider = ({ children }) => {
         duplicate = true;
       }
 
-      if (!duplicate) {
+      if (!duplicate && c.id !== 'client_teste_agente' && !c.isSimulator && c.phone !== '37900000000' && c.email !== 'teste@agente.simulador') {
         if (suffix) seenSuffixes.add(suffix);
         if (cleanName && isRealName(c.name)) seenNames.add(cleanName);
         unique.push(c);
       }
     });
-    const hasSimulator = unique.some(c => c.id === 'client_teste_agente');
-    if (!hasSimulator) {
-      unique.unshift({
-        id: 'client_teste_agente',
-        name: '🤖 Chat de Teste (Simulador)',
-        phone: '37900000000',
-        email: 'teste@agente.simulador',
-        status: 'Pessoal',
-        empreendimento: 'Todos',
-        situacaoComercial: 'Interessado',
-        createdAt: new Date().toISOString().split('T')[0],
-        isSimulator: true
-      });
-    }
-    return unique;
+    return unique.filter(c => c.id !== 'client_teste_agente' && !c.isSimulator && c.phone !== '37900000000' && c.email !== 'teste@agente.simulador');
   });
 
   const setClients = (value) => {
@@ -487,27 +509,13 @@ export const AppProvider = ({ children }) => {
           duplicate = true;
         }
 
-        if (!duplicate) {
+        if (!duplicate && c.id !== 'client_teste_agente' && !c.isSimulator && c.phone !== '37900000000' && c.email !== 'teste@agente.simulador') {
           if (suffix) seenSuffixes.add(suffix);
           if (cleanName && isRealName(c.name)) seenNames.add(cleanName);
           unique.push(c);
         }
       });
-      const hasSimulator = unique.some(c => c.id === 'client_teste_agente');
-      if (!hasSimulator) {
-        unique.unshift({
-          id: 'client_teste_agente',
-          name: '🤖 Chat de Teste (Simulador)',
-          phone: '37900000000',
-          email: 'teste@agente.simulador',
-          status: 'Pessoal',
-          empreendimento: 'Todos',
-          situacaoComercial: 'Interessado',
-          createdAt: new Date().toISOString().split('T')[0],
-          isSimulator: true
-        });
-      }
-      return unique;
+      return unique.filter(c => c.id !== 'client_teste_agente' && !c.isSimulator && c.phone !== '37900000000' && c.email !== 'teste@agente.simulador');
     });
   };
 
@@ -526,6 +534,7 @@ export const AppProvider = ({ children }) => {
     const uniqueCards = [];
     const seenClientIds = new Set();
     cards.forEach(card => {
+      if (card.clientId === 'client_teste_agente' || card.id === 'k_wa_teste_simulador') return;
       if (!seenClientIds.has(card.clientId)) {
         seenClientIds.add(card.clientId);
         uniqueCards.push(card);

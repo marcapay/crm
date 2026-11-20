@@ -51,6 +51,7 @@ export default function Clientes() {
 
   // Filter clients list
   const filteredClients = clients.filter(c => {
+    if (c.isSimulator || c.id === 'client_teste_agente' || c.phone === '37900000000' || c.email === 'teste@agente.simulador') return false;
     const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           c.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           c.phone.includes(searchQuery);

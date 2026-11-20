@@ -449,6 +449,7 @@ export default function Conversas() {
   // Filter and sort clients by most recent message timestamp & instance filter
   const filteredClients = clients
     .filter(client => {
+      if (client.isSimulator || client.id === 'client_teste_agente' || client.phone === '37900000000' || client.email === 'teste@agente.simulador') return false;
       const matchesSearch = client.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                             client.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
                             client.phone?.includes(searchQuery);
