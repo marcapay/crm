@@ -1228,8 +1228,8 @@ export default function FichaVisitaTecnica() {
       {viewMode === 'form' && (
         <form onSubmit={handleSaveFicha} className="ficha-form-container">
           
-          {/* Top Floating Action Bar */}
-          <div className="glass-panel" style={{ padding: '0.875rem 1.25rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', position: 'sticky', top: '0', zIndex: 10 }}>
+          {/* Top Fixed Action Bar (Posicionado de forma fixa e natural no topo, sem flutuar sobre os campos ao rolar) */}
+          <div className="glass-panel" style={{ padding: '0.875rem 1.25rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
               {isEditingFichaName ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
