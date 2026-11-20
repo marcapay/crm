@@ -52,15 +52,26 @@ export default function FichaVisitaTecnica() {
   const [editingId, setEditingId] = useState(null);
   const [selectedPreviewImg, setSelectedPreviewImg] = useState(null);
 
-  // Fichas recebidas pelo formulário "Anunciar Imóvel" do Site Oficial
-  const siteFichas = (fichasVisita || []).filter(f => 
-    f && (
-      f.origemCaptacao === 'Site Oficial (Anunciar Imóvel)' ||
-      f.provisoria === true ||
-      (typeof f.id === 'string' && f.id.startsWith('ficha_site_')) ||
-      f.createdBy === 'Site Oficial (Anunciar Imóvel)'
-    )
-  );
+  // Identifica se uma ficha foi enviada pelo formulário "Anunciar Imóvel" do Site Oficial
+  const isSiteFicha = (f) => {
+    return Boolean(
+      f && (
+        f.provisoria === true ||
+        (typeof f.origemCaptacao === 'string' && f.origemCaptacao.includes('Site')) ||
+        (typeof f.id === 'string' && f.id.startsWith('ficha_site_')) ||
+        (typeof f.codigoImovel === 'string' && f.codigoImovel.startsWith('AN-')) ||
+        (typeof f.createdBy === 'string' && f.createdBy.includes('Site')) ||
+        (typeof f.profissionalResponsavel === 'string' && f.profissionalResponsavel.includes('Site')) ||
+        (typeof f.corretorResponsavel === 'string' && f.corretorResponsavel.includes('Site'))
+      )
+    );
+  };
+
+  // Fichas exclusivas do Site Oficial (Anunciar Imóvel)
+  const siteFichas = (fichasVisita || []).filter(isSiteFicha);
+
+  // Fichas internas/oficiais do CRM (apenas estas aparecem na listagem principal)
+  const internalFichas = (fichasVisita || []).filter(f => !isSiteFicha(f));
 
   // Print state
   const [printData, setPrintData] = useState(null);
@@ -490,8 +501,8 @@ export default function FichaVisitaTecnica() {
     }
   };
 
-  // List filtering
-  const filteredFichas = fichasVisita.filter(f => {
+  // List filtering (apenas fichas internas do CRM aparecem na lista padrão; fichas do site aparecem exclusivamente em 'Imóveis site')
+  const filteredFichas = internalFichas.filter(f => {
     const matchesSearch = 
       (f.nomeProprietario || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (f.codigoImovel || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -673,7 +684,7 @@ export default function FichaVisitaTecnica() {
               </div>
               <div>
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', display: 'block' }}>Total de Fichas</span>
-                <strong style={{ fontSize: '1.25rem', color: 'var(--text-primary)' }}>{fichasVisita.length}</strong>
+                <strong style={{ fontSize: '1.25rem', color: 'var(--text-primary)' }}>{internalFichas.length}</strong>
               </div>
             </div>
 
@@ -684,7 +695,7 @@ export default function FichaVisitaTecnica() {
               <div>
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', display: 'block' }}>Aguardando / Agendadas</span>
                 <strong style={{ fontSize: '1.25rem', color: 'var(--text-primary)' }}>
-                  {fichasVisita.filter(f => f.status === 'Aguardando agendamento' || f.status === 'Agendado').length}
+                  {internalFichas.filter(f => f.status === 'Aguardando agendamento' || f.status === 'Agendado').length}
                 </strong>
               </div>
             </div>
@@ -696,7 +707,7 @@ export default function FichaVisitaTecnica() {
               <div>
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', display: 'block' }}>Confirmadas / Realizadas</span>
                 <strong style={{ fontSize: '1.25rem', color: 'var(--text-primary)' }}>
-                  {fichasVisita.filter(f => f.status === 'Confirmado' || f.status === 'Realizado').length}
+                  {internalFichas.filter(f => f.status === 'Confirmado' || f.status === 'Realizado').length}
                 </strong>
               </div>
             </div>
