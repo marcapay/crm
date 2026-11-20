@@ -812,6 +812,16 @@ export default function FichaVisitaTecnica() {
                             {(f.precoPretendido || f.valorImovel) ? ` • ${f.precoPretendido || `R$ ${Number(f.valorImovel).toLocaleString('pt-BR')}`}` : ''}
                           </span>
                           <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', display: 'block' }}>{f.enderecoImovel}</span>
+                          {f.linkLocalizacaoImovel && (
+                            <a
+                              href={f.linkLocalizacaoImovel}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '0.72rem', color: '#38bdf8', textDecoration: 'none', fontWeight: '600', marginTop: '2px' }}
+                            >
+                              <MapPin size={11} /> Ver localização no mapa ↗
+                            </a>
+                          )}
                           {f.observacoesImovel && (
                             <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', display: 'block', marginTop: '2px', maxWidth: '280px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={f.observacoesImovel}>
                               {f.observacoesImovel}
