@@ -147,17 +147,17 @@ export default function AreaProprietario() {
             <Bell size={18} color="var(--accent-cyan)" />
             {myMessages.some(m => !m.read) && <span style={styles.notifDot} />}
           </button>
-          <button
-            style={styles.logoutBtn}
+          <a
+            href="https://www.araujoimoveiscaratinga.com.br/"
+            style={{ ...styles.logoutBtn, textDecoration: 'none' }}
             onClick={() => {
-              logout(true);
-              window.location.href = 'https://www.araujoimoveiscaratinga.com.br/';
+              localStorage.setItem('eloos_auth', 'false');
             }}
             title="Voltar para o Site"
           >
             <LogOut size={16} />
             <span style={styles.logoutText}>Sair</span>
-          </button>
+          </a>
         </div>
       </header>
 
@@ -768,16 +768,16 @@ export default function AreaProprietario() {
                 </div>
               </div>
 
-              <button
-                style={{ ...styles.logoutBtn, width: '100%', marginTop: '1.5rem', justifyContent: 'center', padding: '0.75rem' }}
+              <a
+                href="https://www.araujoimoveiscaratinga.com.br/"
+                style={{ ...styles.logoutBtn, width: '100%', marginTop: '1.5rem', justifyContent: 'center', padding: '0.75rem', textDecoration: 'none' }}
                 onClick={() => {
-                  logout(true);
-                  window.location.href = 'https://www.araujoimoveiscaratinga.com.br/';
+                  localStorage.setItem('eloos_auth', 'false');
                 }}
               >
                 <LogOut size={16} />
                 <span>Sair da Minha Conta</span>
-              </button>
+              </a>
             </div>
           </div>
         )}
