@@ -3129,9 +3129,15 @@ export const AppProvider = ({ children }) => {
 
 
 
-  const logout = () => {
+  const logout = (redirectToSite = false) => {
     setIsAuthenticated(false);
     localStorage.setItem('eloos_auth', 'false');
+    const roleNorm = (profile?.role || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (redirectToSite === true || roleNorm === 'proprietario' || roleNorm === 'inquilino') {
+      if (typeof window !== 'undefined') {
+        window.location.href = 'https://www.araujoimoveiscaratinga.com.br/';
+      }
+    }
   };
 
   const register = (name, email, password) => {

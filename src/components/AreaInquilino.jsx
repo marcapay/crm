@@ -215,7 +215,14 @@ export default function AreaInquilino() {
           <div style={styles.badgeTenant}>Área do Inquilino</div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <button style={styles.logoutBtn} onClick={logout} title="Sair do Portal">
+          <button
+            style={styles.logoutBtn}
+            onClick={() => {
+              logout(true);
+              window.location.href = 'https://www.araujoimoveiscaratinga.com.br/';
+            }}
+            title="Voltar para o Site"
+          >
             <LogOut size={16} />
             <span style={styles.logoutText}>Sair</span>
           </button>
@@ -807,7 +814,13 @@ export default function AreaInquilino() {
                 )}
               </div>
 
-              <button style={{ ...styles.logoutBtn, width: '100%', marginTop: '1.5rem', justifyContent: 'center', padding: '0.75rem' }} onClick={logout}>
+              <button
+                style={{ ...styles.logoutBtn, width: '100%', marginTop: '1.5rem', justifyContent: 'center', padding: '0.75rem' }}
+                onClick={() => {
+                  logout(true);
+                  window.location.href = 'https://www.araujoimoveiscaratinga.com.br/';
+                }}
+              >
                 <LogOut size={16} />
                 <span>Sair da Minha Conta</span>
               </button>
