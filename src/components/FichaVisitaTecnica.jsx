@@ -29,7 +29,11 @@ import {
   Camera,
   Upload,
   Globe,
-  Sparkles
+  Sparkles,
+  ExternalLink,
+  MessageSquare,
+  RefreshCw,
+  Eye
 } from 'lucide-react';
 
 export default function FichaVisitaTecnica() {
@@ -43,9 +47,20 @@ export default function FichaVisitaTecnica() {
     portalUsers = []
   } = useApp();
 
-  // View modes: 'list' | 'form' | 'print'
+  // View modes: 'list' | 'form' | 'print' | 'site_fichas'
   const [viewMode, setViewMode] = useState('list');
   const [editingId, setEditingId] = useState(null);
+  const [selectedPreviewImg, setSelectedPreviewImg] = useState(null);
+
+  // Fichas recebidas pelo formulário "Anunciar Imóvel" do Site Oficial
+  const siteFichas = (fichasVisita || []).filter(f => 
+    f && (
+      f.origemCaptacao === 'Site Oficial (Anunciar Imóvel)' ||
+      f.provisoria === true ||
+      (typeof f.id === 'string' && f.id.startsWith('ficha_site_')) ||
+      f.createdBy === 'Site Oficial (Anunciar Imóvel)'
+    )
+  );
 
   // Print state
   const [printData, setPrintData] = useState(null);
@@ -518,10 +533,9 @@ export default function FichaVisitaTecnica() {
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
           {viewMode === 'list' ? (
             <>
-              <a 
-                href="https://www.araujoimoveiscaratinga.com.br/imoveis" 
-                target="_blank" 
-                rel="noopener noreferrer"
+              <button 
+                type="button"
+                onClick={() => setViewMode('site_fichas')}
                 style={{ 
                   display: 'inline-flex', 
                   alignItems: 'center', 
@@ -533,15 +547,63 @@ export default function FichaVisitaTecnica() {
                   border: '1px solid rgba(56, 189, 248, 0.35)',
                   fontWeight: '700',
                   fontSize: '0.875rem',
-                  textDecoration: 'none',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease'
                 }}
-                title="Abrir catálogo de imóveis no site oficial"
+                title="Ver fichas e propostas enviadas através do 'Anunciar Imóvel' no site"
               >
                 <Globe size={16} />
                 <span>Imóveis site</span>
-              </a>
+                {siteFichas.length > 0 && (
+                  <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0.125rem 0.5rem',
+                    borderRadius: '999px',
+                    fontSize: '0.75rem',
+                    fontWeight: '800',
+                    backgroundColor: '#10b981',
+                    color: '#ffffff',
+                    marginLeft: '0.25rem',
+                    lineHeight: 1
+                  }}>
+                    {siteFichas.length}
+                  </span>
+                )}
+              </button>
+
+              <button 
+                type="button"
+                onClick={handleOpenAddForm}
+                style={{ 
+                  display: 'inline-flex', 
+                  alignItems: 'center', 
+                  gap: '0.5rem', 
+                  padding: '0.625rem 1.125rem', 
+                  borderRadius: 'var(--border-radius-sm)', 
+                  backgroundColor: 'var(--text-primary)', 
+                  color: 'var(--bg-primary)', 
+                  border: '1px solid var(--text-primary)',
+                  fontWeight: '700',
+                  fontSize: '0.875rem',
+                  cursor: 'pointer'
+                }}
+              >
+                <Plus size={16} />
+                <span>Nova Ficha</span>
+              </button>
+            </>
+          ) : viewMode === 'site_fichas' ? (
+            <>
+              <button 
+                onClick={() => setViewMode('list')}
+                className="btn btn-secondary"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+              >
+                <ArrowLeft size={16} />
+                <span>Voltar para Lista de Fichas</span>
+              </button>
 
               <button 
                 type="button"
@@ -814,6 +876,314 @@ export default function FichaVisitaTecnica() {
             )}
           </div>
         </>
+      )}
+
+      {/* ====================================
+          VIEW MODE 3: IMÓVEIS RECEBIDOS DO SITE (ANUNCIAR IMÓVEL)
+         ==================================== */}
+      {viewMode === 'site_fichas' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          {/* Header Panel */}
+          <div className="glass-panel" style={{ padding: '1.25rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(56, 189, 248, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-cyan)' }}>
+                <Globe size={24} />
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <h2 style={{ fontSize: '1.25rem', fontWeight: '700', margin: 0, color: 'var(--text-primary)' }}>
+                    Imóveis Recebidos do Site Oficial
+                  </h2>
+                  <span style={{ backgroundColor: '#10b981', color: '#fff', fontSize: '0.75rem', fontWeight: 'bold', padding: '2px 8px', borderRadius: '12px' }}>
+                    {siteFichas.length} {siteFichas.length === 1 ? 'imóvel recebido' : 'imóveis recebidos'}
+                  </span>
+                </div>
+                <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.85rem', color: 'var(--text-tertiary)' }}>
+                  Fichas e propostas enviadas diretamente por clientes em <strong>araujoimoveiscaratinga.com.br/anunciar</strong>
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <button 
+                onClick={() => setViewMode('list')}
+                className="btn btn-secondary"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+              >
+                <ArrowLeft size={16} />
+                <span>Voltar para Fichas</span>
+              </button>
+              <a 
+                href="https://www.araujoimoveiscaratinga.com.br/anunciar" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="btn btn-secondary"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none' }}
+              >
+                <ExternalLink size={16} />
+                <span>Ver Página no Site</span>
+              </a>
+            </div>
+          </div>
+
+          {/* Cards List or Empty State */}
+          {siteFichas.length === 0 ? (
+            <div className="glass-card" style={{ padding: '3.5rem 2rem', textAlign: 'center' }}>
+              <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: 'rgba(56, 189, 248, 0.1)', color: 'var(--accent-cyan)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
+                <Globe size={32} />
+              </div>
+              <h3 style={{ fontSize: '1.125rem', fontWeight: '700', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
+                Nenhum imóvel recebido do site no momento
+              </h3>
+              <p style={{ fontSize: '0.875rem', color: 'var(--text-tertiary)', maxWidth: '520px', margin: '0 auto 1.5rem auto', lineHeight: '1.5' }}>
+                Assim que um proprietário preencher e enviar o formulário na página <strong>Anunciar Imóvel</strong> do site oficial, a ficha com todas as fotos e dados de contato do WhatsApp aparecerá automaticamente aqui.
+              </p>
+              <a 
+                href="https://www.araujoimoveiscaratinga.com.br/anunciar" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="btn btn-primary"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none' }}
+              >
+                <ExternalLink size={16} />
+                <span>Abrir página Anunciar Imóvel</span>
+              </a>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '1.25rem' }}>
+              {siteFichas.map((f) => {
+                const cleanPhone = (f.telefoneProprietario || f.telefoneAcesso || '').replace(/\D/g, '');
+                const waUrl = cleanPhone 
+                  ? `https://wa.me/55${cleanPhone}?text=${encodeURIComponent(`Olá ${f.nomeProprietario || ''}, tudo bem? Sou da Araújo Imóveis. Recebemos seu cadastro de ${f.tipoImovel || 'imóvel'} no site oficial e gostaríamos de agendar a visita técnica!`)}`
+                  : null;
+                const formattedPrice = f.precoPretendido || (f.valorImovel ? `R$ ${Number(f.valorImovel).toLocaleString('pt-BR')}` : 'A combinar');
+                const modality = f.modalidadePretendida || (f.finalidadeImovel === 'alugar' ? 'Aluguel' : 'Venda');
+
+                return (
+                  <div 
+                    key={f.id} 
+                    className="glass-card" 
+                    style={{ 
+                      padding: '1.25rem', 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      justifyContent: 'space-between',
+                      gap: '1rem',
+                      border: '1px solid rgba(56, 189, 248, 0.25)',
+                      backgroundColor: 'rgba(15, 23, 42, 0.65)'
+                    }}
+                  >
+                    <div>
+                      {/* Top Meta Bar */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem', gap: '0.5rem' }}>
+                        <div>
+                          <span style={{ fontSize: '0.75rem', fontWeight: '800', color: 'var(--accent-cyan)', letterSpacing: '0.05em' }}>
+                            {f.codigoImovel || f.id}
+                          </span>
+                          <h4 style={{ fontSize: '1.05rem', fontWeight: '700', margin: '0.15rem 0 0 0', color: 'var(--text-primary)' }}>
+                            {f.tipoImovel || 'Imóvel'} • {modality}
+                          </h4>
+                        </div>
+                        <span style={{
+                          fontSize: '0.7rem',
+                          fontWeight: '700',
+                          padding: '0.2rem 0.6rem',
+                          borderRadius: '6px',
+                          backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                          color: '#10b981',
+                          border: '1px solid rgba(16, 185, 129, 0.3)'
+                        }}>
+                          🌐 Enviado pelo Site
+                        </span>
+                      </div>
+
+                      {/* Price Highlight */}
+                      <div style={{ marginBottom: '0.75rem', padding: '0.5rem 0.75rem', borderRadius: '8px', backgroundColor: 'rgba(255, 255, 255, 0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>Valor Pretendido:</span>
+                        <strong style={{ fontSize: '1rem', color: '#10b981' }}>{formattedPrice}</strong>
+                      </div>
+
+                      {/* Owner Details */}
+                      <div style={{ marginBottom: '0.75rem', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-primary)' }}>
+                          <User size={15} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />
+                          <strong>{f.nomeProprietario || 'Proprietário não informado'}</strong>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}>
+                          <Phone size={15} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />
+                          <span>{f.telefoneProprietario || 'Sem telefone'}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}>
+                          <MapPin size={15} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />
+                          <span>{f.bairroImovel || f.enderecoImovel || 'Caratinga - MG'}</span>
+                        </div>
+                      </div>
+
+                      {/* Client Description / Notes */}
+                      {f.observacoesImovel && (
+                        <div style={{ marginBottom: '0.75rem', padding: '0.6rem 0.75rem', borderRadius: '6px', backgroundColor: 'rgba(0,0,0,0.25)', fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+                          <strong style={{ color: 'var(--text-primary)', display: 'block', marginBottom: '0.2rem' }}>Descrição do Imóvel:</strong>
+                          {f.observacoesImovel.replace(/^\[Enviado pelo Site para Análise\]\s*/i, '')}
+                        </div>
+                      )}
+
+                      {/* Photo Thumbnails */}
+                      {f.imagensImovel && f.imagensImovel.length > 0 && (
+                        <div style={{ marginTop: '0.5rem' }}>
+                          <span style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-tertiary)', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '0.35rem' }}>
+                            <Camera size={13} /> {f.imagensImovel.length} foto(s) anexada(s):
+                          </span>
+                          <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.25rem' }}>
+                            {f.imagensImovel.map((img, idx) => (
+                              <img 
+                                key={idx}
+                                src={img}
+                                alt={`Foto ${idx + 1}`}
+                                onClick={() => setSelectedPreviewImg(img)}
+                                style={{
+                                  width: '56px',
+                                  height: '56px',
+                                  borderRadius: '6px',
+                                  objectFit: 'cover',
+                                  cursor: 'pointer',
+                                  border: '1px solid rgba(255,255,255,0.1)',
+                                  flexShrink: 0,
+                                  transition: 'transform 0.15s ease'
+                                }}
+                                title="Clique para ampliar a foto"
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        {waUrl && (
+                          <a 
+                            href={waUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              flex: 1,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '0.4rem',
+                              padding: '0.55rem 0.75rem',
+                              borderRadius: '6px',
+                              backgroundColor: '#25D366',
+                              color: '#ffffff',
+                              fontSize: '0.8rem',
+                              fontWeight: '700',
+                              textDecoration: 'none',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            <MessageSquare size={14} />
+                            <span>WhatsApp</span>
+                          </a>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditForm(f)}
+                          style={{
+                            flex: 1.2,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '0.4rem',
+                            padding: '0.55rem 0.75rem',
+                            borderRadius: '6px',
+                            backgroundColor: 'var(--text-primary)',
+                            color: 'var(--bg-primary)',
+                            border: 'none',
+                            fontSize: '0.8rem',
+                            fontWeight: '700',
+                            cursor: 'pointer'
+                          }}
+                          title="Abrir como Ficha de Visita Técnica e agendar"
+                        >
+                          <Edit3 size={14} />
+                          <span>Abrir como Ficha</span>
+                        </button>
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.25rem' }}>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)' }}>
+                          Recebido em: {f.dataCaptacao || (f.createdAt ? f.createdAt.split('T')[0] : 'Hoje')}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(f.id)}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            fontSize: '0.75rem',
+                            color: 'var(--accent-danger)',
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            padding: '2px 6px'
+                          }}
+                          title="Descartar este imóvel"
+                        >
+                          <Trash2 size={13} />
+                          <span>Descartar</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Lightbox Modal para Visualização de Fotos */}
+      {selectedPreviewImg && (
+        <div 
+          onClick={() => setSelectedPreviewImg(null)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.85)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '2rem'
+          }}
+        >
+          <div style={{ position: 'relative', maxWidth: '90vw', maxHeight: '90vh' }}>
+            <img src={selectedPreviewImg} alt="Visualização" style={{ maxWidth: '100%', maxHeight: '85vh', borderRadius: '12px', objectFit: 'contain' }} />
+            <button 
+              onClick={() => setSelectedPreviewImg(null)}
+              style={{
+                position: 'absolute',
+                top: '-15px',
+                right: '-15px',
+                backgroundColor: '#ef4444',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '50%',
+                width: '36px',
+                height: '36px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer'
+              }}
+            >
+              <X size={20} />
+            </button>
+          </div>
+        </div>
       )}
 
       {/* ====================================

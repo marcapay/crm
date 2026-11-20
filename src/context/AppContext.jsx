@@ -901,12 +901,23 @@ export const AppProvider = ({ children }) => {
 
         if (incomingFichas.length === 0) {
           try {
-            const cloudRes = await fetch('https://api.restful-api.dev/objects/ff808181a09d98f701a1f4330be964d4', { cache: 'no-store' });
-            if (cloudRes.ok) {
-              const cloudJson = await cloudRes.json();
-              const deletedSet = new Set(cloudJson?.data?.deletedFichaIds || []);
-              if (Array.isArray(cloudJson?.data?.fichas)) {
-                incomingFichas = cloudJson.data.fichas.filter(f => f && f.id && !deletedSet.has(f.id));
+            const ptrRes = await fetch('https://keyvalue.immanuel.co/api/KeyVal/GetValue/araujo_imoveis_crm_users_v2/araujo_properties_store_ptr', { cache: 'no-store' });
+            if (ptrRes.ok) {
+              const raw = await ptrRes.text();
+              if (raw && raw !== '""' && raw !== '"null"') {
+                const clean = raw.replace(/"/g, '').replace(/-/g, '+').replace(/_/g, '/');
+                const padded = clean + '='.repeat((4 - clean.length % 4) % 4);
+                const url = atob(padded);
+                if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+                  const dataRes = await fetch(url, { cache: 'no-store' });
+                  if (dataRes.ok) {
+                    const cloudJson = await dataRes.json();
+                    const deletedSet = new Set(cloudJson?.deletedFichaIds || []);
+                    if (Array.isArray(cloudJson?.fichas)) {
+                      incomingFichas = cloudJson.fichas.filter(f => f && f.id && !deletedSet.has(f.id));
+                    }
+                  }
+                }
               }
             }
           } catch {}

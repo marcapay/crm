@@ -1,7 +1,22 @@
 // Serverless endpoint to manage properties/fichas globally for Araújo Imóveis
 // Synchronizes CRM (crmaraujoimoveis.vercel.app) with the official Site (www.araujoimoveiscaratinga.com.br)
 
-const CLOUD_STORE_URL = "https://api.restful-api.dev/objects/ff808181a09d98f701a1f4330be964d4";
+const BUCKET_ID = process.env.KV_BUCKET_ID || "araujo_imoveis_crm_users_v2";
+const POINTER_KEY = "araujo_properties_store_ptr";
+
+function encodeBase64Url(str) {
+  return Buffer.from(str, 'utf-8').toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=/g, '');
+}
+
+function decodeBase64Url(safeStr) {
+  if (!safeStr) return '';
+  const clean = safeStr.replace(/"/g, '').replace(/-/g, '+').replace(/_/g, '/');
+  const padded = clean + '='.repeat((4 - clean.length % 4) % 4);
+  return Buffer.from(padded, 'base64').toString('utf-8');
+}
 
 // In-memory cache for fast serverless responses
 let memoryCache = null;
@@ -115,23 +130,38 @@ async function sanitizeProperty(prop) {
 }
 
 async function fetchFullCloudData() {
+  if (memoryCache && memoryFichasCache) {
+    return {
+      list: memoryCache,
+      fichas: memoryFichasCache,
+      deletedFichaIds: []
+    };
+  }
+
   try {
-    const res = await fetch(CLOUD_STORE_URL, {
-      headers: { 'Accept': 'application/json' },
-      cache: 'no-store'
-    });
-    if (res.ok) {
-      const json = await res.json();
-      const data = json?.data || {};
-      return {
-        list: Array.isArray(data.list) ? data.list : [],
-        fichas: Array.isArray(data.fichas) ? data.fichas : [],
-        deletedFichaIds: Array.isArray(data.deletedFichaIds) ? data.deletedFichaIds : []
-      };
+    const ptrRes = await fetch(`https://keyvalue.immanuel.co/api/KeyVal/GetValue/${BUCKET_ID}/${POINTER_KEY}`, { cache: 'no-store' });
+    if (ptrRes.ok) {
+      const raw = await ptrRes.text();
+      if (raw && raw !== '""' && raw !== '"null"' && raw !== 'null') {
+        const url = decodeBase64Url(raw);
+        if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+          const dataRes = await fetch(url, { cache: 'no-store' });
+          if (dataRes.ok) {
+            const json = await dataRes.json();
+            const list = Array.isArray(json?.list) ? json.list : [];
+            const fichas = Array.isArray(json?.fichas) ? json.fichas : [];
+            const deleted = Array.isArray(json?.deletedFichaIds) ? json.deletedFichaIds : [];
+            memoryCache = list;
+            memoryFichasCache = fichas;
+            return { list, fichas, deletedFichaIds: deleted };
+          }
+        }
+      }
     }
   } catch (err) {
     console.error("fetchFullCloudData error:", err);
   }
+
   return {
     list: memoryCache || [],
     fichas: memoryFichasCache || [],
@@ -149,18 +179,29 @@ async function saveFullCloudData({ list, fichas, deletedFichaIds }) {
     memoryCache = nextList;
     memoryFichasCache = nextFichas;
 
-    await fetch(CLOUD_STORE_URL, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: 'araujo_properties_store',
-        data: {
-          list: nextList,
-          fichas: nextFichas,
-          deletedFichaIds: nextDeleted
-        }
+    const payload = {
+      updatedAt: new Date().toISOString(),
+      list: nextList,
+      fichas: nextFichas,
+      deletedFichaIds: nextDeleted
+    };
+
+    const dpRes = await fetch('https://dpaste.org/api/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        content: JSON.stringify(payload),
+        expiry_days: '365',
+        format: 'url'
       })
     });
+
+    if (dpRes.ok) {
+      const dpUrl = (await dpRes.text()).trim();
+      const rawUrl = `${dpUrl}/raw`;
+      const encoded = encodeBase64Url(rawUrl);
+      await fetch(`https://keyvalue.immanuel.co/api/KeyVal/UpdateValue/${BUCKET_ID}/${POINTER_KEY}/${encoded}`, { method: 'POST' });
+    }
   } catch (err) {
     console.error("saveFullCloudData error:", err);
   }
