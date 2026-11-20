@@ -862,6 +862,8 @@ export const AppProvider = ({ children }) => {
       status: 'Disponível',
       fichaId: ficha.id,
       origemFicha: true,
+      corretorResponsavel: ficha.corretorResponsavel || '',
+      linkWhatsappCorretor: ficha.linkWhatsappCorretor || ficha.whatsappCorretor || '',
       nomeProprietario: ficha.nomeProprietario || '',
       telefoneProprietario: ficha.telefoneProprietario || '',
       createdAt: ficha.createdAt || new Date().toISOString()

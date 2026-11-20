@@ -177,6 +177,7 @@ export default function FichaVisitaTecnica() {
     codigoImovel: '',
     dataCaptacao: defaultToday,
     corretorResponsavel: profile?.name || 'Corretor Responsável',
+    linkWhatsappCorretor: '',
     origemCaptacao: 'WhatsApp',
     status: 'Aguardando agendamento'
   });
@@ -242,6 +243,7 @@ export default function FichaVisitaTecnica() {
       codigoImovel: autoCode,
       dataCaptacao: defaultToday,
       corretorResponsavel: profile?.name || 'Ricardo Araújo',
+      linkWhatsappCorretor: '',
       origemCaptacao: 'WhatsApp',
       status: 'Aguardando agendamento'
     });
@@ -298,6 +300,7 @@ export default function FichaVisitaTecnica() {
       codigoImovel: ficha.codigoImovel || '',
       dataCaptacao: ficha.dataCaptacao || defaultToday,
       corretorResponsavel: ficha.corretorResponsavel || profile?.name || '',
+      linkWhatsappCorretor: ficha.linkWhatsappCorretor || ficha.whatsappCorretor || '',
       origemCaptacao: ficha.origemCaptacao || 'WhatsApp',
       status: ficha.status || 'Aguardando agendamento'
     });
@@ -1991,7 +1994,7 @@ export default function FichaVisitaTecnica() {
                 </select>
               </div>
 
-              <div className="form-group span-2">
+              <div className="form-group">
                 <label className="form-label required">Status da Ficha de Visita:</label>
                 <select 
                   className={`form-input ${formErrors.status ? 'input-error' : ''}`}
@@ -2006,6 +2009,46 @@ export default function FichaVisitaTecnica() {
                   <option value="Reagendar">Reagendar</option>
                 </select>
                 {formErrors.status && <span className="error-text">{formErrors.status}</span>}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span>Link do WhatsApp do Corretor:</span>
+                  {formData.linkWhatsappCorretor && (
+                    <a 
+                      href={formData.linkWhatsappCorretor.startsWith('http') ? formData.linkWhatsappCorretor : `https://wa.me/55${formData.linkWhatsappCorretor.replace(/\D/g, '')}`}
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      style={{ fontSize: '0.75rem', color: '#22c55e', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '3px', fontWeight: '600' }}
+                    >
+                      Abrir conversa ↗
+                    </a>
+                  )}
+                </label>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <input 
+                    type="text"
+                    className="form-input"
+                    placeholder="https://wa.me/5533999999999 ou DDD + número"
+                    value={formData.linkWhatsappCorretor || ''}
+                    onChange={e => handleFieldChange('linkWhatsappCorretor', e.target.value)}
+                  />
+                  {formData.linkWhatsappCorretor && !formData.linkWhatsappCorretor.startsWith('http') && formData.linkWhatsappCorretor.replace(/\D/g, '').length >= 10 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const digits = formData.linkWhatsappCorretor.replace(/\D/g, '');
+                        const full = digits.length <= 11 ? `55${digits}` : digits;
+                        handleFieldChange('linkWhatsappCorretor', `https://wa.me/${full}`);
+                      }}
+                      className="btn btn-secondary"
+                      style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem', whiteSpace: 'nowrap' }}
+                      title="Formatar link do WhatsApp"
+                    >
+                      Gerar Link
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>

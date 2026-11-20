@@ -249,9 +249,13 @@ export default function FichaPrintTemplate({ ficha, isBlank = false, onClose, on
               <span className="field-label">Corretor Responsável:</span>
               <span className="field-content">{renderValue(data.corretorResponsavel, '________________________')}</span>
             </div>
-            <div className="field-group span-2">
+            <div className="field-group">
               <span className="field-label">Origem da Captação:</span>
-              <span className="field-content">{renderValue(data.origemCaptacao, '____________________________________________________')}</span>
+              <span className="field-content">{renderValue(data.origemCaptacao, '________________________')}</span>
+            </div>
+            <div className="field-group">
+              <span className="field-label">WhatsApp do Corretor:</span>
+              <span className="field-content">{renderValue(data.linkWhatsappCorretor || data.whatsappCorretor, '________________________')}</span>
             </div>
             <div className="field-group span-2">
               <span className="field-label" style={{ marginBottom: '6px', display: 'block' }}>Status da Ficha:</span>
