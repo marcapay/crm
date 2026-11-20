@@ -516,53 +516,32 @@ export default function FichaVisitaTecnica() {
         </div>
 
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
-          <button 
-            type="button"
-            onClick={() => {
-              handleCopyClientLink();
-              setShowShareModal(true);
-            }}
-            style={{ 
-              display: 'inline-flex', 
-              alignItems: 'center', 
-              gap: '0.5rem', 
-              padding: '0.625rem 1.125rem', 
-              borderRadius: 'var(--border-radius-sm)', 
-              backgroundColor: '#0284c7', 
-              color: '#ffffff', 
-              border: 'none',
-              fontWeight: '700',
-              fontSize: '0.875rem',
-              cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)'
-            }}
-          >
-            <Share2 size={16} style={{ color: '#ffffff' }} />
-            <span>Gerar Link para Cliente</span>
-          </button>
-
           {viewMode === 'list' ? (
             <>
-              <button 
-                type="button"
-                onClick={handlePrintBlank}
+              <a 
+                href="https://www.araujoimoveiscaratinga.com.br/imoveis" 
+                target="_blank" 
+                rel="noopener noreferrer"
                 style={{ 
                   display: 'inline-flex', 
                   alignItems: 'center', 
                   gap: '0.5rem', 
                   padding: '0.625rem 1.125rem', 
-                  borderRadius: 'var(--border-radius-sm)',
-                  backgroundColor: 'var(--bg-tertiary)',
-                  color: 'var(--text-primary)',
-                  border: '1px solid var(--glass-border)',
-                  fontWeight: '600',
+                  borderRadius: 'var(--border-radius-sm)', 
+                  backgroundColor: 'rgba(56, 189, 248, 0.12)', 
+                  color: 'var(--accent-cyan)', 
+                  border: '1px solid rgba(56, 189, 248, 0.35)',
+                  fontWeight: '700',
                   fontSize: '0.875rem',
-                  cursor: 'pointer'
+                  textDecoration: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
                 }}
+                title="Abrir catálogo de imóveis no site oficial"
               >
-                <Printer size={16} />
-                <span>Imprimir em Branco</span>
-              </button>
+                <Globe size={16} />
+                <span>Imóveis site</span>
+              </a>
 
               <button 
                 type="button"
@@ -583,29 +562,6 @@ export default function FichaVisitaTecnica() {
               >
                 <Plus size={16} />
                 <span>Nova Ficha</span>
-              </button>
-
-              <button 
-                type="button"
-                onClick={handleSyncWithWebsite}
-                disabled={isSyncingSite}
-                style={{ 
-                  display: 'inline-flex', 
-                  alignItems: 'center', 
-                  gap: '0.5rem', 
-                  padding: '0.625rem 1.125rem', 
-                  borderRadius: 'var(--border-radius-sm)', 
-                  backgroundColor: 'rgba(56, 189, 248, 0.12)', 
-                  color: 'var(--accent-cyan)', 
-                  border: '1px solid rgba(56, 189, 248, 0.35)',
-                  fontWeight: '700',
-                  fontSize: '0.875rem',
-                  cursor: isSyncingSite ? 'not-allowed' : 'pointer'
-                }}
-                title="Sincronizar todos os imóveis ativos com o site oficial"
-              >
-                <Globe size={16} />
-                <span>{isSyncingSite ? 'Sincronizando...' : 'Publicar no Site'}</span>
               </button>
             </>
           ) : (
