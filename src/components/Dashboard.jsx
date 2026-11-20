@@ -91,7 +91,6 @@ export default function Dashboard() {
       <header className="module-header dashboard-header" style={styles.header}>
         <div>
           <h1 className="title-gradient" style={styles.title}>Visão Geral Imobiliária</h1>
-          <p style={styles.subtitle}>Acompanhe seus leads, visitas agendadas, propostas e negociações com a Araújo Imóveis.</p>
         </div>
         <div style={styles.badgeArea}>
           <div className={`badge ${waStatus === 'ONLINE' ? 'badge-success' : 'badge-danger'}`} style={{ gap: '0.25rem' }}>
