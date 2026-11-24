@@ -575,7 +575,7 @@ export default function FichaVisitaTecnica() {
         <div>
           <h1 style={{ fontSize: '1.5rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <ClipboardList style={{ color: 'var(--accent-cyan)' }} size={24} />
-            Ficha 01: Agendamento de Visita Técnica
+            Agendamento de Visita Técnica
           </h1>
           <p style={{ fontSize: '0.875rem', color: 'var(--text-tertiary)', marginTop: '0.25rem' }}>
             Cadastro, agendamento de avaliação técnica e emissão de fichas em A4 / PDF.
@@ -1344,7 +1344,7 @@ export default function FichaVisitaTecnica() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <span 
                     onClick={() => {
-                      setCustomFichaName(formData.nomeFicha || (editingId ? `Editando Ficha: ${formData.codigoImovel}` : 'Nova Ficha 01'));
+                      setCustomFichaName(formData.nomeFicha || (editingId ? `Editando Ficha: ${formData.codigoImovel}` : 'Nova Ficha'));
                       setIsEditingFichaName(true);
                     }}
                     style={{ 
@@ -1358,12 +1358,12 @@ export default function FichaVisitaTecnica() {
                     }}
                     title="Clique para editar o nome da ficha"
                   >
-                    {formData.nomeFicha || (editingId ? `Editando Ficha: ${formData.codigoImovel}` : 'Nova Ficha 01')}
+                    {formData.nomeFicha || (editingId ? `Editando Ficha: ${formData.codigoImovel}` : 'Nova Ficha')}
                   </span>
                   <button
                     type="button"
                     onClick={() => {
-                      setCustomFichaName(formData.nomeFicha || (editingId ? (formData.nomeFicha || formData.codigoImovel) : 'Nova Ficha 01'));
+                      setCustomFichaName(formData.nomeFicha || (editingId ? (formData.nomeFicha || formData.codigoImovel) : 'Nova Ficha'));
                       setIsEditingFichaName(true);
                     }}
                     className="btn btn-secondary"
@@ -1540,6 +1540,18 @@ export default function FichaVisitaTecnica() {
                   <option value="Sobrado">Sobrado</option>
                   <option value="Outro">Outro</option>
                 </select>
+                {formData.tipoImovel === 'Outro' && (
+                  <div style={{ marginTop: '0.5rem' }}>
+                    <input 
+                      type="text"
+                      className="form-input"
+                      placeholder="Qual o tipo do imóvel? (Digite aqui)"
+                      value={formData.tipoImovelOutro || ''}
+                      onChange={e => handleFieldChange('tipoImovelOutro', e.target.value)}
+                      autoFocus
+                    />
+                  </div>
+                )}
                 {formErrors.tipoImovel && <span className="error-text">{formErrors.tipoImovel}</span>}
               </div>
 
@@ -2014,6 +2026,18 @@ export default function FichaVisitaTecnica() {
                   <option value="Placa">Placa no Imóvel</option>
                   <option value="Outro">Outro</option>
                 </select>
+                {formData.origemCaptacao === 'Outro' && (
+                  <div style={{ marginTop: '0.5rem' }}>
+                    <input 
+                      type="text"
+                      className="form-input"
+                      placeholder="Qual a origem da captação? (Digite aqui)"
+                      value={formData.origemCaptacaoOutro || ''}
+                      onChange={e => handleFieldChange('origemCaptacaoOutro', e.target.value)}
+                      autoFocus
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="form-group">

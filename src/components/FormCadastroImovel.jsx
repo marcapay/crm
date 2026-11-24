@@ -50,7 +50,8 @@ const DIFERENCIAIS_LIST = [
   'Terraço',
   'Quintal',
   'Aceita Pet',
-  'Espaço Pet'
+  'Espaço Pet',
+  'Outro'
 ];
 
 const DOCUMENTACAO_LIST = [
@@ -61,7 +62,8 @@ const DOCUMENTACAO_LIST = [
   'Em Inventário',
   'Imóvel Financiado / Consórcio',
   'Somente Posse',
-  'Habite-se'
+  'Habite-se',
+  'Outro'
 ];
 
 export default function FormCadastroImovel({ onBack, onSaved }) {
@@ -82,11 +84,16 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
     // 2. Informações do Imóvel
     codigo: '',
     tipo: 'Casa',
+    tipoOutro: '',
     uso: 'Residencial',
+    usoOutro: '',
     finalidade: 'Locação',
+    finalidadeOutro: '',
     finalidadeSite: 'alugar',
+    finalidadeSiteOutro: '',
     publicarNoSite: true,
     status: 'Disponível',
+    statusOutro: '',
     titulo: '',
     destaque: false,
     exclusividade: false,
@@ -139,12 +146,14 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
 
     // 6. Diferenciais (Lazer e Estrutura)
     diferenciais: [],
+    diferenciaisOutro: '',
 
     // 7. Descrição e Textos
     descricao: '',
 
     // 8. Documentação
     documentacao: [],
+    documentacaoOutro: '',
 
     // 9. Fotos e Mídias
     fotos: [],
@@ -290,7 +299,12 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
     setIsSaving(true);
 
     const cleanCode = (formData.codigo || `IM-${Date.now()}`).toUpperCase().replace(/^#+/, '');
-    const cleanType = formData.tipo || 'Casa';
+    const cleanType = (formData.tipo === 'Outro' && formData.tipoOutro?.trim())
+      ? formData.tipoOutro.trim()
+      : (formData.tipo || 'Casa');
+    const cleanUso = (formData.uso === 'Outro' && formData.usoOutro?.trim())
+      ? formData.usoOutro.trim()
+      : (formData.uso || 'Residencial');
     const cleanCity = (formData.cidade || 'Caratinga').trim();
     const cleanNeighborhood = (formData.bairro || 'Centro').trim();
     const cleanAddress = formData.mostrarEnderecoExato
@@ -298,7 +312,11 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
       : `${cleanNeighborhood}, ${cleanCity} - ${formData.estado || 'MG'}`.trim();
 
     let transaction = 'alugar';
-    const fin = (formData.finalidadeSite || formData.finalidade || '').toLowerCase();
+    const fin = (formData.finalidadeSite === 'Outro' && formData.finalidadeSiteOutro?.trim())
+      ? formData.finalidadeSiteOutro.toLowerCase()
+      : ((formData.finalidade === 'Outro' && formData.finalidadeOutro?.trim())
+          ? formData.finalidadeOutro.toLowerCase()
+          : (formData.finalidadeSite || formData.finalidade || '').toLowerCase());
     if (fin.includes('venda') && fin.includes('loca')) {
       transaction = 'venda-aluguel';
     } else if (fin.includes('venda') || fin.includes('compr')) {
@@ -322,7 +340,7 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
 
     const features = [
       `Imóvel tipo ${cleanType}`,
-      `Uso: ${formData.uso || 'Residencial'}`,
+      `Uso: ${cleanUso}`,
       `Bairro ${cleanNeighborhood}`,
       formData.porteiraFechada ? 'Porteira Fechada' : null,
       formData.conjugado ? 'Conjugado' : null,
@@ -331,8 +349,10 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
       formData.aceitaFgts ? 'Aceita FGTS' : null,
       formData.aceitaPermuta ? 'Aceita Permuta' : null,
       formData.aceitaVeiculo ? 'Aceita Veículo na Negociação' : null,
-      ...(Array.isArray(formData.diferenciais) ? formData.diferenciais : []),
-      ...(Array.isArray(formData.documentacao) ? formData.documentacao : []),
+      ...(Array.isArray(formData.diferenciais) ? formData.diferenciais.filter(d => d !== 'Outro') : []),
+      (formData.diferenciais?.includes('Outro') && formData.diferenciaisOutro?.trim()) ? formData.diferenciaisOutro.trim() : null,
+      ...(Array.isArray(formData.documentacao) ? formData.documentacao.filter(d => d !== 'Outro') : []),
+      (formData.documentacao?.includes('Outro') && formData.documentacaoOutro?.trim()) ? formData.documentacaoOutro.trim() : null,
       'Atendimento Exclusivo Araújo Imóveis'
     ].filter(Boolean);
 
@@ -643,6 +663,18 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
                 <option value="Sobrado">Sobrado</option>
                 <option value="Outro">Outro</option>
               </select>
+              {formData.tipo === 'Outro' && (
+                <div style={{ marginTop: '0.5rem' }}>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    placeholder="Qual o tipo do imóvel? (Digite aqui)" 
+                    value={formData.tipoOutro || ''} 
+                    onChange={e => handleChange('tipoOutro', e.target.value)} 
+                    autoFocus
+                  />
+                </div>
+              )}
             </div>
 
             <div className="form-group">
@@ -655,7 +687,20 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
                 <option value="Residencial">Residencial</option>
                 <option value="Comercial">Comercial</option>
                 <option value="Residencial ou comercial">Residencial ou comercial</option>
+                <option value="Outro">Outro</option>
               </select>
+              {formData.uso === 'Outro' && (
+                <div style={{ marginTop: '0.5rem' }}>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    placeholder="Qual o uso do imóvel? (Digite aqui)" 
+                    value={formData.usoOutro || ''} 
+                    onChange={e => handleChange('usoOutro', e.target.value)} 
+                    autoFocus
+                  />
+                </div>
+              )}
             </div>
 
             <div className="form-group">
@@ -669,7 +714,20 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
                 <option value="Venda">Venda</option>
                 <option value="Venda e Locação">Venda e Locação</option>
                 <option value="Permuta">Permuta</option>
+                <option value="Outro">Outro</option>
               </select>
+              {formData.finalidade === 'Outro' && (
+                <div style={{ marginTop: '0.5rem' }}>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    placeholder="Qual a finalidade? (Digite aqui)" 
+                    value={formData.finalidadeOutro || ''} 
+                    onChange={e => handleChange('finalidadeOutro', e.target.value)} 
+                    autoFocus
+                  />
+                </div>
+              )}
             </div>
 
             <div className="form-group">
@@ -683,7 +741,20 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
                 <option value="Em Negociação">Em Negociação</option>
                 <option value="Vendido/Alugado">Vendido/Alugado</option>
                 <option value="Pausado">Pausado</option>
+                <option value="Outro">Outro</option>
               </select>
+              {formData.status === 'Outro' && (
+                <div style={{ marginTop: '0.5rem' }}>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    placeholder="Qual o status? (Digite aqui)" 
+                    value={formData.statusOutro || ''} 
+                    onChange={e => handleChange('statusOutro', e.target.value)} 
+                    autoFocus
+                  />
+                </div>
+              )}
             </div>
 
             <div className="form-group">
@@ -1241,6 +1312,21 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
               );
             })}
           </div>
+          {(formData.diferenciais || []).includes('Outro') && (
+            <div style={{ marginTop: '1rem', width: '100%', maxWidth: '600px' }}>
+              <label className="form-label" style={{ fontSize: '0.85rem', color: 'var(--accent-cyan)' }}>
+                Especifique outro diferencial:
+              </label>
+              <input 
+                type="text" 
+                className="form-input" 
+                placeholder="Ex: Sauna, Campo de futebol, Vista panorâmica..." 
+                value={formData.diferenciaisOutro || ''} 
+                onChange={e => handleChange('diferenciaisOutro', e.target.value)} 
+                autoFocus
+              />
+            </div>
+          )}
         </div>
 
         {/* ============================================================
@@ -1298,6 +1384,21 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
               );
             })}
           </div>
+          {(formData.documentacao || []).includes('Outro') && (
+            <div style={{ marginTop: '1rem', width: '100%', maxWidth: '600px' }}>
+              <label className="form-label" style={{ fontSize: '0.85rem', color: 'var(--accent-cyan)' }}>
+                Especifique outra documentação:
+              </label>
+              <input 
+                type="text" 
+                className="form-input" 
+                placeholder="Ex: Usucapião em andamento, Cessão de posse..." 
+                value={formData.documentacaoOutro || ''} 
+                onChange={e => handleChange('documentacaoOutro', e.target.value)} 
+                autoFocus
+              />
+            </div>
+          )}
         </div>
 
         {/* ============================================================
@@ -1502,7 +1603,20 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
                 <option value="comprar">Venda / Comprar</option>
                 <option value="lancamento">Lançamento / Investimento</option>
                 <option value="permuta">Permuta</option>
+                <option value="Outro">Outro</option>
               </select>
+              {formData.finalidadeSite === 'Outro' && (
+                <div style={{ marginTop: '0.5rem' }}>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    placeholder="Especifique a finalidade para o site..." 
+                    value={formData.finalidadeSiteOutro || ''} 
+                    onChange={e => handleChange('finalidadeSiteOutro', e.target.value)} 
+                    autoFocus
+                  />
+                </div>
+              )}
             </div>
 
             <div className="form-group">

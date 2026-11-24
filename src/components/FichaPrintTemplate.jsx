@@ -63,7 +63,7 @@ export default function FichaPrintTemplate({ ficha, isBlank = false, onClose, on
             <ClientLogo height={44} theme="light" />
           </div>
           <div className="header-title-area">
-            <h1 className="ficha-main-title">Ficha 01: Agendamento de Visita Técnica</h1>
+            <h1 className="ficha-main-title">Agendamento de Visita Técnica</h1>
             <p className="ficha-subtitle">Araújo Imóveis — Gestão de Captação e Avaliação</p>
           </div>
           <div className="header-code-area">

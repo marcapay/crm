@@ -551,6 +551,18 @@ export default function FichaPublicaCliente() {
                   <option value="Sobrado">Sobrado</option>
                   <option value="Outro">Outro</option>
                 </select>
+                {formData.tipoImovel === 'Outro' && (
+                  <div style={{ marginTop: '0.5rem' }}>
+                    <input 
+                      type="text"
+                      className="form-input"
+                      placeholder="Qual o tipo do imóvel? (Digite aqui)"
+                      value={formData.tipoImovelOutro || ''}
+                      onChange={e => handleFieldChange('tipoImovelOutro', e.target.value)}
+                      autoFocus
+                    />
+                  </div>
+                )}
                 {formErrors.tipoImovel && <span className="error-text">{formErrors.tipoImovel}</span>}
               </div>
 
