@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import FichaPrintTemplate from './FichaPrintTemplate';
+import FormCadastroImovel from './FormCadastroImovel';
 import { 
   ClipboardList, 
   Plus, 
@@ -550,6 +551,22 @@ export default function FichaVisitaTecnica() {
     );
   }
 
+  // Render Cadastro Completo de Imóvel (Padrão Eloos CRM)
+  if (viewMode === 'cadastro_imovel') {
+    return (
+      <div className="module-container" style={{ padding: '1.5rem', maxWidth: '1400px', margin: '0 auto' }}>
+        <FormCadastroImovel 
+          onBack={() => setViewMode('list')}
+          onSaved={() => {
+            setViewMode('list');
+            setSuccessMsg('Imóvel cadastrado com sucesso!');
+            setTimeout(() => setSuccessMsg(''), 4000);
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="module-container" style={{ padding: '1.5rem', maxWidth: '1400px', margin: '0 auto' }}>
       
@@ -570,42 +587,25 @@ export default function FichaVisitaTecnica() {
             <>
               <button 
                 type="button"
-                onClick={() => setViewMode('site_fichas')}
+                onClick={() => setViewMode('cadastro_imovel')}
                 style={{ 
                   display: 'inline-flex', 
                   alignItems: 'center', 
                   gap: '0.5rem', 
                   padding: '0.625rem 1.125rem', 
                   borderRadius: 'var(--border-radius-sm)', 
-                  backgroundColor: 'rgba(56, 189, 248, 0.12)', 
+                  backgroundColor: 'rgba(56, 189, 248, 0.15)', 
                   color: 'var(--accent-cyan)', 
-                  border: '1px solid rgba(56, 189, 248, 0.35)',
+                  border: '1px solid rgba(56, 189, 248, 0.4)',
                   fontWeight: '700',
                   fontSize: '0.875rem',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease'
                 }}
-                title="Ver fichas e propostas enviadas através do 'Anunciar Imóvel' no site"
+                title="Cadastrar novo imóvel completo no sistema"
               >
-                <Globe size={16} />
-                <span>Imóveis site</span>
-                {siteFichas.length > 0 && (
-                  <span style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '0.125rem 0.5rem',
-                    borderRadius: '999px',
-                    fontSize: '0.75rem',
-                    fontWeight: '800',
-                    backgroundColor: '#10b981',
-                    color: '#ffffff',
-                    marginLeft: '0.25rem',
-                    lineHeight: 1
-                  }}>
-                    {siteFichas.length}
-                  </span>
-                )}
+                <Building size={16} />
+                <span>Cadastrar Imóvel</span>
               </button>
 
               <button 
