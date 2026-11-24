@@ -52,8 +52,8 @@ export default function Sidebar({ isOpen, onClose }) {
     { id: 'kanban', name: 'Kanban', icon: Columns },
     { id: 'conversas', name: 'Conversas', icon: MessageSquare },
     { id: 'clientes', name: 'Clientes', icon: Users },
-    { id: 'visita-tecnica', name: 'Ficha', icon: ClipboardList },
-    { id: 'gestao-portais', name: 'Locação', icon: Building2 },
+    { id: 'visita-tecnica', name: 'Imóveis', icon: ClipboardList },
+    { id: 'gestao-portais', name: 'Gestão de Locação', icon: Building2 },
     { id: 'links-rapidos', name: 'Atalhos Rápidos', icon: Link2 },
     { id: 'configuracoes', name: 'Configurações', icon: Settings },
   ];

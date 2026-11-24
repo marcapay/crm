@@ -62,8 +62,10 @@ export default function App() {
       case 'clientes':
         return <Clientes />;
       case 'ficha':
+      case 'imoveis':
       case 'visita-tecnica':
         return <FichaVisitaTecnica />;
+      case 'locacao':
       case 'gestao-portais':
         return <PainelGestaoPortais />;
       case 'links-rapidos':
