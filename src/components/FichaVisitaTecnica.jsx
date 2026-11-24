@@ -1498,6 +1498,32 @@ export default function FichaVisitaTecnica() {
             </h3>
 
             <div className="form-grid-2">
+              {/* Valores: Pretendido vs Avaliado */}
+              <div className="form-group">
+                <label className="form-label">Valor Pretendido do Aluguel:</label>
+                <input 
+                  type="text"
+                  className="form-input"
+                  placeholder="Ex: R$ 1.500,00"
+                  value={formData.valorPretendidoAluguel !== undefined ? formData.valorPretendidoAluguel : (formData.valorImovel || '')}
+                  onChange={e => {
+                    handleFieldChange('valorPretendidoAluguel', e.target.value);
+                    handleFieldChange('valorImovel', e.target.value);
+                  }}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Valor Avaliado pela Imobiliária:</label>
+                <input 
+                  type="text"
+                  className="form-input"
+                  placeholder="Ex: R$ 1.400,00"
+                  value={formData.valorAvaliadoImobiliaria || ''}
+                  onChange={e => handleFieldChange('valorAvaliadoImobiliaria', e.target.value)}
+                />
+              </div>
+
               <div className="form-group">
                 <label className="form-label required">Tipo do Imóvel:</label>
                 <select 
@@ -1625,32 +1651,6 @@ export default function FichaVisitaTecnica() {
                     </div>
                   )
                 )}
-              </div>
-
-              {/* Valores: Pretendido vs Avaliado */}
-              <div className="form-group">
-                <label className="form-label">Valor Pretendido do Aluguel:</label>
-                <input 
-                  type="text"
-                  className="form-input"
-                  placeholder="Ex: R$ 1.500,00"
-                  value={formData.valorPretendidoAluguel !== undefined ? formData.valorPretendidoAluguel : (formData.valorImovel || '')}
-                  onChange={e => {
-                    handleFieldChange('valorPretendidoAluguel', e.target.value);
-                    handleFieldChange('valorImovel', e.target.value);
-                  }}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Valor Avaliado pela Imobiliária:</label>
-                <input 
-                  type="text"
-                  className="form-input"
-                  placeholder="Ex: R$ 1.400,00"
-                  value={formData.valorAvaliadoImobiliaria || ''}
-                  onChange={e => handleFieldChange('valorAvaliadoImobiliaria', e.target.value)}
-                />
               </div>
 
               {/* Situação e Acesso */}

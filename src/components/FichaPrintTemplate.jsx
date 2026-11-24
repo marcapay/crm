@@ -96,6 +96,14 @@ export default function FichaPrintTemplate({ ficha, isBlank = false, onClose, on
           <h2 className="section-title">2. Dados Iniciais do Imóvel</h2>
           <div className="ficha-grid grid-col-2">
             <div className="field-group">
+              <span className="field-label">Valor Pretendido do Aluguel:</span>
+              <span className="field-content">{renderValue(data.valorPretendidoAluguel || data.valorImovel, 'R$ ____________________')}</span>
+            </div>
+            <div className="field-group">
+              <span className="field-label">Valor Avaliado pela Imobiliária:</span>
+              <span className="field-content">{renderValue(data.valorAvaliadoImobiliaria, 'R$ ____________________')}</span>
+            </div>
+            <div className="field-group">
               <span className="field-label">Tipo do Imóvel:</span>
               <span className="field-content">{renderValue(data.tipoImovel, '________________________')}</span>
             </div>
@@ -114,14 +122,6 @@ export default function FichaPrintTemplate({ ficha, isBlank = false, onClose, on
             <div className="field-group">
               <span className="field-label">Link da Localização:</span>
               <span className="field-content">{renderValue(data.linkLocalizacaoImovel, '________________________')}</span>
-            </div>
-            <div className="field-group">
-              <span className="field-label">Valor Pretendido do Aluguel:</span>
-              <span className="field-content">{renderValue(data.valorPretendidoAluguel || data.valorImovel, 'R$ ____________________')}</span>
-            </div>
-            <div className="field-group">
-              <span className="field-label">Valor Avaliado pela Imobiliária:</span>
-              <span className="field-content">{renderValue(data.valorAvaliadoImobiliaria, 'R$ ____________________')}</span>
             </div>
             <div className="field-group">
               <span className="field-label">Situação do Imóvel:</span>
