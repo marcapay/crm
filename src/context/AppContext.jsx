@@ -887,7 +887,7 @@ export const AppProvider = ({ children }) => {
       try {
         if (!Array.isArray(fichasVisita) || fichasVisita.length === 0) return;
         const activeProps = fichasVisita
-          .filter(f => f && f.publicarNoSite !== false && f.status !== 'Cancelado')
+          .filter(f => f && f.publicarNoSite === true && f.status !== 'Cancelado')
           .map(convertFichaToProperty)
           .filter(Boolean);
 
@@ -3515,7 +3515,7 @@ export const AppProvider = ({ children }) => {
 
     // Direct synchronization of the property to the official website API
     try {
-      if (newFicha.publicarNoSite !== false) {
+      if (newFicha.publicarNoSite === true) {
         const propToSync = convertFichaToProperty(newFicha);
         if (propToSync) {
           fetch('/api/properties', {
@@ -3625,7 +3625,7 @@ export const AppProvider = ({ children }) => {
       const targetFicha = (fichasVisita || []).find(f => f.id === id);
       if (targetFicha) {
         const merged = { ...targetFicha, ...updatedFields };
-        if (merged.publicarNoSite !== false && merged.status !== 'Cancelado') {
+        if (merged.publicarNoSite === true && merged.status !== 'Cancelado') {
           const propToSync = convertFichaToProperty(merged);
           if (propToSync) {
             fetch('/api/properties', {

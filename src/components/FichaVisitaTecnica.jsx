@@ -179,7 +179,7 @@ export default function FichaVisitaTecnica() {
     banheiros: '',
     vagas: '',
     area: '',
-    publicarNoSite: true,
+    publicarNoSite: false,
 
     dataVisita: defaultToday,
     horarioVisita: '09:00',
@@ -248,7 +248,7 @@ export default function FichaVisitaTecnica() {
       banheiros: '',
       vagas: '',
       area: '',
-      publicarNoSite: true,
+      publicarNoSite: false,
 
       dataVisita: defaultToday,
       horarioVisita: '09:00',
@@ -307,7 +307,7 @@ export default function FichaVisitaTecnica() {
       banheiros: ficha.banheiros !== undefined ? ficha.banheiros : '',
       vagas: ficha.vagas !== undefined ? ficha.vagas : '',
       area: ficha.area !== undefined ? ficha.area : '',
-      publicarNoSite: ficha.publicarNoSite !== undefined ? ficha.publicarNoSite : true,
+      publicarNoSite: ficha.publicarNoSite === true ? true : false,
 
       dataVisita: ficha.dataVisita || defaultToday,
       horarioVisita: ficha.horarioVisita || '09:00',
@@ -909,7 +909,7 @@ export default function FichaVisitaTecnica() {
                               </span>
                             </div>
                           )}
-                          {f.publicarNoSite !== false && f.status !== 'Cancelado' && (
+                          {f.publicarNoSite === true && f.status !== 'Cancelado' && (
                             <div style={{ marginTop: '5px' }}>
                               <a 
                                 href={`https://www.araujoimoveiscaratinga.com.br/imoveis/${(f.codigoImovel || f.id || '').toLowerCase().replace(/^#+/, '')}`}
@@ -1875,98 +1875,6 @@ export default function FichaVisitaTecnica() {
                     ))}
                   </div>
                 )}
-              </div>
-
-              {/* Integração Automática com o Site Oficial Araújo Imóveis */}
-              <div className="form-group span-2" style={{ backgroundColor: 'rgba(56, 189, 248, 0.05)', border: '1px solid rgba(56, 189, 248, 0.25)', borderRadius: '12px', padding: '1.25rem', marginTop: '0.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-cyan)', fontWeight: '700', fontSize: '0.95rem' }}>
-                    <Globe size={18} />
-                    <span>Publicação no Site Oficial (araujoimoveiscaratinga.com.br)</span>
-                  </div>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.875rem', color: 'var(--text-primary)', fontWeight: '600' }}>
-                    <input 
-                      type="checkbox" 
-                      checked={formData.publicarNoSite !== false} 
-                      onChange={e => handleFieldChange('publicarNoSite', e.target.checked)} 
-                    />
-                    <span>Exibir este imóvel no site oficial</span>
-                  </label>
-                </div>
-
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '1rem', lineHeight: '1.4' }}>
-                  As fotos, endereço e características desta ficha serão formatados automaticamente como um anúncio de destaque na página inicial e no catálogo de imóveis do site oficial.
-                </p>
-
-                <div className="form-grid-2" style={{ gap: '1rem' }}>
-                  <div className="form-group">
-                    <label className="form-label">Finalidade no Site:</label>
-                    <select 
-                      className="form-input"
-                      value={formData.finalidadeImovel || 'alugar'}
-                      onChange={e => handleFieldChange('finalidadeImovel', e.target.value)}
-                    >
-                      <option value="alugar">Aluguel / Locação</option>
-                      <option value="comprar">Venda / Comprar</option>
-                      <option value="lancamento">Lançamento / Investimento</option>
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Valor Pretendido / Aluguel (R$):</label>
-                    <input 
-                      type="number"
-                      className="form-input"
-                      placeholder="Ex: 1800 (padrão se vazio)"
-                      value={formData.valorImovel || ''}
-                      onChange={e => handleFieldChange('valorImovel', e.target.value)}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Quartos:</label>
-                    <input 
-                      type="number"
-                      className="form-input"
-                      placeholder="Ex: 3"
-                      value={formData.quartos || ''}
-                      onChange={e => handleFieldChange('quartos', e.target.value)}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Banheiros:</label>
-                    <input 
-                      type="number"
-                      className="form-input"
-                      placeholder="Ex: 2"
-                      value={formData.banheiros || ''}
-                      onChange={e => handleFieldChange('banheiros', e.target.value)}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Vagas de Garagem:</label>
-                    <input 
-                      type="number"
-                      className="form-input"
-                      placeholder="Ex: 1"
-                      value={formData.vagas || ''}
-                      onChange={e => handleFieldChange('vagas', e.target.value)}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Área Construída (m²):</label>
-                    <input 
-                      type="number"
-                      className="form-input"
-                      placeholder="Ex: 150"
-                      value={formData.area || ''}
-                      onChange={e => handleFieldChange('area', e.target.value)}
-                    />
-                  </div>
-                </div>
               </div>
             </div>
           </div>
