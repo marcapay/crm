@@ -170,7 +170,9 @@ export default function FichaVisitaTecnica() {
     observacoesImovel: '',
     imagensImovel: [],
 
-    // Integração Site Oficial Araújo Imóveis
+    // Integração Site Oficial Araújo Imóveis e Valores
+    valorPretendidoAluguel: '',
+    valorAvaliadoImobiliaria: '',
     finalidadeImovel: 'alugar',
     valorImovel: '',
     quartos: '',
@@ -238,6 +240,8 @@ export default function FichaVisitaTecnica() {
       observacoesImovel: '',
       imagensImovel: [],
 
+      valorPretendidoAluguel: '',
+      valorAvaliadoImobiliaria: '',
       finalidadeImovel: 'alugar',
       valorImovel: '',
       quartos: '',
@@ -295,8 +299,10 @@ export default function FichaVisitaTecnica() {
       observacoesImovel: ficha.observacoesImovel || '',
       imagensImovel: ficha.imagensImovel || [],
 
+      valorPretendidoAluguel: ficha.valorPretendidoAluguel !== undefined ? ficha.valorPretendidoAluguel : (ficha.valorImovel !== undefined ? ficha.valorImovel : (ficha.precoPretendido || '')),
+      valorAvaliadoImobiliaria: ficha.valorAvaliadoImobiliaria !== undefined ? ficha.valorAvaliadoImobiliaria : '',
       finalidadeImovel: ficha.finalidadeImovel || 'alugar',
-      valorImovel: ficha.valorImovel !== undefined ? ficha.valorImovel : '',
+      valorImovel: ficha.valorImovel !== undefined ? ficha.valorImovel : (ficha.valorPretendidoAluguel || ''),
       quartos: ficha.quartos !== undefined ? ficha.quartos : '',
       banheiros: ficha.banheiros !== undefined ? ficha.banheiros : '',
       vagas: ficha.vagas !== undefined ? ficha.vagas : '',
@@ -1472,18 +1478,6 @@ export default function FichaVisitaTecnica() {
               </div>
 
               <div className="form-group">
-                <label className="form-label">E-mail:</label>
-                <input 
-                  type="email"
-                  className={`form-input ${formErrors.emailProprietario ? 'input-error' : ''}`}
-                  placeholder="proprietario@email.com"
-                  value={formData.emailProprietario}
-                  onChange={e => handleFieldChange('emailProprietario', e.target.value)}
-                />
-                {formErrors.emailProprietario && <span className="error-text">{formErrors.emailProprietario}</span>}
-              </div>
-
-              <div className="form-group">
                 <label className="form-label">Melhor Horário para Contato:</label>
                 <input 
                   type="text"
@@ -1492,48 +1486,6 @@ export default function FichaVisitaTecnica() {
                   value={formData.horarioContatoProprietario}
                   onChange={e => handleFieldChange('horarioContatoProprietario', e.target.value)}
                 />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span>Link do WhatsApp:</span>
-                  {formData.linkWhatsapp && (
-                    <a 
-                      href={formData.linkWhatsapp.startsWith('http') ? formData.linkWhatsapp : `https://${formData.linkWhatsapp}`}
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      style={{ fontSize: '0.75rem', color: '#22c55e', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '3px', fontWeight: '600' }}
-                    >
-                      Abrir conversa ↗
-                    </a>
-                  )}
-                </label>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <input 
-                    type="url"
-                    className="form-input"
-                    placeholder="https://wa.me/5537999999999"
-                    value={formData.linkWhatsapp || ''}
-                    onChange={e => handleFieldChange('linkWhatsapp', e.target.value)}
-                  />
-                  {formData.telefoneProprietario && !formData.linkWhatsapp && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const digits = formData.telefoneProprietario.replace(/\D/g, '');
-                        if (digits) {
-                          const fullNumber = digits.length <= 11 ? `55${digits}` : digits;
-                          handleFieldChange('linkWhatsapp', `https://wa.me/${fullNumber}`);
-                        }
-                      }}
-                      className="btn btn-secondary"
-                      style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem', whiteSpace: 'nowrap' }}
-                      title="Gerar link automaticamente a partir do telefone informado"
-                    >
-                      Gerar Link
-                    </button>
-                  )}
-                </div>
               </div>
             </div>
           </div>
@@ -1675,6 +1627,33 @@ export default function FichaVisitaTecnica() {
                 )}
               </div>
 
+              {/* Valores: Pretendido vs Avaliado */}
+              <div className="form-group">
+                <label className="form-label">Valor Pretendido do Aluguel:</label>
+                <input 
+                  type="text"
+                  className="form-input"
+                  placeholder="Ex: R$ 1.500,00"
+                  value={formData.valorPretendidoAluguel !== undefined ? formData.valorPretendidoAluguel : (formData.valorImovel || '')}
+                  onChange={e => {
+                    handleFieldChange('valorPretendidoAluguel', e.target.value);
+                    handleFieldChange('valorImovel', e.target.value);
+                  }}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Valor Avaliado pela Imobiliária:</label>
+                <input 
+                  type="text"
+                  className="form-input"
+                  placeholder="Ex: R$ 1.400,00"
+                  value={formData.valorAvaliadoImobiliaria || ''}
+                  onChange={e => handleFieldChange('valorAvaliadoImobiliaria', e.target.value)}
+                />
+              </div>
+
+              {/* Situação e Acesso */}
               <div className="form-group">
                 <label className="form-label">Situação do Imóvel:</label>
                 <select 
@@ -1684,6 +1663,18 @@ export default function FichaVisitaTecnica() {
                 >
                   <option value="Vazio">Vazio</option>
                   <option value="Ocupado">Ocupado</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Existe dificuldade de acesso?</label>
+                <select 
+                  className="form-input"
+                  value={formData.dificuldadeAcesso}
+                  onChange={e => handleFieldChange('dificuldadeAcesso', e.target.value)}
+                >
+                  <option value="Não">Não</option>
+                  <option value="Sim">Sim</option>
                 </select>
               </div>
 
@@ -1707,18 +1698,6 @@ export default function FichaVisitaTecnica() {
                   value={formData.telefoneAcesso}
                   onChange={e => handleFieldChange('telefoneAcesso', e.target.value)}
                 />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Existe dificuldade de acesso?</label>
-                <select 
-                  className="form-input"
-                  value={formData.dificuldadeAcesso}
-                  onChange={e => handleFieldChange('dificuldadeAcesso', e.target.value)}
-                >
-                  <option value="Não">Não</option>
-                  <option value="Sim">Sim</option>
-                </select>
               </div>
 
               <div className="form-group span-2">

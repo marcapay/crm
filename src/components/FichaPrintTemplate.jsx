@@ -85,16 +85,8 @@ export default function FichaPrintTemplate({ ficha, isBlank = false, onClose, on
               <span className="field-content">{renderValue(data.telefoneProprietario, '________________________')}</span>
             </div>
             <div className="field-group">
-              <span className="field-label">E-mail:</span>
-              <span className="field-content">{renderValue(data.emailProprietario, '________________________')}</span>
-            </div>
-            <div className="field-group">
               <span className="field-label">Melhor Horário para Contato:</span>
               <span className="field-content">{renderValue(data.horarioContatoProprietario, '________________________')}</span>
-            </div>
-            <div className="field-group">
-              <span className="field-label">Link do WhatsApp:</span>
-              <span className="field-content">{renderValue(data.linkWhatsapp, '________________________')}</span>
             </div>
           </div>
         </section>
@@ -124,10 +116,25 @@ export default function FichaPrintTemplate({ ficha, isBlank = false, onClose, on
               <span className="field-content">{renderValue(data.linkLocalizacaoImovel, '________________________')}</span>
             </div>
             <div className="field-group">
+              <span className="field-label">Valor Pretendido do Aluguel:</span>
+              <span className="field-content">{renderValue(data.valorPretendidoAluguel || data.valorImovel, 'R$ ____________________')}</span>
+            </div>
+            <div className="field-group">
+              <span className="field-label">Valor Avaliado pela Imobiliária:</span>
+              <span className="field-content">{renderValue(data.valorAvaliadoImobiliaria, 'R$ ____________________')}</span>
+            </div>
+            <div className="field-group">
               <span className="field-label">Situação do Imóvel:</span>
               <div className="radio-options">
                 {renderRadioBox('Vazio', data.ocupacaoImovel === 'Vazio')}
                 {renderRadioBox('Ocupado', data.ocupacaoImovel === 'Ocupado')}
+              </div>
+            </div>
+            <div className="field-group">
+              <span className="field-label">Dificuldade de Acesso:</span>
+              <div className="radio-options">
+                {renderRadioBox('Não', data.dificuldadeAcesso === 'Não' || data.dificuldadeAcesso === false)}
+                {renderRadioBox('Sim', data.dificuldadeAcesso === 'Sim' || data.dificuldadeAcesso === true)}
               </div>
             </div>
             <div className="field-group">
@@ -137,13 +144,6 @@ export default function FichaPrintTemplate({ ficha, isBlank = false, onClose, on
             <div className="field-group">
               <span className="field-label">Telefone de quem dará acesso:</span>
               <span className="field-content">{renderValue(data.telefoneAcesso, '________________________')}</span>
-            </div>
-            <div className="field-group">
-              <span className="field-label">Dificuldade de Acesso:</span>
-              <div className="radio-options">
-                {renderRadioBox('Não', data.dificuldadeAcesso === 'Não' || data.dificuldadeAcesso === false)}
-                {renderRadioBox('Sim', data.dificuldadeAcesso === 'Sim' || data.dificuldadeAcesso === true)}
-              </div>
             </div>
             {data.observacoesAcesso && (
               <div className="field-group span-2">
