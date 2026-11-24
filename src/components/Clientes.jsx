@@ -46,7 +46,7 @@ export default function Clientes() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [status, setStatus] = useState(pipelinesList[0]?.name || 'Pessoal');
-  const [role, setRole] = useState('Normal');
+  const [role, setRole] = useState('Colaborador');
   const [tagsInput, setTagsInput] = useState('');
 
   // Filter clients list
@@ -66,7 +66,7 @@ export default function Clientes() {
     setEmail('');
     setPhone('');
     setStatus(pipelinesList[0]?.name || 'Pessoal');
-    setRole('Normal');
+    setRole('Colaborador');
     setTagsInput('');
     setIsAddOpen(true);
   };
@@ -77,7 +77,7 @@ export default function Clientes() {
     setEmail(client.email);
     setPhone(client.phone);
     setStatus(client.status);
-    setRole(client.role || 'Normal');
+    setRole((client.role === 'Normal' ? 'Colaborador' : client.role) || 'Colaborador');
     setTagsInput(client.tags ? client.tags.join(', ') : '');
     setIsEditOpen(true);
   };
@@ -247,7 +247,7 @@ export default function Clientes() {
                              (client.role === 'Inquilino' || client.role === 'inquilino') ? '#f472b6' :
                              '#94a3b8'
                     }}>
-                      {client.role || 'Normal'}
+                      {client.role === 'Normal' ? 'Colaborador' : (client.role || 'Colaborador')}
                     </span>
                   </td>
                   <td style={styles.td}>
@@ -373,7 +373,7 @@ export default function Clientes() {
                   onChange={e => setRole(e.target.value)}
                   style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
                 >
-                  <option value="Normal">Normal</option>
+                  <option value="Colaborador">Colaborador</option>
                   <option value="Inquilino">Inquilino</option>
                   <option value="Proprietário">Proprietário</option>
                   <option value="Administrador">Administrador</option>
@@ -462,7 +462,7 @@ export default function Clientes() {
                   onChange={e => setRole(e.target.value)}
                   style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
                 >
-                  <option value="Normal">Normal</option>
+                  <option value="Colaborador">Colaborador</option>
                   <option value="Inquilino">Inquilino</option>
                   <option value="Proprietário">Proprietário</option>
                   <option value="Administrador">Administrador</option>

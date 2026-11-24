@@ -267,7 +267,7 @@ export const AppProvider = ({ children }) => {
           const cleanPass = passParam ? passParam.trim() : '';
           const rawRoleLower = (roleParam || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
           const cleanRole = rawRoleLower.includes('admin') ? 'Administrador' :
-                            rawRoleLower.includes('normal') ? 'Normal' :
+                            (rawRoleLower.includes('normal') || rawRoleLower.includes('colaborador')) ? 'Colaborador' :
                             (rawRoleLower.includes('inquilino') || rawRoleLower.includes('locatario')) ? 'inquilino' : 'proprietario';
 
           const allPortalUsers = safeJsonParse(localStorage.getItem('araujo_portal_users'), []);
@@ -281,7 +281,7 @@ export const AppProvider = ({ children }) => {
             role: (c.role || c.tipo || c.situacaoComercial || '').toLowerCase().includes('inquilino') ? 'inquilino' : 
                   (c.role || c.tipo || c.situacaoComercial || '').toLowerCase().includes('proprietario') ? 'proprietario' :
                   (c.role || c.tipo || c.situacaoComercial || '').toLowerCase().includes('admin') ? 'Administrador' :
-                  (c.role || 'Normal'),
+                  ((c.role === 'Normal' ? 'Colaborador' : c.role) || 'Colaborador'),
             phone: c.phone || c.telefone || '',
             password: c.password || '123456'
           }));
@@ -1028,7 +1028,7 @@ export const AppProvider = ({ children }) => {
       localStorage.setItem('eloos_auth', 'true');
       const roleLabel = matchedPortal.role === 'proprietario' ? 'Proprietário' : 
                         matchedPortal.role === 'inquilino' ? 'Inquilino' :
-                        (matchedPortal.role === 'Normal' || matchedPortal.role === 'Corretor') ? 'Corretor' : 'Administrador';
+                        (matchedPortal.role === 'Normal' || matchedPortal.role === 'Colaborador' || matchedPortal.role === 'Corretor') ? 'Corretor' : 'Administrador';
       registerActivityLog(`${matchedPortal.name} (${roleLabel})`, 'Fez login no sistema');
       return { success: true };
     }
@@ -1043,7 +1043,7 @@ export const AppProvider = ({ children }) => {
         id: matched.id,
         name: matched.name,
         email: matched.email,
-        role: matched.role || 'Normal',
+        role: (matched.role === 'Normal' ? 'Colaborador' : matched.role) || 'Colaborador',
         phone: matched.phone || '',
         avatar: matched.avatar || initialProfile.avatar,
         password: matched.password
@@ -1104,7 +1104,7 @@ export const AppProvider = ({ children }) => {
         localStorage.setItem('eloos_auth', 'true');
         registerActivityLog(`${user.name} (Inquilino)`, 'Fez login no Portal do Inquilino');
       } else if (roleOrUser === 'corretor') {
-        const user = portalUsers.find(u => u.role === 'Normal' || u.role === 'Corretor') || { id: 'user_corretor', name: 'Corretor', email: 'corretor@portal.com', role: 'Normal' };
+        const user = portalUsers.find(u => u.role === 'Normal' || u.role === 'Colaborador' || u.role === 'Corretor') || { id: 'user_corretor', name: 'Corretor', email: 'corretor@portal.com', role: 'Colaborador' };
         setProfile(user);
         setIsAuthenticated(true);
         localStorage.setItem('eloos_auth', 'true');
@@ -3254,7 +3254,7 @@ export const AppProvider = ({ children }) => {
       id: `u_${Date.now()}`,
       name,
       email: email.trim(),
-      role: 'Normal',
+      role: 'Colaborador',
       status: 'Ativo',
       password: password.trim()
     };
@@ -3274,7 +3274,7 @@ export const AppProvider = ({ children }) => {
       historicoAtividades: [],
       camposPersonalizados: client.camposPersonalizados || {},
       interesseDemonstrado: client.interesseDemonstrado || false,
-      role: client.role || 'Normal',
+      role: (client.role === 'Normal' ? 'Colaborador' : client.role) || 'Colaborador',
       ...client,
       id: newId,
       createdAt: new Date().toISOString().split('T')[0],

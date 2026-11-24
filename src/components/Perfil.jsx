@@ -51,7 +51,7 @@ export default function Perfil() {
   useEffect(() => {
     setProfileName(profile.name);
     setProfileEmail(profile.email);
-    setProfileRole(profile.role);
+    setProfileRole(profile.role === 'Normal' ? 'Colaborador' : profile.role);
     setProfileAvatar(profile.avatar);
     setProfilePhone(profile.phone || '37998072208');
     setProfileLinkWhatsapp(profile.linkWhatsapp || profile.whatsappLink || '');
@@ -220,7 +220,7 @@ export default function Perfil() {
                   <input 
                     type="text" 
                     className="input-field" 
-                    value={profileRole} 
+                    value={profileRole === 'Normal' ? 'Colaborador' : profileRole} 
                     disabled 
                     style={{ opacity: 0.6, cursor: 'not-allowed' }}
                   />

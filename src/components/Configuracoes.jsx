@@ -298,7 +298,7 @@ export default function Configuracoes() {
   // Form states to invite new user
   const [newUserName, setNewUserName] = useState('');
   const [newUserEmail, setNewUserEmail] = useState('');
-  const [newUserRole, setNewUserRole] = useState('Normal');
+  const [newUserRole, setNewUserRole] = useState('Colaborador');
   const [newUserPassword, setNewUserPassword] = useState('');
   const [newUserColor, setNewUserColor] = useState('#3b82f6');
   const [emailApiKey, setEmailApiKey] = useState(() => {
@@ -312,7 +312,7 @@ export default function Configuracoes() {
   const [editingUser, setEditingUser] = useState(null);
   const [editUserName, setEditUserName] = useState('');
   const [editUserEmail, setEditUserEmail] = useState('');
-  const [editUserRole, setEditUserRole] = useState('Normal');
+  const [editUserRole, setEditUserRole] = useState('Colaborador');
   const [editUserStatus, setEditUserStatus] = useState('Ativo');
   const [editUserPassword, setEditUserPassword] = useState('');
   const [editUserColor, setEditUserColor] = useState('#3b82f6');
@@ -486,7 +486,7 @@ export default function Configuracoes() {
     setNewUserName('');
     setNewUserEmail('');
     setNewUserPassword('');
-    setNewUserRole('Normal');
+    setNewUserRole('Colaborador');
     setNewUserColor(USER_COLORS[(systemUsers.length + 1) % USER_COLORS.length]);
     alert(`Usuário "${newUser.name}" cadastrado com sucesso!`);
   };
@@ -495,7 +495,7 @@ export default function Configuracoes() {
     setEditingUser(user);
     setEditUserName(user.name);
     setEditUserEmail(user.email);
-    setEditUserRole(user.role || 'Normal');
+    setEditUserRole((user.role === 'Normal' ? 'Colaborador' : user.role) || 'Colaborador');
     setEditUserStatus(user.status || 'Ativo');
     setEditUserPassword(user.password || '');
     setEditUserColor(user.color || '#3b82f6');
@@ -1404,7 +1404,7 @@ Seu cadastro foi realizado com sucesso e seu acesso ao sistema *${clientName}* e
                           <td style={styles.td}><strong>{u.name}</strong></td>
                           <td style={styles.td}>{u.email}</td>
                           <td style={styles.td}>
-                            <span className="badge badge-primary">{u.role}</span>
+                            <span className="badge badge-primary">{u.role === 'Normal' ? 'Colaborador' : u.role}</span>
                           </td>
                           <td style={styles.td}>
                             <span className={u.status === 'Ativo' ? 'badge badge-success' : 'badge badge-secondary'}>
@@ -1508,7 +1508,7 @@ Seu cadastro foi realizado com sucesso e seu acesso ao sistema *${clientName}* e
                             style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
                           >
                             <option value="Administrador">Administrador</option>
-                            <option value="Normal">Normal</option>
+                            <option value="Colaborador">Colaborador</option>
                             <option value="Proprietário">Proprietário</option>
                             <option value="Inquilino">Inquilino</option>
                           </select>
@@ -1613,7 +1613,7 @@ Seu cadastro foi realizado com sucesso e seu acesso ao sistema *${clientName}* e
                     style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
                   >
                     <option value="Administrador">Administrador</option>
-                    <option value="Normal">Normal</option>
+                    <option value="Colaborador">Colaborador</option>
                     <option value="Proprietário">Proprietário</option>
                     <option value="Inquilino">Inquilino</option>
                   </select>

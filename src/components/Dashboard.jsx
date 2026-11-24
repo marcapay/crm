@@ -81,7 +81,7 @@ export default function Dashboard() {
 
   // Quick nav helper
   const navigateToChat = (clientId) => {
-    if (userRole === 'normal') return;
+    if (userRole === 'normal' || userRole === 'colaborador') return;
     setActiveChatClientId(clientId);
     setActiveModule('conversas');
   };

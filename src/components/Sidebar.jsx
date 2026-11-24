@@ -59,8 +59,8 @@ export default function Sidebar({ isOpen, onClose }) {
   ];
 
   const menuItems = allMenuItems.filter(item => {
-    if (userRole === 'normal') {
-      // Usuário Normal vê apenas Dashboard e Atalhos Rápidos
+    if (userRole === 'normal' || userRole === 'colaborador') {
+      // Usuário Colaborador/Normal vê apenas Dashboard e Atalhos Rápidos
       return item.id === 'dashboard' || item.id === 'links-rapidos';
     }
     if (userRole === 'proprietario' || userRole === 'inquilino') {
@@ -130,11 +130,11 @@ export default function Sidebar({ isOpen, onClose }) {
           />
           <div style={styles.profileInfo}>
             <span style={styles.profileName}>{currentProfile.name}</span>
-            <span style={styles.profileRole}>{currentProfile.role}</span>
+            <span style={styles.profileRole}>{currentProfile.role === 'Normal' ? 'Colaborador' : currentProfile.role}</span>
           </div>
 
           {/* Notification Bell Icon on Far Right */}
-          {userRole !== 'normal' && (
+          {userRole !== 'normal' && userRole !== 'colaborador' && (
             <div 
               style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px', cursor: 'pointer', marginLeft: 'auto' }}
               onClick={(e) => {
@@ -186,7 +186,7 @@ export default function Sidebar({ isOpen, onClose }) {
               <span>Perfil</span>
             </button>
 
-            {userRole !== 'normal' && (
+            {userRole !== 'normal' && userRole !== 'colaborador' && (
               <button 
                 onClick={(e) => { 
                   e.stopPropagation(); 
