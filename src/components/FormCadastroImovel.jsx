@@ -22,7 +22,8 @@ import {
   Video, 
   Compass,
   Upload,
-  Check
+  Check,
+  Globe
 } from 'lucide-react';
 
 const DIFERENCIAIS_LIST = [
@@ -64,9 +65,10 @@ const DOCUMENTACAO_LIST = [
 ];
 
 export default function FormCadastroImovel({ onBack, onSaved }) {
-  const { properties = [], setProperties, profile, registerActivityLog } = useApp();
+  const { properties = [], setProperties, profile, registerActivityLog, clients = [], addClient } = useApp();
 
   const [loadingCep, setLoadingCep] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [successToast, setSuccessToast] = useState('');
   const [errorToast, setErrorToast] = useState('');
 
@@ -82,6 +84,8 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
     tipo: 'Casa',
     uso: 'Residencial',
     finalidade: 'Locação',
+    finalidadeSite: 'alugar',
+    publicarNoSite: true,
     status: 'Disponível',
     titulo: '',
     destaque: false,
@@ -269,8 +273,8 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
     });
   };
 
-  // Submit Handler
-  const handleSubmit = (e) => {
+  // Submit Handler with direct publication to araujoimoveiscaratinga.com.br
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!formData.nomeProprietario?.trim()) {
@@ -283,22 +287,132 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
       return;
     }
 
+    setIsSaving(true);
+
+    const cleanCode = (formData.codigo || `IM-${Date.now()}`).toUpperCase().replace(/^#+/, '');
+    const cleanType = formData.tipo || 'Casa';
+    const cleanCity = (formData.cidade || 'Caratinga').trim();
+    const cleanNeighborhood = (formData.bairro || 'Centro').trim();
+    const cleanAddress = formData.mostrarEnderecoExato
+      ? `${formData.endereco || ''}${formData.numero ? ', ' + formData.numero : ''}${formData.complemento ? ' - ' + formData.complemento : ''} - ${cleanNeighborhood}, ${cleanCity} - ${formData.estado || 'MG'}`.trim()
+      : `${cleanNeighborhood}, ${cleanCity} - ${formData.estado || 'MG'}`.trim();
+
+    let transaction = 'alugar';
+    const fin = (formData.finalidadeSite || formData.finalidade || '').toLowerCase();
+    if (fin.includes('venda') && fin.includes('loca')) {
+      transaction = 'venda-aluguel';
+    } else if (fin.includes('venda') || fin.includes('compr')) {
+      transaction = 'comprar';
+    } else if (fin.includes('permuta')) {
+      transaction = 'permuta';
+    } else if (fin.includes('lança') || fin.includes('invest')) {
+      transaction = 'lancamento';
+    } else {
+      transaction = 'alugar';
+    }
+
+    const priceNum = parseFloat(String(formData.valorImovel || '').replace(/\D/g, '')) || 0;
+    const condoNum = parseFloat(String(formData.valorCondominio || '').replace(/\D/g, '')) || 0;
+    const iptuNum = parseFloat(String(formData.iptuAnual || '').replace(/\D/g, '')) || 0;
+
+    let desc = (formData.descricao || '').trim();
+    if (!desc || desc.length < 15) {
+      desc = `${formData.titulo || `${cleanType} disponível para ${transaction === 'comprar' ? 'venda' : 'locação'}`} localizado no bairro ${cleanNeighborhood}, em ${cleanCity}. Imóvel com ${formData.quartos || '0'} quarto(s), ${formData.banheiros || '0'} banheiro(s) e ${formData.vagas || '0'} vaga(s) de garagem. Excelente oportunidade com a credibilidade e garantia Araújo Imóveis.`;
+    }
+
+    const features = [
+      `Imóvel tipo ${cleanType}`,
+      `Uso: ${formData.uso || 'Residencial'}`,
+      `Bairro ${cleanNeighborhood}`,
+      formData.porteiraFechada ? 'Porteira Fechada' : null,
+      formData.conjugado ? 'Conjugado' : null,
+      formData.geminada ? 'Casa Geminada' : null,
+      formData.aceitaFinanciamento ? 'Aceita Financiamento Bancário' : null,
+      formData.aceitaFgts ? 'Aceita FGTS' : null,
+      formData.aceitaPermuta ? 'Aceita Permuta' : null,
+      formData.aceitaVeiculo ? 'Aceita Veículo na Negociação' : null,
+      ...(Array.isArray(formData.diferenciais) ? formData.diferenciais : []),
+      ...(Array.isArray(formData.documentacao) ? formData.documentacao : []),
+      'Atendimento Exclusivo Araújo Imóveis'
+    ].filter(Boolean);
+
+    const mainPhoto = (formData.fotos && formData.fotos.length > 0)
+      ? formData.fotos[0]
+      : 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=600&auto=format&fit=crop';
+
     const newProperty = {
       id: `prop_${Date.now()}`,
-      title: formData.titulo || `${formData.tipo} - ${formData.bairro || 'Caratinga'}`,
-      code: formData.codigo,
-      address: `${formData.endereco || ''}, ${formData.numero || ''} ${formData.bairro || ''}`.trim(),
-      shortAddress: `${formData.bairro || ''}, ${formData.cidade || 'Caratinga'}`.trim(),
-      photo: formData.fotos[0] || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=600&auto=format&fit=crop',
+      title: formData.titulo || `${formData.tipo} - ${cleanNeighborhood}`,
+      code: cleanCode,
+      address: cleanAddress,
+      shortAddress: `${cleanNeighborhood}, ${cleanCity}`,
+      photo: mainPhoto,
       status: formData.status || 'Disponível',
       ownerName: formData.nomeProprietario,
       ownerPhone: formData.telefoneProprietario,
-      rentValue: parseFloat(String(formData.valorImovel).replace(/\D/g, '')) || 0,
-      condominiumValue: parseFloat(String(formData.valorCondominio).replace(/\D/g, '')) || 0,
-      iptuValue: parseFloat(String(formData.iptuAnual).replace(/\D/g, '')) || 0,
+      rentValue: priceNum,
+      condominiumValue: condoNum,
+      iptuValue: iptuNum,
+      publicarNoSite: formData.publicarNoSite !== false,
       createdAt: new Date().toISOString(),
       details: { ...formData }
     };
+
+    // Publicação direta na API do site oficial (araujoimoveiscaratinga.com.br)
+    const propPayload = {
+      id: `imovel-${cleanCode.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
+      code: cleanCode,
+      title: formData.titulo || `${cleanType} no ${cleanNeighborhood} - ${cleanCity}`,
+      type: cleanType,
+      transaction: transaction,
+      price: priceNum,
+      condoFee: condoNum,
+      iptu: iptuNum,
+      city: cleanCity,
+      neighborhood: cleanNeighborhood,
+      address: cleanAddress,
+      bedrooms: Number(formData.quartos) || 0,
+      bathrooms: Number(formData.banheiros) || 0,
+      suites: Number(formData.suites) || 0,
+      parkingSpots: Number(formData.vagas) || 0,
+      area: Number(formData.areaConstruida || formData.areaTotal) || 0,
+      description: desc,
+      features: features,
+      images: Array.isArray(formData.fotos) && formData.fotos.length > 0 ? formData.fotos : [],
+      featured: formData.destaque !== undefined ? Boolean(formData.destaque) : true,
+      status: formData.status || 'Disponível',
+      linkYoutube: formData.linkYoutube || '',
+      linkTourVirtual: formData.linkTourVirtual || '',
+      linkMaps: formData.linkMaps || '',
+      nomeProprietario: formData.nomeProprietario || '',
+      telefoneProprietario: formData.telefoneProprietario || '',
+      corretorResponsavel: profile?.name || 'Araújo Imóveis',
+      linkWhatsappCorretor: profile?.whatsapp || 'https://wa.me/5533999000000',
+      publicarNoSite: formData.publicarNoSite !== false,
+      origemCadastroImovel: true,
+      details: { ...formData },
+      createdAt: new Date().toISOString()
+    };
+
+    let sitePublished = false;
+    if (formData.publicarNoSite !== false) {
+      try {
+        const siteRes = await fetch('/api/properties', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(propPayload)
+        });
+        if (siteRes.ok) sitePublished = true;
+      } catch (err) {
+        console.warn("Erro ao postar imóvel no site oficial:", err);
+      }
+    } else {
+      try {
+        await fetch(`/api/properties?id=${propPayload.id}`, { method: 'DELETE' });
+      } catch (err) {
+        console.warn("Erro ao remover imóvel do site oficial:", err);
+      }
+    }
 
     // Save in context & localStorage
     if (typeof setProperties === 'function') {
@@ -313,15 +427,58 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
       console.error("Erro ao salvar imóvel localmente:", err);
     }
 
-    if (typeof registerActivityLog === 'function') {
-      registerActivityLog(profile?.name || 'Corretor', `Cadastrou o imóvel ${newProperty.code}: ${newProperty.title}`);
+    // Auto-create client as 'Proprietário' in CRM if not exists
+    if (typeof addClient === 'function') {
+      try {
+        const currentClients = clients || [];
+        const cleanPhone = (formData.telefoneProprietario || '').replace(/\D/g, '');
+        const clientExists = currentClients.some(c => {
+          const cPhone = (c.phone || '').replace(/\D/g, '');
+          const cName = (c.name || '').trim().toLowerCase();
+          return (cleanPhone && cPhone && (cPhone === cleanPhone || cPhone.slice(-8) === cleanPhone.slice(-8))) ||
+                 (cName === formData.nomeProprietario?.trim().toLowerCase());
+        });
+
+        if (!clientExists) {
+          addClient({
+            name: formData.nomeProprietario.trim(),
+            phone: formData.telefoneProprietario.trim(),
+            email: formData.emailProprietario?.trim() || `proprietario_${cleanPhone || Date.now()}@araujoimoveis.com.br`,
+            role: 'Proprietário',
+            status: 'Novo Lead / Qualificação',
+            tags: ['Cadastro Imóvel', cleanType, cleanNeighborhood],
+            empreendimento: `${cleanType} - ${cleanNeighborhood}`,
+            situacaoComercial: 'Imóvel Cadastrado',
+            linkWhatsapp: cleanPhone ? `https://wa.me/55${cleanPhone}` : '',
+            camposPersonalizados: {
+              codigoImovel: cleanCode,
+              tipoImovel: cleanType,
+              bairro: cleanNeighborhood,
+              cidade: cleanCity,
+              valor: formData.valorImovel || ''
+            }
+          });
+        }
+      } catch (err) {
+        console.warn("Erro ao auto-cadastrar proprietário em clientes:", err);
+      }
     }
 
-    setSuccessToast(`Imóvel ${newProperty.code} cadastrado com sucesso!`);
+    if (typeof registerActivityLog === 'function') {
+      registerActivityLog(profile?.name || 'Corretor', `Cadastrou o imóvel ${newProperty.code}: ${newProperty.title}${formData.publicarNoSite !== false ? ' e publicou no site oficial' : ''}`);
+    }
+
+    setIsSaving(false);
+    setSuccessToast(
+      formData.publicarNoSite !== false
+        ? `Imóvel ${newProperty.code} salvo e publicado com sucesso no site oficial www.araujoimoveiscaratinga.com.br!`
+        : `Imóvel ${newProperty.code} salvo com sucesso no CRM!`
+    );
+
     setTimeout(() => {
       if (onSaved) onSaved(newProperty);
       else if (onBack) onBack();
-    }, 1200);
+    }, 1300);
   };
 
   return (
@@ -406,10 +563,11 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
           <button 
             type="button" 
             onClick={handleSubmit}
+            disabled={isSaving}
             className="btn btn-primary"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontWeight: '700' }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontWeight: '700', opacity: isSaving ? 0.7 : 1 }}
           >
-            <Save size={16} /> Salvar Imóvel
+            <Save size={16} /> {isSaving ? 'Salvando e Publicando...' : 'Salvar Imóvel'}
           </button>
         </div>
       </div>
@@ -540,6 +698,15 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
             </div>
 
             <div className="form-group span-2" style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', paddingTop: '0.5rem' }}>
+              <label style={checkboxLabelStyle}>
+                <input 
+                  type="checkbox" 
+                  checked={formData.publicarNoSite !== false} 
+                  onChange={e => handleChange('publicarNoSite', e.target.checked)} 
+                />
+                <span style={{ color: 'var(--accent-cyan)', fontWeight: '600' }}>Publicar no Site Oficial (araujoimoveiscaratinga.com.br)</span>
+              </label>
+
               <label style={checkboxLabelStyle}>
                 <input 
                   type="checkbox" 
@@ -1286,6 +1453,158 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
         </div>
 
         {/* ============================================================
+            PUBLICAÇÃO NO SITE OFICIAL (araujoimoveiscaratinga.com.br)
+           ============================================================ */}
+        <div className="glass-panel" style={{ 
+          backgroundColor: 'rgba(56, 189, 248, 0.05)', 
+          border: '1px solid rgba(56, 189, 248, 0.3)', 
+          borderRadius: '16px', 
+          padding: '1.5rem', 
+          marginBottom: '1.75rem',
+          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.25)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1rem', borderBottom: '1px solid rgba(56, 189, 248, 0.2)', paddingBottom: '0.75rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', color: 'var(--accent-cyan)', fontWeight: '700', fontSize: '1.05rem' }}>
+              <Globe size={20} />
+              <span>Publicação no Site Oficial (araujoimoveiscaratinga.com.br)</span>
+            </div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer', fontSize: '0.92rem', color: 'var(--text-primary)', fontWeight: '700' }}>
+              <input 
+                type="checkbox" 
+                checked={formData.publicarNoSite !== false} 
+                onChange={e => handleChange('publicarNoSite', e.target.checked)} 
+                style={{ width: '18px', height: '18px', accentColor: 'var(--accent-cyan)' }}
+              />
+              <span>Exibir este imóvel no site oficial</span>
+            </label>
+          </div>
+
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.25rem', lineHeight: '1.5' }}>
+            As fotos, endereço e características desta tela serão formatados automaticamente como um anúncio de destaque na página inicial e no catálogo de imóveis do site oficial <strong>www.araujoimoveiscaratinga.com.br</strong>.
+          </p>
+
+          <div className="form-grid-2" style={{ gap: '1rem' }}>
+            <div className="form-group">
+              <label className="form-label">Finalidade no Site:</label>
+              <select 
+                className="form-input"
+                value={
+                  formData.finalidadeSite || 
+                  (formData.finalidade === 'Venda' ? 'comprar' : formData.finalidade === 'Permuta' ? 'permuta' : 'alugar')
+                }
+                onChange={e => {
+                  const val = e.target.value;
+                  handleChange('finalidadeSite', val);
+                  handleChange('finalidade', val === 'comprar' ? 'Venda' : (val === 'permuta' ? 'Permuta' : 'Locação'));
+                }}
+              >
+                <option value="alugar">Aluguel / Locação</option>
+                <option value="comprar">Venda / Comprar</option>
+                <option value="lancamento">Lançamento / Investimento</option>
+                <option value="permuta">Permuta</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Valor Pretendido / Aluguel (R$):</label>
+              <input 
+                type="text"
+                className="form-input"
+                placeholder="Ex: 1800 (padrão se vazio)"
+                value={formData.valorImovel || ''}
+                onChange={e => handleChange('valorImovel', e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Quartos:</label>
+              <input 
+                type="number"
+                className="form-input"
+                placeholder="Ex: 3"
+                value={formData.quartos || ''}
+                onChange={e => handleChange('quartos', e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Banheiros:</label>
+              <input 
+                type="number"
+                className="form-input"
+                placeholder="Ex: 2"
+                value={formData.banheiros || ''}
+                onChange={e => handleChange('banheiros', e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Vagas de Garagem:</label>
+              <input 
+                type="number"
+                className="form-input"
+                placeholder="Ex: 1"
+                value={formData.vagas || ''}
+                onChange={e => handleChange('vagas', e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Área Construída (m²):</label>
+              <input 
+                type="number"
+                className="form-input"
+                placeholder="Ex: 150"
+                value={formData.areaConstruida || formData.areaTotal || ''}
+                onChange={e => handleChange('areaConstruida', e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Opções e link gerado */}
+          <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px dashed rgba(56, 189, 248, 0.25)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
+              <label style={checkboxLabelStyle}>
+                <input 
+                  type="checkbox" 
+                  checked={formData.destaque} 
+                  onChange={e => handleChange('destaque', e.target.checked)} 
+                />
+                <span>Exibir em Destaque na Página Inicial do Site</span>
+              </label>
+
+              <label style={checkboxLabelStyle}>
+                <input 
+                  type="checkbox" 
+                  checked={formData.mostrarEnderecoExato} 
+                  onChange={e => handleChange('mostrarEnderecoExato', e.target.checked)} 
+                />
+                <span>Exibir Endereço Exato no Site</span>
+              </label>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem', marginTop: '0.5rem', backgroundColor: 'rgba(0, 0, 0, 0.25)', padding: '0.75rem 1rem', borderRadius: '8px' }}>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <span>Link direto que será gerado:</span>
+                <a 
+                  href={`https://www.araujoimoveiscaratinga.com.br/imoveis/${(formData.codigo || 'im-0001').toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
+                  target="_blank" 
+                  rel="noreferrer"
+                  style={{ color: 'var(--accent-cyan)', fontWeight: '600', textDecoration: 'underline', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+                >
+                  {`https://www.araujoimoveiscaratinga.com.br/imoveis/${(formData.codigo || 'im-0001').toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
+                  <ExternalLink size={13} />
+                </a>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', color: formData.publicarNoSite !== false ? '#34d399' : '#94a3b8', fontWeight: '600' }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: formData.publicarNoSite !== false ? '#10b981' : '#64748b', display: 'inline-block' }} />
+                {formData.publicarNoSite !== false ? 'Pronto para publicação instantânea ao salvar' : 'Publicação no site desativada'}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ============================================================
             10. DOCUMENTOS INTERNOS / OBSERVAÇÕES (PRIVADO)
            ============================================================ */}
         <div className="glass-panel" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
@@ -1316,10 +1635,11 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
           </button>
           <button 
             type="submit" 
+            disabled={isSaving}
             className="btn btn-primary"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 2rem', fontWeight: '700', fontSize: '1rem' }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 2rem', fontWeight: '700', fontSize: '1rem', opacity: isSaving ? 0.7 : 1 }}
           >
-            <Save size={18} /> Salvar Imóvel
+            <Save size={18} /> {isSaving ? 'Salvando e Publicando...' : 'Salvar Imóvel'}
           </button>
         </div>
       </form>

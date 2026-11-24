@@ -125,6 +125,14 @@ async function sanitizeProperty(prop) {
     fichaId: prop.fichaId || null,
     nomeProprietario: prop.nomeProprietario || '',
     telefoneProprietario: prop.telefoneProprietario || '',
+    corretorResponsavel: prop.corretorResponsavel || '',
+    linkWhatsappCorretor: prop.linkWhatsappCorretor || '',
+    linkYoutube: prop.linkYoutube || '',
+    linkTourVirtual: prop.linkTourVirtual || '',
+    linkMaps: prop.linkMaps || '',
+    publicarNoSite: prop.publicarNoSite !== undefined ? Boolean(prop.publicarNoSite) : true,
+    origemCadastroImovel: Boolean(prop.origemCadastroImovel),
+    details: prop.details || null,
     createdAt: prop.createdAt || new Date().toISOString()
   };
 }
