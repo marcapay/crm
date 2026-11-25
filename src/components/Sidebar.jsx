@@ -14,7 +14,8 @@ import {
   User,
   Bell,
   Building2,
-  ClipboardList
+  ClipboardList,
+  SearchCheck
 } from 'lucide-react';
 
 export default function Sidebar({ isOpen, onClose }) {
@@ -53,6 +54,7 @@ export default function Sidebar({ isOpen, onClose }) {
     { id: 'conversas', name: 'Conversas', icon: MessageSquare },
     { id: 'clientes', name: 'Clientes', icon: Users },
     { id: 'visita-tecnica', name: 'Imóveis', icon: ClipboardList },
+    { id: 'demanda-locacao', name: 'Demanda de Locação', icon: SearchCheck },
     { id: 'gestao-portais', name: 'Gestão de Locação', icon: Building2 },
     { id: 'links-rapidos', name: 'Atalhos Rápidos', icon: Link2 },
     { id: 'configuracoes', name: 'Configurações', icon: Settings },

@@ -14,10 +14,23 @@ import AreaInquilino from './components/AreaInquilino';
 import PainelGestaoPortais from './components/PainelGestaoPortais';
 import FichaVisitaTecnica from './components/FichaVisitaTecnica';
 import FichaPublicaCliente from './components/FichaPublicaCliente';
+import DemandaLocacao from './components/DemandaLocacao';
+import PaginaPublicaDemandaLocacao from './components/PaginaPublicaDemandaLocacao';
 
 export default function App() {
   const { isAuthenticated, profile, activeModule } = useApp();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // Check for public demand capture link (e.g. /demanda-de-locacao or ?demanda)
+  const isDemandaPublica = typeof window !== 'undefined' && (
+    window.location.pathname.includes('/demanda') ||
+    window.location.search.includes('demanda') ||
+    window.location.hash.includes('demanda')
+  );
+
+  if (isDemandaPublica) {
+    return <PaginaPublicaDemandaLocacao />;
+  }
 
   // Check for public client form link (e.g. ?form=ficha-visita)
   const isPublicForm = typeof window !== 'undefined' && (
@@ -65,6 +78,9 @@ export default function App() {
       case 'imoveis':
       case 'visita-tecnica':
         return <FichaVisitaTecnica />;
+      case 'demanda-locacao':
+      case 'demanda':
+        return <DemandaLocacao />;
       case 'locacao':
       case 'gestao-portais':
         return <PainelGestaoPortais />;

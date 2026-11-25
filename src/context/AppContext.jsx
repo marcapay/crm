@@ -691,6 +691,12 @@ export const AppProvider = ({ children }) => {
   }, [activityLogs]);
   useEffect(() => { localStorage.setItem('crmbase_fichas_visita', JSON.stringify(fichasVisita)); }, [fichasVisita]);
 
+  const [demandasLocacao, setDemandasLocacao] = useState(() => {
+    const saved = localStorage.getItem('araujo_demandas_locacao');
+    return safeJsonParse(saved, []);
+  });
+  useEffect(() => { localStorage.setItem('araujo_demandas_locacao', JSON.stringify(demandasLocacao)); }, [demandasLocacao]);
+
   // Rotina de expiração diária: os logs de atividade somem automaticamente ao final do dia
   useEffect(() => {
     const purgeOldLogs = () => {
@@ -5185,7 +5191,9 @@ ${fullSearchContext.substring(0, 4000)}
       addFichaVisita,
       updateFichaVisita,
       deleteFichaVisita,
-      convertFichaToProperty
+      convertFichaToProperty,
+      demandasLocacao,
+      setDemandasLocacao
     }}>
       {children}
     </AppContext.Provider>
