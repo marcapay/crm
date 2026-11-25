@@ -862,14 +862,28 @@ export default function DemandaLocacao() {
                             </select>
                           </td>
                           <td style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>
-                            <button
-                              type="button"
-                              onClick={() => setSelectedDemand(demanda)}
-                              className="btn btn-secondary"
-                              style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem' }}
-                            >
-                              <Eye size={13} /> Ver Detalhes
-                            </button>
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', justifyContent: 'flex-end' }}>
+                              <button
+                                type="button"
+                                onClick={() => setSelectedDemand(demanda)}
+                                className="btn btn-secondary"
+                                style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem' }}
+                              >
+                                <Eye size={13} /> Ver Detalhes
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteDemand(demanda.id);
+                                }}
+                                className="btn btn-secondary"
+                                style={{ padding: '0.35rem 0.55rem', fontSize: '0.75rem', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.35)', backgroundColor: 'rgba(239, 68, 68, 0.1)' }}
+                                title="Excluir demanda"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -953,11 +967,34 @@ export default function DemandaLocacao() {
                               <span style={{ fontSize: '0.7rem', fontWeight: '700', color: 'var(--text-tertiary)' }}>
                                 {item.codigo}
                               </span>
-                              {item.urgencia === 'imediata' && (
-                                <span style={{ fontSize: '0.65rem', fontWeight: '700', color: '#f87171', backgroundColor: 'rgba(239, 68, 68, 0.15)', padding: '1px 5px', borderRadius: '3px' }}>
-                                  🚨 Imediata
-                                </span>
-                              )}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                {item.urgencia === 'imediata' && (
+                                  <span style={{ fontSize: '0.65rem', fontWeight: '700', color: '#f87171', backgroundColor: 'rgba(239, 68, 68, 0.15)', padding: '1px 5px', borderRadius: '3px' }}>
+                                    🚨 Imediata
+                                  </span>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteDemand(item.id);
+                                  }}
+                                  title="Excluir demanda"
+                                  style={{
+                                    background: 'rgba(239, 68, 68, 0.1)',
+                                    border: '1px solid rgba(239, 68, 68, 0.3)',
+                                    color: '#ef4444',
+                                    cursor: 'pointer',
+                                    padding: '2px 5px',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    borderRadius: '4px'
+                                  }}
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              </div>
                             </div>
 
                             <strong style={{ fontSize: '0.88rem', color: 'var(--text-primary)' }}>
@@ -1037,17 +1074,41 @@ export default function DemandaLocacao() {
                         Procura: <strong>{(demanda.tiposImovel || []).join(', ')}</strong> em <strong>{(demanda.bairros || []).join(', ') || 'Caratinga'}</strong>
                       </div>
                     </div>
-                    <span style={{
-                      fontSize: '0.72rem',
-                      fontWeight: '700',
-                      padding: '2px 8px',
-                      borderRadius: '4px',
-                      backgroundColor: 'var(--glass-highlight)',
-                      color: 'var(--text-primary)',
-                      border: '1px solid var(--glass-border)'
-                    }}>
-                      {matches.length} compatíveis
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span style={{
+                        fontSize: '0.72rem',
+                        fontWeight: '700',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        backgroundColor: 'var(--glass-highlight)',
+                        color: 'var(--text-primary)',
+                        border: '1px solid var(--glass-border)'
+                      }}>
+                        {matches.length} compatíveis
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteDemand(demanda.id);
+                        }}
+                        className="btn btn-secondary"
+                        title="Excluir este card de demanda"
+                        style={{
+                          padding: '0.35rem 0.55rem',
+                          color: '#ef4444',
+                          border: '1px solid rgba(239, 68, 68, 0.35)',
+                          backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                          borderRadius: '6px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </div>
 
                   {/* Top Matched Properties */}
