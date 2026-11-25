@@ -97,7 +97,7 @@ export default function PipelineKanban({
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1, minWidth: '260px' }}>
           <Layers size={18} style={{ color: tipo === 'venda' ? '#8b5cf6' : '#38bdf8' }} />
           <strong style={{ fontSize: '1rem', color: 'var(--text-primary)' }}>
-            Pipeline de {tipo === 'venda' ? 'Venda (14 Etapas)' : 'Locação (14 Etapas)'}
+            Pipeline de {tipo === 'venda' ? `Venda (${stages.length} Etapas)` : `Locação (${stages.length} Etapas)`}
           </strong>
           <span style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>
             ({filteredImoveis.length} imóveis no fluxo)

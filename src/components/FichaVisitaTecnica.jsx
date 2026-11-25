@@ -6,13 +6,13 @@ import ModalCicloVidaImovel from './ModalCicloVidaImovel';
 import PipelineKanban from './PipelineKanban';
 import GestaoVistorias from './GestaoVistorias';
 import ControleAssinaturas from './ControleAssinaturas';
-import CentralPendenciasIA from './CentralPendenciasIA';
 import { 
   FINALIDADE_IMOVEL, 
   STATUS_COMERCIAL, 
   STATUS_OPERACIONAL_POS_LOCACAO, 
   getStatusComercialInfo,
-  detectPendencias 
+  PIPELINE_LOCACAO_STAGES,
+  PIPELINE_VENDA_STAGES
 } from '../utils/propertyLifecycle';
 import { 
   ClipboardList, 
@@ -836,11 +836,10 @@ export default function FichaVisitaTecnica() {
           }}>
             {[
               { id: 'carteira', label: 'Carteira de Imóveis', icon: Building2 },
-              { id: 'pipeline_locacao', label: 'Pipeline Locação (14 Etapas)', icon: Layers },
-              { id: 'pipeline_venda', label: 'Pipeline Venda (14 Etapas)', icon: Tag },
+              { id: 'pipeline_locacao', label: `Pipeline Locação (${PIPELINE_LOCACAO_STAGES.length} Etapas)`, icon: Layers },
+              { id: 'pipeline_venda', label: `Pipeline Venda (${PIPELINE_VENDA_STAGES.length} Etapas)`, icon: Tag },
               { id: 'contratos', label: `Contratos & Assinaturas (${imoveisContratos.length})`, icon: FileCheck },
               { id: 'vistorias', label: `Gestão de Vistorias (${imoveisVistorias.length})`, icon: ClipboardCheck },
-              { id: 'pendencias', label: `Central de Pendências (IA)`, icon: AlertTriangle },
               { id: 'fichas', label: `Fichas Visita Técnica (Ficha 01)`, icon: ClipboardList }
             ].map(tab => {
               const Icon = tab.icon;
@@ -1169,22 +1168,7 @@ export default function FichaVisitaTecnica() {
             />
           )}
 
-          {/* SUB-ABA 6: CENTRAL DE PENDÊNCIAS (IA) */}
-          {imoveisSubTab === 'pendencias' && (
-            <CentralPendenciasIA 
-              imoveis={internalFichas}
-              contratos={imoveisContratos}
-              vistorias={imoveisVistorias}
-              onResolvePendencia={(p) => {
-                if (p.imovelId) {
-                  const target = internalFichas.find(f => f.id === p.imovelId || f.codigoImovel === p.imovelCodigo);
-                  if (target) setSelectedLifecycleImovel(target);
-                }
-              }}
-            />
-          )}
-
-          {/* SUB-ABA 7: FICHAS DE VISITA TÉCNICA (ORIGINAL A4 / PDF) */}
+          {/* SUB-ABA 6: FICHAS DE VISITA TÉCNICA (ORIGINAL A4 / PDF) */}
           {imoveisSubTab === 'fichas' && (
             <>
               {/* Quick Metrics Bar Original */}

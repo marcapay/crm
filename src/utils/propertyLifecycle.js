@@ -97,34 +97,21 @@ export const PIPELINE_LOCACAO_STAGES = [
   { id: '1_cadastro_iniciado', label: '1. Cadastro iniciado', short: 'Cadastro iniciado', step: 1 },
   { id: '2_aguardando_documentacao', label: '2. Aguardando documentação', short: 'Aguardando doc.', step: 2 },
   { id: '3_aguardando_autorizacao', label: '3. Aguardando autorização do proprietário', short: 'Autorização prop.', step: 3 },
-  { id: '4_disponivel_divulgacao', label: '4. Disponível para divulgação', short: 'Divulgação aberta', step: 4 },
-  { id: '5_em_visitacao', label: '5. Em visitação', short: 'Em visitação', step: 5 },
-  { id: '6_proposta_recebida', label: '6. Proposta recebida', short: 'Proposta recebida', step: 6 },
-  { id: '7_em_analise_cadastral', label: '7. Em análise cadastral do interessado', short: 'Análise cadastral', step: 7 },
-  { id: '8_aguardando_aprovacao_proprietario', label: '8. Aguardando aprovação do proprietário', short: 'Aprovação prop.', step: 8 },
-  { id: '9_aguardando_garantia', label: '9. Aguardando garantia locatícia', short: 'Garantia locatícia', step: 9 },
-  { id: '10_em_vistoria_entrada', label: '10. Em vistoria de entrada', short: 'Vistoria entrada', step: 10 },
-  { id: '11_elaborando_contrato', label: '11. Elaborando contrato', short: 'Elaborando contrato', step: 11 },
-  { id: '12_aguardando_assinaturas', label: '12. Aguardando assinaturas', short: 'Aguardando assinaturas', step: 12 },
-  { id: '13_aguardando_entrega_chaves', label: '13. Aguardando entrega das chaves', short: 'Entrega de chaves', step: 13 },
-  { id: '14_locacao_concluida', label: '14. Locação concluída', short: 'Locação concluída', step: 14 }
+  { id: '11_elaborando_contrato', label: '4. Elaborando contrato', short: 'Elaborando contrato', step: 4 },
+  { id: '12_aguardando_assinaturas', label: '5. Aguardando assinaturas', short: 'Aguardando assinaturas', step: 5 },
+  { id: '13_aguardando_entrega_chaves', label: '6. Aguardando entrega das chaves', short: 'Entrega de chaves', step: 6 },
+  { id: '14_locacao_concluida', label: '7. Locação concluída', short: 'Locação concluída', step: 7 }
 ];
 
 export const PIPELINE_VENDA_STAGES = [
   { id: '1_cadastro_iniciado', label: '1. Cadastro iniciado', short: 'Cadastro iniciado', step: 1 },
   { id: '2_aguardando_documentacao', label: '2. Aguardando documentação', short: 'Aguardando doc.', step: 2 },
   { id: '3_aguardando_autorizacao', label: '3. Aguardando autorização do proprietário', short: 'Autorização prop.', step: 3 },
-  { id: '4_disponivel_divulgacao', label: '4. Disponível para divulgação', short: 'Divulgação aberta', step: 4 },
-  { id: '5_em_visitacao', label: '5. Em visitação', short: 'Em visitação', step: 5 },
-  { id: '6_proposta_recebida', label: '6. Proposta recebida', short: 'Proposta recebida', step: 6 },
-  { id: '7_em_negociacao', label: '7. Em negociação', short: 'Em negociação', step: 7 },
-  { id: '8_proposta_aprovada', label: '8. Proposta aprovada', short: 'Proposta aprovada', step: 8 },
-  { id: '9_aguardando_documentacao_partes', label: '9. Aguardando documentação das partes', short: 'Documentos partes', step: 9 },
-  { id: '10_elaborando_contrato', label: '10. Elaborando contrato', short: 'Elaborando contrato', step: 10 },
-  { id: '11_aguardando_assinaturas', label: '11. Aguardando assinaturas', short: 'Aguardando assinaturas', step: 11 },
-  { id: '12_aguardando_pagamento_financiamento', label: '12. Aguardando pagamento ou financiamento', short: 'Pagto / Financ.', step: 12 },
-  { id: '13_aguardando_transferencia', label: '13. Aguardando formalização da transferência', short: 'Formaliz. transfer.', step: 13 },
-  { id: '14_venda_concluida', label: '14. Venda concluída', short: 'Venda concluída', step: 14 }
+  { id: '10_elaborando_contrato', label: '4. Elaborando contrato', short: 'Elaborando contrato', step: 4 },
+  { id: '11_aguardando_assinaturas', label: '5. Aguardando assinaturas', short: 'Aguardando assinaturas', step: 5 },
+  { id: '12_aguardando_pagamento_financiamento', label: '6. Aguardando pagamento ou financiamento', short: 'Pagto / Financ.', step: 6 },
+  { id: '13_aguardando_transferencia', label: '7. Aguardando formalização da transferência', short: 'Formaliz. transfer.', step: 7 },
+  { id: '14_venda_concluida', label: '8. Venda concluída', short: 'Venda concluída', step: 8 }
 ];
 
 export const STATUS_VISTORIA = [
