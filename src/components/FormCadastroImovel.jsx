@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
+import ModalPreenchimentoIA from './ModalPreenchimentoIA';
 import { 
   Building, 
   User, 
@@ -71,6 +72,7 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
 
   const [loadingCep, setLoadingCep] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showAiModal, setShowAiModal] = useState(false);
   const [successToast, setSuccessToast] = useState('');
   const [errorToast, setErrorToast] = useState('');
 
@@ -280,6 +282,103 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
         fotos: [chosen, ...current]
       };
     });
+  };
+
+  // Handler to receive structured data from AI Preenchimento
+  const handleApplyAiData = (aiData) => {
+    if (!aiData) return;
+
+    setFormData(prev => {
+      const updated = { ...prev };
+
+      // 1. Proprietário
+      if (aiData.nomeProprietario) updated.nomeProprietario = aiData.nomeProprietario;
+      if (aiData.telefoneProprietario) updated.telefoneProprietario = aiData.telefoneProprietario;
+      if (aiData.emailProprietario) updated.emailProprietario = aiData.emailProprietario;
+
+      // 2. Informações do Imóvel
+      if (aiData.tipo) updated.tipo = aiData.tipo;
+      if (aiData.tipoOutro) updated.tipoOutro = aiData.tipoOutro;
+      if (aiData.uso) updated.uso = aiData.uso;
+      if (aiData.usoOutro) updated.usoOutro = aiData.usoOutro;
+      if (aiData.finalidade) updated.finalidade = aiData.finalidade;
+      if (aiData.finalidadeOutro) updated.finalidadeOutro = aiData.finalidadeOutro;
+      if (aiData.finalidadeSite) updated.finalidadeSite = aiData.finalidadeSite;
+      if (aiData.status) updated.status = aiData.status;
+      if (aiData.statusOutro) updated.statusOutro = aiData.statusOutro;
+      if (aiData.titulo) updated.titulo = aiData.titulo;
+
+      // 3. Localização
+      if (aiData.cep) updated.cep = aiData.cep;
+      if (aiData.endereco) updated.endereco = aiData.endereco;
+      if (aiData.numero) updated.numero = aiData.numero;
+      if (aiData.complemento) updated.complemento = aiData.complemento;
+      if (aiData.bairro) updated.bairro = aiData.bairro;
+      if (aiData.cidade) updated.cidade = aiData.cidade;
+      if (aiData.estado) updated.estado = aiData.estado;
+      if (aiData.condominio) updated.condominio = aiData.condominio;
+
+      // 4. Valores
+      if (aiData.valorImovel) updated.valorImovel = aiData.valorImovel;
+      if (aiData.valorCondominio) updated.valorCondominio = aiData.valorCondominio;
+      if (aiData.iptuAnual) updated.iptuAnual = aiData.iptuAnual;
+
+      // 5. Características
+      if (aiData.areaTotal) updated.areaTotal = aiData.areaTotal;
+      if (aiData.areaConstruida) updated.areaConstruida = aiData.areaConstruida;
+      if (aiData.quartos) updated.quartos = aiData.quartos;
+      if (aiData.suites) updated.suites = aiData.suites;
+      if (aiData.banheiros) updated.banheiros = aiData.banheiros;
+      if (aiData.vagas) updated.vagas = aiData.vagas;
+      if (aiData.salas) updated.salas = aiData.salas;
+      if (aiData.copas) updated.copas = aiData.copas;
+      if (aiData.cozinhas) updated.cozinhas = aiData.cozinhas;
+      if (aiData.lavabos) updated.lavabos = aiData.lavabos;
+      if (aiData.porteiraFechada !== undefined) updated.porteiraFechada = aiData.porteiraFechada;
+
+      // 6. Diferenciais & Documentação
+      if (Array.isArray(aiData.diferenciais) && aiData.diferenciais.length > 0) {
+        updated.diferenciais = [...new Set([...(prev.diferenciais || []), ...aiData.diferenciais])];
+      }
+      if (aiData.diferenciaisOutro) updated.diferenciaisOutro = aiData.diferenciaisOutro;
+
+      if (Array.isArray(aiData.documentacao) && aiData.documentacao.length > 0) {
+        updated.documentacao = [...new Set([...(prev.documentacao || []), ...aiData.documentacao])];
+      }
+      if (aiData.documentacaoOutro) updated.documentacaoOutro = aiData.documentacaoOutro;
+
+      // 7. Descrição
+      if (aiData.descricao) updated.descricao = aiData.descricao;
+
+      // 9. Fotos
+      if (Array.isArray(aiData.fotos) && aiData.fotos.length > 0) {
+        updated.fotos = [...new Set([...(prev.fotos || []), ...aiData.fotos])];
+      }
+
+      return updated;
+    });
+
+    // Auto-lookup ViaCEP if 8 digits CEP is extracted
+    const cleanCep = (aiData.cep || '').replace(/\D/g, '');
+    if (cleanCep.length === 8) {
+      fetch(`https://viacep.com.br/ws/${cleanCep}/json/`)
+        .then(res => res.json())
+        .then(data => {
+          if (!data.erro) {
+            setFormData(prev => ({
+              ...prev,
+              endereco: prev.endereco || data.logradouro || '',
+              bairro: prev.bairro || data.bairro || '',
+              cidade: prev.cidade || data.localidade || 'Caratinga',
+              estado: prev.estado || data.uf || 'MG'
+            }));
+          }
+        })
+        .catch(e => console.warn("ViaCEP error after AI:", e));
+    }
+
+    setSuccessToast('✓ Dados e fotos do imóvel preenchidos automaticamente com Inteligência Artificial!');
+    setTimeout(() => setSuccessToast(''), 4500);
   };
 
   // Submit Handler with direct publication to araujoimoveiscaratinga.com.br
@@ -572,7 +671,24 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+          <button 
+            type="button" 
+            onClick={() => setShowAiModal(true)}
+            className="btn btn-primary"
+            style={{ 
+              background: 'linear-gradient(135deg, #0284c7 0%, #8b5cf6 100%)', 
+              border: 'none',
+              boxShadow: '0 4px 15px rgba(139, 92, 246, 0.4)',
+              fontWeight: '700',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.55rem 1.1rem'
+            }}
+          >
+            <Sparkles size={16} /> Preencher com IA
+          </button>
           <button 
             type="button" 
             onClick={onBack}
@@ -590,6 +706,65 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
             <Save size={16} /> {isSaving ? 'Salvando e Publicando...' : 'Salvar Imóvel'}
           </button>
         </div>
+      </div>
+
+      {/* Banner de Preenchimento Automático por IA */}
+      <div className="glass-panel" style={{
+        background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.1) 0%, rgba(139, 92, 246, 0.14) 100%)',
+        border: '1px solid rgba(56, 189, 248, 0.35)',
+        borderRadius: '16px',
+        padding: '1.25rem 1.5rem',
+        marginBottom: '1.5rem',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '1rem',
+        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.25)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{
+            width: '46px',
+            height: '46px',
+            borderRadius: '12px',
+            background: 'linear-gradient(135deg, var(--accent-cyan), #a855f7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 4px 14px rgba(56, 189, 248, 0.35)',
+            flexShrink: 0
+          }}>
+            <Sparkles size={24} color="#ffffff" />
+          </div>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <strong style={{ fontSize: '1.05rem', color: '#ffffff' }}>Preenchimento Automático com Inteligência Artificial</strong>
+              <span style={{ fontSize: '0.68rem', fontWeight: '800', padding: '2px 8px', borderRadius: '10px', background: 'rgba(56, 189, 248, 0.25)', color: 'var(--accent-cyan)', border: '1px solid rgba(56, 189, 248, 0.4)' }}>NOVO</span>
+            </div>
+            <p style={{ margin: '0.2rem 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+              Adicione documentos (matrícula, IPTU, contratos em PDF), fotos do imóvel ou texto de WhatsApp. A IA lê e preenche todos os campos automaticamente para você!
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setShowAiModal(true)}
+          className="btn btn-primary"
+          style={{
+            background: 'linear-gradient(135deg, #0284c7 0%, #8b5cf6 100%)',
+            border: 'none',
+            boxShadow: '0 4px 16px rgba(139, 92, 246, 0.35)',
+            fontWeight: '700',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            padding: '0.7rem 1.4rem',
+            fontSize: '0.9rem'
+          }}
+        >
+          <Sparkles size={16} /> Preencher com IA
+        </button>
       </div>
 
       <form onSubmit={handleSubmit}>
@@ -1757,6 +1932,14 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
           </button>
         </div>
       </form>
+
+      {/* Modal de Preenchimento Automático com IA */}
+      <ModalPreenchimentoIA 
+        isOpen={showAiModal}
+        onClose={() => setShowAiModal(false)}
+        onApply={handleApplyAiData}
+        existingFormData={formData}
+      />
     </div>
   );
 }
