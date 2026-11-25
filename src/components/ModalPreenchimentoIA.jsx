@@ -25,8 +25,6 @@ import {
 } from 'lucide-react';
 
 export default function ModalPreenchimentoIA({ isOpen, onClose, onApply, existingFormData }) {
-  if (!isOpen) return null;
-
   // Active Tab: 'upload' | 'text' | 'config'
   const [activeTab, setActiveTab] = useState('upload');
   
@@ -516,6 +514,8 @@ Retorne EXCLUSIVAMENTE um objeto JSON estrito com as seguintes chaves:
     }
     onClose();
   };
+
+  if (!isOpen) return null;
 
   return (
     <div style={{

@@ -44,25 +44,26 @@ export default function ModalCicloVidaImovel({
   onSaveVistoria,
   currentUser = 'Administrador'
 }) {
-  if (!imovel) return null;
-
   const [activeTab, setActiveTab] = useState('comercial'); // 'comercial', 'contratos', 'vistorias', 'historico'
   const [successToast, setSuccessToast] = useState('');
 
   // Estados editáveis de ciclo de vida
-  const [finalidade, setFinalidade] = useState(imovel.finalidadeImovel || 'Para locação');
-  const [statusComercial, setStatusComercial] = useState(imovel.statusComercial || 'Disponível para locação');
-  const [statusOperacional, setStatusOperacional] = useState(imovel.statusOperacional || 'Liberado para nova locação');
+  const [finalidade, setFinalidade] = useState(imovel?.finalidadeImovel || 'Para locação');
+  const [statusComercial, setStatusComercial] = useState(imovel?.statusComercial || 'Disponível para locação');
+  const [statusOperacional, setStatusOperacional] = useState(imovel?.statusOperacional || 'Liberado para nova locação');
   const [motivoAlteracao, setMotivoAlteracao] = useState('');
   const [autorizadoPeloProprietario, setAutorizadoPeloProprietario] = useState(true);
-  const [publicarNoSite, setPublicarNoSite] = useState(imovel.publicarNoSite !== false);
+  const [publicarNoSite, setPublicarNoSite] = useState(imovel?.publicarNoSite !== false);
 
   // Contratos vinculados ao imóvel
-  const imovelContratos = contratos.filter(c => {
+  const imovelContratos = (Array.isArray(contratos) ? contratos : []).filter(c => {
+    if (!c || !imovel) return false;
     return c.imovelId === imovel.id || c.imovelCodigo === (imovel.codigoImovel || imovel.code);
   });
 
   const [selectedContratoId, setSelectedContratoId] = useState(imovelContratos[0]?.id || null);
+
+  if (!imovel) return null;
 
   const activeContrato = imovelContratos.find(c => c.id === selectedContratoId) || imovelContratos[0] || null;
 

@@ -55,7 +55,8 @@ import {
   DollarSign,
   TrendingUp,
   ShieldCheck,
-  Filter
+  Filter,
+  AlertTriangle
 } from 'lucide-react';
 
 const formatLocationUrl = (urlOrCoords) => {

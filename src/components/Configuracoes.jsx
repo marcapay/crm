@@ -27,6 +27,7 @@ import {
   Maximize2,
   Minimize2,
   ZoomIn,
+  ZoomOut,
   Copy,
   CopyCheck,
   Plus,

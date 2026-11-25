@@ -23,16 +23,17 @@ import {
   ChevronRight,
   Eye,
   MapPin,
-  DollarSign
+  DollarSign,
+  Calendar
 } from 'lucide-react';
 import { getStatusComercialInfo } from '../utils/propertyLifecycle';
 
 export default function Dashboard() {
   const { 
-    clients, 
-    kanbanCards, 
-    chats, 
-    quickLinks, 
+    clients = [], 
+    kanbanCards = [], 
+    chats = {}, 
+    quickLinks = [], 
     setActiveModule,
     setActiveChatClientId,
     waStatus,
@@ -46,28 +47,33 @@ export default function Dashboard() {
 
   const userRole = (profile?.role || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
+  // Sanitização defensiva das coleções
+  const safeFichas = Array.isArray(fichasVisita) ? fichasVisita.filter(f => f && typeof f === 'object') : [];
+  const safeContratos = Array.isArray(imoveisContratos) ? imoveisContratos.filter(c => c && typeof c === 'object') : [];
+  const safeVistorias = Array.isArray(imoveisVistorias) ? imoveisVistorias.filter(v => v && typeof v === 'object') : [];
+
   // Métricas do Painel Administrativo Inteligente (Seção 9)
-  const totalImoveisCadastrados = fichasVisita;
-  const imoveisDispLocacao = fichasVisita.filter(f => (f.statusComercial || 'Disponível para locação') === 'Disponível para locação');
-  const imoveisDispVenda = fichasVisita.filter(f => (f.statusComercial || '') === 'Disponível para venda' || (f.statusComercial || '') === 'Disponível para venda e locação');
-  const imoveisAlugados = fichasVisita.filter(f => (f.statusComercial || '') === 'Alugado');
-  const imoveisVendidos = fichasVisita.filter(f => (f.statusComercial || '') === 'Vendido');
-  const imoveisReservados = fichasVisita.filter(f => (f.statusComercial || '') === 'Reservado');
-  const imoveisEmNegociacao = fichasVisita.filter(f => (f.statusComercial || '') === 'Em negociação');
-  const imoveisEmVistoria = fichasVisita.filter(f => {
+  const totalImoveisCadastrados = safeFichas;
+  const imoveisDispLocacao = safeFichas.filter(f => (f.statusComercial || 'Disponível para locação') === 'Disponível para locação');
+  const imoveisDispVenda = safeFichas.filter(f => (f.statusComercial || '') === 'Disponível para venda' || (f.statusComercial || '') === 'Disponível para venda e locação');
+  const imoveisAlugados = safeFichas.filter(f => (f.statusComercial || '') === 'Alugado');
+  const imoveisVendidos = safeFichas.filter(f => (f.statusComercial || '') === 'Vendido');
+  const imoveisReservados = safeFichas.filter(f => (f.statusComercial || '') === 'Reservado');
+  const imoveisEmNegociacao = safeFichas.filter(f => (f.statusComercial || '') === 'Em negociação');
+  const imoveisEmVistoria = safeFichas.filter(f => {
     return (f.etapaPipelineLocacao || '').includes('vistoria') || 
-      imoveisVistorias.some(v => (v.imovelId === f.id || v.imovelCodigo === f.codigoImovel) && !v.status.includes('concluída'));
+      safeVistorias.some(v => (v.imovelId === f.id || v.imovelCodigo === f.codigoImovel) && !(typeof v?.status === 'string' && v.status.includes('concluída')));
   });
-  const contratosAguardandoAssinaturas = imoveisContratos.filter(c => {
-    return c.signatarios?.some(s => s.obrigatoria !== false && s.status !== 'Assinada' && s.status !== 'Não se aplica');
+  const contratosAguardandoAssinaturas = safeContratos.filter(c => {
+    return Array.isArray(c?.signatarios) && c.signatarios.some(s => s && s.obrigatoria !== false && s.status !== 'Assinada' && s.status !== 'Não se aplica');
   });
-  const contratosProximosVencimento = imoveisContratos.filter(c => {
-    if (!c.dataVencimento) return false;
+  const contratosProximosVencimento = safeContratos.filter(c => {
+    if (!c?.dataVencimento) return false;
     const diff = new Date(c.dataVencimento) - new Date();
     return diff > 0 && diff <= 60 * 24 * 60 * 60 * 1000;
   });
-  const imoveisEmManutencao = fichasVisita.filter(f => (f.statusOperacional || '').toLowerCase().includes('manuten'));
-  const imoveisDocPendente = fichasVisita.filter(f => {
+  const imoveisEmManutencao = safeFichas.filter(f => (f.statusOperacional || '').toLowerCase().includes('manuten'));
+  const imoveisDocPendente = safeFichas.filter(f => {
     const doc = f.documentacao || {};
     return (!doc.matriculaIndividual && !doc.escrituraPublica && !f.matricula) || (f.etapaPipelineLocacao || '').includes('documentacao');
   });

@@ -2775,7 +2775,7 @@ export const AppProvider = ({ children }) => {
             // TRIGGER REAL-TIME AGENT RESPONSE ON WHATSAPP CONTACT MESSAGES
             const isSdrEnabled = localStorage.getItem('crmbase_sdr_enabled') !== 'false';
             const sdrIgnoreGroups = localStorage.getItem('crmbase_sdr_ignore_groups') !== 'false';
-            const isGroupChat = clientJid.includes('@g.us') || isGroup;
+            const isGroupChat = clientJid.includes('@g.us') || Boolean(chat?.isGroup);
 
             if (isSdrEnabled && lastMsgText && (!isGroupChat || !sdrIgnoreGroups)) {
               const lastMsg = chat.lastMessage;
@@ -4100,6 +4100,7 @@ export const AppProvider = ({ children }) => {
     const isSummaryRequest = ['resum', 'resuma', 'mostre os dados', 'dados completos', 'resumo do atendimento', 'todas as informações', 'listar todas'].some(k => cleanPrompt.toLowerCase().includes(k));
 
     let responseText = '';
+    let matchedSnippet = null;
 
     if (isSummaryRequest) {
       if (allKnowledgeText.trim()) {
@@ -4119,7 +4120,7 @@ export const AppProvider = ({ children }) => {
         .split(/\s+/)
         .filter(w => w.length >= 2 && !stopWords.includes(w)) : [];
 
-      let matchedSnippet = null;
+      matchedSnippet = null;
 
       if (userTokens.length > 0) {
         const fieldMap = [

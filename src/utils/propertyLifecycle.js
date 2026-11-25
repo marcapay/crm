@@ -299,12 +299,16 @@ export function getSitePublishDecision(imovel) {
 export function detectPendencias(imoveis = [], contratos = [], vistorias = []) {
   const pendencias = [];
 
+  const safeImoveis = Array.isArray(imoveis) ? imoveis : [];
+  const safeContratos = Array.isArray(contratos) ? contratos : [];
+  const safeVistorias = Array.isArray(vistorias) ? vistorias : [];
+
   const now = new Date();
   const sixtyDaysMs = 60 * 24 * 60 * 60 * 1000;
 
   // 1. Varredura dos Imóveis
-  imoveis.forEach(imovel => {
-    if (!imovel) return;
+  safeImoveis.forEach(imovel => {
+    if (!imovel || typeof imovel !== 'object') return;
     const codigo = imovel.codigoImovel || imovel.code || `IM-${imovel.id}`;
     const titulo = imovel.tituloImovel || imovel.title || `${imovel.tipoImovel || imovel.type} no ${imovel.bairroImovel || imovel.neighborhood || 'Centro'}`;
     const responsavel = imovel.corretorResponsavel || imovel.profissionalResponsavel || 'Corretor Geral';
@@ -412,8 +416,8 @@ export function detectPendencias(imoveis = [], contratos = [], vistorias = []) {
   });
 
   // 2. Varredura dos Contratos
-  contratos.forEach(c => {
-    if (!c) return;
+  safeContratos.forEach(c => {
+    if (!c || typeof c !== 'object') return;
     const progress = calculateSignatureProgress(c);
     const codigoImovel = c.imovelCodigo || c.propertyId || 'Imóvel';
     const responsavel = c.responsavel || 'Setor de Contratos';
@@ -463,8 +467,8 @@ export function detectPendencias(imoveis = [], contratos = [], vistorias = []) {
   });
 
   // 3. Varredura de Vistorias
-  vistorias.forEach(v => {
-    if (!v) return;
+  safeVistorias.forEach(v => {
+    if (!v || typeof v !== 'object') return;
     if (v.status !== 'entrada_concluida' && v.status !== 'saida_concluida' && v.status !== 'Vistoria de entrada concluída' && v.status !== 'Vistoria de saída concluída') {
       const codigoImovel = v.imovelCodigo || 'Imóvel';
       pendencias.push({
