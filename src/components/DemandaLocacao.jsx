@@ -195,7 +195,6 @@ export default function DemandaLocacao() {
 
   // Modal manual creation state
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showQrModal, setShowQrModal] = useState(false);
   const [copyToast, setCopyToast] = useState('');
 
   // Filters State
@@ -319,13 +318,6 @@ export default function DemandaLocacao() {
       setCopyToast('Link copiado para a área de transferência!');
       setTimeout(() => setCopyToast(''), 3500);
     }
-  };
-
-  const handleShareWhatsApp = () => {
-    const text = encodeURIComponent(
-      `🏠 Procurando imóvel para alugar em Caratinga e região?\n\nAcesse o formulário oficial da Araújo Imóveis e conte o que você precisa. Nossa equipe encontra as melhores oportunidades para você!\n\n👉 Acesse agora: ${publicLink}`
-    );
-    window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
   };
 
   // Change demand status
@@ -538,24 +530,6 @@ export default function DemandaLocacao() {
             title="Copiar endereço do link público"
           >
             <Copy size={15} /> Copiar Link Público
-          </button>
-
-          <button
-            type="button"
-            onClick={handleShareWhatsApp}
-            className="btn btn-secondary"
-            title="Divulgar link pelo WhatsApp"
-          >
-            <Share2 size={15} /> Compartilhar no WhatsApp
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setShowQrModal(true)}
-            className="btn btn-secondary"
-            title="Gerar QR Code para impressão ou stories"
-          >
-            <QrCode size={15} /> Gerar QR Code
           </button>
 
           <button
@@ -1691,85 +1665,6 @@ export default function DemandaLocacao() {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* ============================================================
-          MODAL: QR CODE PARA CAPTAÇÃO PÚBLICA
-         ============================================================ */}
-      {showQrModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.85)',
-          backdropFilter: 'blur(6px)',
-          zIndex: 99999,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '1rem'
-        }} onClick={() => setShowQrModal(false)}>
-          <div 
-            className="glass-panel"
-            style={{
-              width: '100%',
-              maxWidth: '420px',
-              backgroundColor: 'var(--bg-secondary)',
-              border: '1px solid var(--glass-border)',
-              borderRadius: 'var(--border-radius-md)',
-              padding: '1.75rem',
-              textAlign: 'center'
-            }}
-            onClick={e => e.stopPropagation()}
-          >
-            <h3 style={{ fontSize: '1.15rem', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '0.35rem' }}>
-              QR Code • Demanda de Locação
-            </h3>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '1.25rem' }}>
-              Imprima para a vitrine da imobiliária ou compartilhe nas redes sociais.
-            </p>
-
-            <div style={{
-              backgroundColor: '#ffffff',
-              padding: '1rem',
-              borderRadius: '12px',
-              display: 'inline-block',
-              boxShadow: '0 4px 15px rgba(0, 0, 0, 0.3)',
-              marginBottom: '1rem'
-            }}>
-              <img 
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(publicLink)}`}
-                alt="QR Code Demanda de Locação"
-                style={{ width: '200px', height: '200px', display: 'block' }}
-              />
-            </div>
-
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', wordBreak: 'break-all', marginBottom: '1.25rem' }}>
-              {publicLink}
-            </div>
-
-            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
-              <button
-                type="button"
-                onClick={handleCopyLink}
-                className="btn btn-secondary"
-                style={{ fontSize: '0.8rem' }}
-              >
-                <Copy size={14} /> Copiar Link
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowQrModal(false)}
-                className="btn btn-primary"
-                style={{ fontSize: '0.8rem' }}
-              >
-                Fechar
-              </button>
-            </div>
           </div>
         </div>
       )}
