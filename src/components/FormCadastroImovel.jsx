@@ -675,16 +675,11 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
           <button 
             type="button" 
             onClick={() => setShowAiModal(true)}
-            className="btn btn-primary"
+            className="btn btn-secondary"
             style={{ 
-              background: 'linear-gradient(135deg, #0284c7 0%, #8b5cf6 100%)', 
-              border: 'none',
-              boxShadow: '0 4px 15px rgba(139, 92, 246, 0.4)',
-              fontWeight: '700',
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '0.5rem',
-              padding: '0.55rem 1.1rem'
+              gap: '0.5rem'
             }}
           >
             <Sparkles size={16} /> Preencher com IA
@@ -710,39 +705,36 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
 
       {/* Banner de Preenchimento Automático por IA */}
       <div className="glass-panel" style={{
-        background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.1) 0%, rgba(139, 92, 246, 0.14) 100%)',
-        border: '1px solid rgba(56, 189, 248, 0.35)',
-        borderRadius: '16px',
         padding: '1.25rem 1.5rem',
         marginBottom: '1.5rem',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
-        gap: '1rem',
-        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.25)'
+        gap: '1rem'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <div style={{
-            width: '46px',
-            height: '46px',
-            borderRadius: '12px',
-            background: 'linear-gradient(135deg, var(--accent-cyan), #a855f7)',
+            width: '42px',
+            height: '42px',
+            borderRadius: 'var(--border-radius-sm)',
+            background: 'var(--bg-tertiary)',
+            border: '1px solid var(--glass-border)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 4px 14px rgba(56, 189, 248, 0.35)',
+            color: 'var(--text-primary)',
             flexShrink: 0
           }}>
-            <Sparkles size={24} color="#ffffff" />
+            <Sparkles size={20} />
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <strong style={{ fontSize: '1.05rem', color: '#ffffff' }}>Preenchimento Automático com Inteligência Artificial</strong>
-              <span style={{ fontSize: '0.68rem', fontWeight: '800', padding: '2px 8px', borderRadius: '10px', background: 'rgba(56, 189, 248, 0.25)', color: 'var(--accent-cyan)', border: '1px solid rgba(56, 189, 248, 0.4)' }}>NOVO</span>
+              <strong style={{ fontSize: '1rem', color: 'var(--text-primary)' }}>Preenchimento Automático com Inteligência Artificial</strong>
+              <span style={{ fontSize: '0.68rem', fontWeight: '600', padding: '2px 8px', borderRadius: '4px', background: 'var(--glass-highlight)', color: 'var(--text-secondary)', border: '1px solid var(--glass-border)' }}>NOVO</span>
             </div>
             <p style={{ margin: '0.2rem 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-              Adicione documentos (matrícula, IPTU, contratos em PDF), fotos do imóvel ou texto de WhatsApp. A IA lê e preenche todos os campos automaticamente para você!
+              Adicione documentos (matrícula, IPTU, contratos em PDF), fotos do imóvel ou texto de WhatsApp. A IA lê e preenche todos os campos automaticamente.
             </p>
           </div>
         </div>
@@ -752,15 +744,9 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
           onClick={() => setShowAiModal(true)}
           className="btn btn-primary"
           style={{
-            background: 'linear-gradient(135deg, #0284c7 0%, #8b5cf6 100%)',
-            border: 'none',
-            boxShadow: '0 4px 16px rgba(139, 92, 246, 0.35)',
-            fontWeight: '700',
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '0.5rem',
-            padding: '0.7rem 1.4rem',
-            fontSize: '0.9rem'
+            gap: '0.5rem'
           }}
         >
           <Sparkles size={16} /> Preencher com IA

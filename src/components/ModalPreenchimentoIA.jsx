@@ -516,8 +516,8 @@ Retorne EXCLUSIVAMENTE um objeto JSON estrito com as seguintes chaves:
       left: 0,
       width: '100vw',
       height: '100vh',
-      backgroundColor: 'rgba(3, 7, 18, 0.85)',
-      backdropFilter: 'blur(8px)',
+      backgroundColor: 'rgba(0, 0, 0, 0.75)',
+      backdropFilter: 'blur(6px)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -529,10 +529,10 @@ Retorne EXCLUSIVAMENTE um objeto JSON estrito com as seguintes chaves:
         maxWidth: '850px',
         maxHeight: '90vh',
         overflowY: 'auto',
-        borderRadius: '20px',
-        border: '1px solid rgba(56, 189, 248, 0.35)',
-        backgroundColor: '#090d16',
-        boxShadow: '0 20px 60px rgba(0, 0, 0, 0.85), 0 0 40px rgba(56, 189, 248, 0.2)',
+        borderRadius: 'var(--border-radius-md)',
+        border: '1px solid var(--glass-border)',
+        backgroundColor: 'var(--bg-secondary)',
+        boxShadow: 'var(--card-shadow)',
         display: 'flex',
         flexDirection: 'column'
       }}>
@@ -543,29 +543,30 @@ Retorne EXCLUSIVAMENTE um objeto JSON estrito com as seguintes chaves:
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          background: 'linear-gradient(90deg, rgba(56, 189, 248, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%)'
+          background: 'var(--glass-highlight)'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <div style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '10px',
-              background: 'linear-gradient(135deg, var(--accent-cyan), #8b5cf6)',
+              width: '38px',
+              height: '38px',
+              borderRadius: 'var(--border-radius-sm)',
+              background: 'var(--bg-tertiary)',
+              border: '1px solid var(--glass-border)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 4px 12px rgba(56, 189, 248, 0.35)'
+              color: 'var(--text-primary)'
             }}>
-              <Sparkles size={22} color="#ffffff" />
+              <Sparkles size={20} />
             </div>
             <div>
-              <h2 style={{ fontSize: '1.2rem', fontWeight: '800', color: '#ffffff', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <h2 style={{ fontSize: '1.15rem', fontWeight: '700', color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 Preenchimento Automático por IA
-                <span style={{ fontSize: '0.65rem', padding: '2px 8px', borderRadius: '10px', background: 'rgba(56, 189, 248, 0.2)', color: 'var(--accent-cyan)', border: '1px solid rgba(56, 189, 248, 0.4)' }}>
+                <span style={{ fontSize: '0.68rem', fontWeight: '500', padding: '2px 8px', borderRadius: '4px', background: 'var(--glass-highlight)', color: 'var(--text-secondary)', border: '1px solid var(--glass-border)' }}>
                   Inteligente
                 </span>
               </h2>
-              <p style={{ margin: '0.15rem 0 0', fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>
+              <p style={{ margin: '0.15rem 0 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                 Envie documentos (PDF, matrícula, IPTU), fotos do imóvel ou texto livre e a IA preencherá o cadastro.
               </p>
             </div>
@@ -589,16 +590,16 @@ Retorne EXCLUSIVAMENTE um objeto JSON estrito com as seguintes chaves:
               onClick={() => setActiveTab('upload')}
               style={{
                 padding: '0.5rem 1rem',
-                borderRadius: '8px',
+                borderRadius: 'var(--border-radius-sm)',
                 fontSize: '0.85rem',
-                fontWeight: '600',
+                fontWeight: activeTab === 'upload' ? '600' : '500',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.5rem',
-                backgroundColor: activeTab === 'upload' ? 'rgba(56, 189, 248, 0.15)' : 'transparent',
-                color: activeTab === 'upload' ? 'var(--accent-cyan)' : 'var(--text-secondary)',
-                border: activeTab === 'upload' ? '1px solid var(--accent-cyan)' : '1px solid transparent'
+                backgroundColor: activeTab === 'upload' ? 'var(--text-primary)' : 'transparent',
+                color: activeTab === 'upload' ? 'var(--bg-primary)' : 'var(--text-secondary)',
+                border: activeTab === 'upload' ? '1px solid var(--text-primary)' : '1px solid transparent'
               }}
             >
               <Upload size={16} /> Arquivos & Fotos ({attachedFiles.length})
@@ -609,16 +610,16 @@ Retorne EXCLUSIVAMENTE um objeto JSON estrito com as seguintes chaves:
               onClick={() => setActiveTab('text')}
               style={{
                 padding: '0.5rem 1rem',
-                borderRadius: '8px',
+                borderRadius: 'var(--border-radius-sm)',
                 fontSize: '0.85rem',
-                fontWeight: '600',
+                fontWeight: activeTab === 'text' ? '600' : '500',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.5rem',
-                backgroundColor: activeTab === 'text' ? 'rgba(56, 189, 248, 0.15)' : 'transparent',
-                color: activeTab === 'text' ? 'var(--accent-cyan)' : 'var(--text-secondary)',
-                border: activeTab === 'text' ? '1px solid var(--accent-cyan)' : '1px solid transparent'
+                backgroundColor: activeTab === 'text' ? 'var(--text-primary)' : 'transparent',
+                color: activeTab === 'text' ? 'var(--bg-primary)' : 'var(--text-secondary)',
+                border: activeTab === 'text' ? '1px solid var(--text-primary)' : '1px solid transparent'
               }}
             >
               <FileText size={16} /> Colar Texto / Anotações
@@ -629,17 +630,17 @@ Retorne EXCLUSIVAMENTE um objeto JSON estrito com as seguintes chaves:
               onClick={() => setActiveTab('config')}
               style={{
                 padding: '0.5rem 1rem',
-                borderRadius: '8px',
+                borderRadius: 'var(--border-radius-sm)',
                 fontSize: '0.85rem',
-                fontWeight: '600',
+                fontWeight: activeTab === 'config' ? '600' : '500',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.5rem',
                 marginLeft: 'auto',
-                backgroundColor: activeTab === 'config' ? 'rgba(139, 92, 246, 0.15)' : 'transparent',
-                color: activeTab === 'config' ? '#c084fc' : 'var(--text-tertiary)',
-                border: activeTab === 'config' ? '1px solid #c084fc' : '1px solid transparent'
+                backgroundColor: activeTab === 'config' ? 'var(--text-primary)' : 'transparent',
+                color: activeTab === 'config' ? 'var(--bg-primary)' : 'var(--text-secondary)',
+                border: activeTab === 'config' ? '1px solid var(--text-primary)' : '1px solid transparent'
               }}
             >
               <Sliders size={15} /> Provedor IA ({aiProvider.toUpperCase()})
@@ -653,30 +654,31 @@ Retorne EXCLUSIVAMENTE um objeto JSON estrito com as seguintes chaves:
               <div
                 onClick={() => fileInputRef.current?.click()}
                 style={{
-                  border: '2px dashed rgba(56, 189, 248, 0.4)',
-                  borderRadius: '16px',
-                  padding: '2rem 1.5rem',
+                  border: '2px dashed var(--glass-border)',
+                  borderRadius: 'var(--border-radius-sm)',
+                  padding: '2.5rem 1.5rem',
                   textAlign: 'center',
-                  backgroundColor: 'rgba(56, 189, 248, 0.03)',
+                  backgroundColor: 'var(--glass-highlight)',
                   cursor: 'pointer',
-                  transition: 'all 0.2s ease',
+                  transition: 'var(--transition-smooth)',
                   marginBottom: '1rem'
                 }}
               >
                 <div style={{
-                  width: '54px',
-                  height: '54px',
+                  width: '50px',
+                  height: '50px',
                   borderRadius: '50%',
-                  background: 'rgba(56, 189, 248, 0.15)',
+                  background: 'var(--bg-tertiary)',
+                  border: '1px solid var(--glass-border)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   margin: '0 auto 1rem',
-                  color: 'var(--accent-cyan)'
+                  color: 'var(--text-primary)'
                 }}>
-                  <Upload size={26} />
+                  <Upload size={24} />
                 </div>
-                <h4 style={{ fontSize: '1rem', fontWeight: '700', color: '#ffffff', marginBottom: '0.35rem' }}>
+                <h4 style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '0.35rem' }}>
                   Clique ou arraste documentos e fotos do imóvel aqui
                 </h4>
                 <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: 0 }}>
@@ -696,7 +698,7 @@ Retorne EXCLUSIVAMENTE um objeto JSON estrito com as seguintes chaves:
               {attachedFiles.length > 0 && (
                 <div style={{ marginTop: '1rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                    <span style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-primary)' }}>
+                    <span style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-primary)' }}>
                       Arquivos Anexados ({attachedFiles.length}):
                     </span>
                     <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
@@ -712,8 +714,9 @@ Retorne EXCLUSIVAMENTE um objeto JSON estrito com as seguintes chaves:
                     flexDirection: 'column',
                     gap: '0.4rem',
                     padding: '0.5rem',
-                    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-                    borderRadius: '10px'
+                    backgroundColor: 'var(--bg-tertiary)',
+                    borderRadius: 'var(--border-radius-sm)',
+                    border: '1px solid var(--glass-border)'
                   }}>
                     {attachedFiles.map((file) => (
                       <div key={file.id} style={{
@@ -721,15 +724,16 @@ Retorne EXCLUSIVAMENTE um objeto JSON estrito com as seguintes chaves:
                         alignItems: 'center',
                         justifyContent: 'space-between',
                         padding: '0.45rem 0.75rem',
-                        borderRadius: '8px',
-                        backgroundColor: 'rgba(255, 255, 255, 0.04)',
+                        borderRadius: '4px',
+                        backgroundColor: 'var(--glass-highlight)',
+                        border: '1px solid var(--glass-border)',
                         fontSize: '0.8rem'
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', overflow: 'hidden' }}>
                           {file.type.startsWith('image/') ? (
                             <img src={file.dataUrl} alt={file.name} style={{ width: '28px', height: '28px', objectFit: 'cover', borderRadius: '4px' }} />
                           ) : (
-                            <File size={16} style={{ color: 'var(--accent-cyan)' }} />
+                            <File size={16} style={{ color: 'var(--text-secondary)' }} />
                           )}
                           <span style={{ color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '380px' }}>
                             {file.name}
@@ -875,15 +879,15 @@ Retorne EXCLUSIVAMENTE um objeto JSON estrito com as seguintes chaves:
             <div style={{
               marginTop: '1.25rem',
               padding: '1.5rem',
-              borderRadius: '12px',
-              backgroundColor: 'rgba(56, 189, 248, 0.08)',
-              border: '1px solid rgba(56, 189, 248, 0.3)',
+              borderRadius: 'var(--border-radius-sm)',
+              backgroundColor: 'var(--bg-tertiary)',
+              border: '1px solid var(--glass-border)',
               textAlign: 'center'
             }}>
-              <div style={{ display: 'inline-block', animation: 'spin 1.2s linear infinite', color: 'var(--accent-cyan)', marginBottom: '0.75rem' }}>
-                <RefreshCw size={28} />
+              <div style={{ display: 'inline-block', animation: 'spin 1.2s linear infinite', color: 'var(--text-primary)', marginBottom: '0.75rem' }}>
+                <RefreshCw size={26} />
               </div>
-              <h4 style={{ fontSize: '0.95rem', fontWeight: '700', color: '#ffffff', margin: 0 }}>
+              <h4 style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--text-primary)', margin: 0 }}>
                 {processingStep || 'Processando com Inteligência Artificial...'}
               </h4>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.35rem' }}>
@@ -897,14 +901,14 @@ Retorne EXCLUSIVAMENTE um objeto JSON estrito com as seguintes chaves:
             <div style={{
               marginTop: '1.25rem',
               padding: '1.25rem',
-              borderRadius: '16px',
-              backgroundColor: 'rgba(16, 185, 129, 0.06)',
-              border: '1px solid rgba(16, 185, 129, 0.4)'
+              borderRadius: 'var(--border-radius-sm)',
+              backgroundColor: 'var(--bg-tertiary)',
+              border: '1px solid var(--glass-border)'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', borderBottom: '1px solid rgba(16, 185, 129, 0.2)', paddingBottom: '0.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#34d399', fontWeight: '700', fontSize: '1rem' }}>
-                  <CheckCircle2 size={20} />
-                  <span>Dados Extraídos com Sucesso pela IA!</span>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-primary)', fontWeight: '600', fontSize: '0.95rem' }}>
+                  <CheckCircle2 size={18} style={{ color: 'var(--accent-success)' }} />
+                  <span>Dados Extraídos com Sucesso pela IA</span>
                 </div>
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                   {extractedPhotos.length} foto(s) identificada(s)
@@ -912,33 +916,33 @@ Retorne EXCLUSIVAMENTE um objeto JSON estrito com as seguintes chaves:
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.75rem', fontSize: '0.82rem' }}>
-                <div style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)', padding: '0.6rem 0.8rem', borderRadius: '8px' }}>
+                <div style={{ backgroundColor: 'var(--glass-highlight)', border: '1px solid var(--glass-border)', padding: '0.6rem 0.8rem', borderRadius: '4px' }}>
                   <span style={{ color: 'var(--text-tertiary)', display: 'block', fontSize: '0.7rem' }}>PROPRIETÁRIO:</span>
-                  <strong style={{ color: '#ffffff' }}>{extractedData.nomeProprietario || 'Não detectado'}</strong>
-                  <div style={{ color: 'var(--accent-cyan)', fontSize: '0.75rem', marginTop: '2px' }}>
+                  <strong style={{ color: 'var(--text-primary)' }}>{extractedData.nomeProprietario || 'Não detectado'}</strong>
+                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginTop: '2px' }}>
                     {extractedData.telefoneProprietario || 'Sem telefone'}
                   </div>
                 </div>
 
-                <div style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)', padding: '0.6rem 0.8rem', borderRadius: '8px' }}>
+                <div style={{ backgroundColor: 'var(--glass-highlight)', border: '1px solid var(--glass-border)', padding: '0.6rem 0.8rem', borderRadius: '4px' }}>
                   <span style={{ color: 'var(--text-tertiary)', display: 'block', fontSize: '0.7rem' }}>IMÓVEL & FINALIDADE:</span>
-                  <strong style={{ color: '#ffffff' }}>{extractedData.tipo || 'Casa'} ({extractedData.finalidade || 'Locação'})</strong>
+                  <strong style={{ color: 'var(--text-primary)' }}>{extractedData.tipo || 'Casa'} ({extractedData.finalidade || 'Locação'})</strong>
                   <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginTop: '2px' }}>
                     {extractedData.titulo || 'Título gerado'}
                   </div>
                 </div>
 
-                <div style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)', padding: '0.6rem 0.8rem', borderRadius: '8px' }}>
+                <div style={{ backgroundColor: 'var(--glass-highlight)', border: '1px solid var(--glass-border)', padding: '0.6rem 0.8rem', borderRadius: '4px' }}>
                   <span style={{ color: 'var(--text-tertiary)', display: 'block', fontSize: '0.7rem' }}>LOCALIZAÇÃO:</span>
-                  <strong style={{ color: '#ffffff' }}>{extractedData.bairro || 'Centro'}, {extractedData.cidade || 'Caratinga'}</strong>
+                  <strong style={{ color: 'var(--text-primary)' }}>{extractedData.bairro || 'Centro'}, {extractedData.cidade || 'Caratinga'}</strong>
                   <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginTop: '2px' }}>
                     {extractedData.endereco ? `${extractedData.endereco}${extractedData.numero ? ', ' + extractedData.numero : ''}` : 'Endereço a complementar'}
                   </div>
                 </div>
 
-                <div style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)', padding: '0.6rem 0.8rem', borderRadius: '8px' }}>
+                <div style={{ backgroundColor: 'var(--glass-highlight)', border: '1px solid var(--glass-border)', padding: '0.6rem 0.8rem', borderRadius: '4px' }}>
                   <span style={{ color: 'var(--text-tertiary)', display: 'block', fontSize: '0.7rem' }}>VALORES & CARACTERÍSTICAS:</span>
-                  <strong style={{ color: '#34d399' }}>{extractedData.valorImovel || 'Valor a definir'}</strong>
+                  <strong style={{ color: 'var(--text-primary)' }}>{extractedData.valorImovel || 'Valor a definir'}</strong>
                   <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginTop: '2px' }}>
                     {extractedData.quartos || '0'} Qts • {extractedData.banheiros || '0'} Banh • {extractedData.vagas || '0'} Vagas
                   </div>
@@ -950,7 +954,7 @@ Retorne EXCLUSIVAMENTE um objeto JSON estrito com as seguintes chaves:
                 <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
                   <span style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)' }}>Diferenciais:</span>
                   {extractedData.diferenciais.map(d => (
-                    <span key={d} style={{ fontSize: '0.7rem', padding: '1px 6px', borderRadius: '10px', background: 'rgba(56, 189, 248, 0.15)', color: 'var(--accent-cyan)', border: '1px solid rgba(56, 189, 248, 0.3)' }}>
+                    <span key={d} style={{ fontSize: '0.7rem', padding: '1px 6px', borderRadius: '4px', background: 'var(--glass-highlight)', color: 'var(--text-secondary)', border: '1px solid var(--glass-border)' }}>
                       ✓ {d}
                     </span>
                   ))}
@@ -965,7 +969,7 @@ Retorne EXCLUSIVAMENTE um objeto JSON estrito com as seguintes chaves:
                   </span>
                   <div style={{ display: 'flex', gap: '0.4rem', overflowX: 'auto', paddingBottom: '4px' }}>
                     {extractedPhotos.map((photo, i) => (
-                      <img key={i} src={photo} alt={`Foto ${i + 1}`} style={{ width: '48px', height: '48px', objectFit: 'cover', borderRadius: '6px', border: '1px solid var(--glass-border)' }} />
+                      <img key={i} src={photo} alt={`Foto ${i + 1}`} style={{ width: '48px', height: '48px', objectFit: 'cover', borderRadius: '4px', border: '1px solid var(--glass-border)' }} />
                     ))}
                   </div>
                 </div>
@@ -983,7 +987,7 @@ Retorne EXCLUSIVAMENTE um objeto JSON estrito com as seguintes chaves:
           justifyContent: 'space-between',
           flexWrap: 'wrap',
           gap: '1rem',
-          backgroundColor: 'rgba(0, 0, 0, 0.4)'
+          background: 'var(--glass-highlight)'
         }}>
           <button 
             type="button" 
@@ -1002,10 +1006,6 @@ Retorne EXCLUSIVAMENTE um objeto JSON estrito com as seguintes chaves:
                 disabled={isProcessing || (attachedFiles.length === 0 && !rawText.trim())}
                 className="btn btn-primary"
                 style={{
-                  background: 'linear-gradient(135deg, #0284c7 0%, #8b5cf6 100%)',
-                  border: 'none',
-                  boxShadow: '0 4px 15px rgba(139, 92, 246, 0.4)',
-                  fontWeight: '700',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '0.5rem',
@@ -1021,14 +1021,9 @@ Retorne EXCLUSIVAMENTE um objeto JSON estrito com as seguintes chaves:
                 onClick={handleApply}
                 className="btn btn-primary"
                 style={{
-                  background: '#10b981',
-                  border: 'none',
-                  boxShadow: '0 4px 15px rgba(16, 185, 129, 0.4)',
-                  fontWeight: '700',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.5rem',
-                  padding: '0.7rem 1.6rem'
+                  gap: '0.5rem'
                 }}
               >
                 <Check size={18} />
