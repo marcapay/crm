@@ -743,6 +743,119 @@ export const AppProvider = ({ children }) => {
     };
   }, []);
 
+  // Gestão de Ciclo de Vida: Contratos & Assinaturas e Vistorias
+  const [imoveisContratos, setImoveisContratos] = useState(() => {
+    const saved = localStorage.getItem('araujo_imoveis_contratos');
+    const parsed = safeJsonParse(saved, null);
+    if (parsed && Array.isArray(parsed) && parsed.length > 0) return parsed;
+    return [
+      {
+        id: 'cnt_loc_101',
+        numero: 'CTR-2026-041',
+        tipo: 'locacao',
+        imovelId: 'ficha_1',
+        imovelCodigo: 'AI-1001',
+        valor: 1400,
+        dataInicio: '2026-03-01',
+        dataVencimento: '2027-02-28',
+        status: 'aguardando_assinaturas',
+        responsavel: 'Marcelo (Administrador)',
+        signatarios: [
+          { id: 'sig_1', papel: 'Locador (Proprietário)', nome: 'Roberto Alves Fonseca', email: 'roberto.fonseca@email.com', telefone: '(33) 99811-2233', obrigatoria: true, status: 'Assinada', dataAssinatura: '2026-03-02T10:30:00Z', documentoNome: 'contrato_assinado_locador.pdf' },
+          { id: 'sig_2', papel: 'Locatário (Inquilino)', nome: 'Lucas Henrique Mendes', email: 'lucas.mendes@email.com', telefone: '(33) 98844-1234', obrigatoria: true, status: 'Aguardando assinatura', dataAssinatura: null },
+          { id: 'sig_3', papel: 'Imobiliária (Intermediadora)', nome: 'Araújo Imóveis Caratinga', email: 'contato@araujoimoveiscaratinga.com.br', telefone: '(33) 3321-0000', obrigatoria: true, status: 'Assinada', dataAssinatura: '2026-03-01T14:00:00Z' },
+          { id: 'sig_4', papel: 'Fiador Solidário', nome: 'Mariana Castro Ribeiro', email: 'mari.castro@gmail.com', telefone: '(33) 99123-5566', obrigatoria: false, status: 'Não se aplica' },
+          { id: 'sig_5', papel: 'Testemunha 1', nome: 'Testemunha Araújo', email: '', telefone: '', obrigatoria: false, status: 'Assinada', dataAssinatura: '2026-03-01T14:15:00Z' },
+          { id: 'sig_6', papel: 'Testemunha 2', nome: 'Testemunha do Inquilino', email: '', telefone: '', obrigatoria: false, status: 'Aguardando assinatura' }
+        ],
+        createdAt: '2026-03-01T09:00:00Z'
+      },
+      {
+        id: 'cnt_ven_102',
+        numero: 'CTR-2026-042',
+        tipo: 'venda',
+        imovelId: 'ficha_2',
+        imovelCodigo: 'AI-1002',
+        valor: 450000,
+        dataInicio: '2026-02-15',
+        dataVencimento: '2026-05-15',
+        status: 'aguardando_assinaturas',
+        responsavel: 'Marcelo (Administrador)',
+        signatarios: [
+          { id: 'sig_v1', papel: 'Vendedor (Proprietário)', nome: 'Geraldo Magela Pires', email: 'geraldo.magela@gmail.com', telefone: '(33) 98777-6655', obrigatoria: true, status: 'Assinada', dataAssinatura: '2026-02-16T11:00:00Z', documentoNome: 'escritura_promessa_venda.pdf' },
+          { id: 'sig_v2', papel: 'Comprador', nome: 'Eduardo Silveira Costa', email: 'edu.silveira@email.com', telefone: '(33) 99888-4422', obrigatoria: true, status: 'Aguardando assinatura' },
+          { id: 'sig_v3', papel: 'Cônjuge do Vendedor (Outorga)', nome: 'Helena Pires', email: '', telefone: '', obrigatoria: false, status: 'Assinada', dataAssinatura: '2026-02-16T11:20:00Z' },
+          { id: 'sig_v4', papel: 'Imobiliária Intermediadora', nome: 'Araújo Imóveis Caratinga', email: 'contato@araujoimoveiscaratinga.com.br', telefone: '(33) 3321-0000', obrigatoria: true, status: 'Assinada', dataAssinatura: '2026-02-15T16:00:00Z' },
+          { id: 'sig_v5', papel: 'Testemunhas Instrumentais', nome: 'Testemunhas Oficiais', email: '', telefone: '', obrigatoria: false, status: 'Aguardando assinatura' }
+        ],
+        createdAt: '2026-02-15T10:00:00Z'
+      }
+    ];
+  });
+  useEffect(() => { localStorage.setItem('araujo_imoveis_contratos', JSON.stringify(imoveisContratos)); }, [imoveisContratos]);
+
+  const [imoveisVistorias, setImoveisVistorias] = useState(() => {
+    const saved = localStorage.getItem('araujo_imoveis_vistorias');
+    const parsed = safeJsonParse(saved, null);
+    if (parsed && Array.isArray(parsed) && parsed.length > 0) return parsed;
+    return [
+      {
+        id: 'vist_101',
+        imovelId: 'ficha_1',
+        imovelCodigo: 'AI-1001',
+        tipo: 'entrada',
+        status: 'Aguardando assinatura da vistoria',
+        dataAgendada: '2026-03-02',
+        profissionalResponsavel: 'Perito Avaliador Carlos Araújo',
+        observacoes: 'Pintura nova em látex branco, piso porcelanato sem avarias, chaves testadas no portão e porta principal.',
+        laudoTexto: 'Imóvel residencial entregue em excelente estado de conservação. Registrados medidores de água (03842) e energia elétrica (10492). 14 tomadas testadas e operacionais.',
+        fotos: [
+          'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=500&auto=format&fit=crop',
+          'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=500&auto=format&fit=crop'
+        ],
+        createdAt: '2026-03-02T14:00:00Z'
+      },
+      {
+        id: 'vist_102',
+        imovelId: 'ficha_2',
+        imovelCodigo: 'AI-1002',
+        tipo: 'entrada',
+        status: 'Vistoria agendada',
+        dataAgendada: '2026-03-05',
+        profissionalResponsavel: 'Perito Técnico Araújo Imóveis',
+        observacoes: 'Agendada vistoria de avaliação técnica estrutural com o proprietário Sr. Geraldo Magela.',
+        laudoTexto: '',
+        fotos: [],
+        createdAt: '2026-03-01T11:00:00Z'
+      }
+    ];
+  });
+  useEffect(() => { localStorage.setItem('araujo_imoveis_vistorias', JSON.stringify(imoveisVistorias)); }, [imoveisVistorias]);
+
+  const saveImovelContrato = (contratoData) => {
+    setImoveisContratos(prev => {
+      const existingIdx = (prev || []).findIndex(c => c.id === contratoData.id);
+      if (existingIdx >= 0) {
+        const copy = [...prev];
+        copy[existingIdx] = { ...copy[existingIdx], ...contratoData, updatedAt: new Date().toISOString() };
+        return copy;
+      }
+      return [contratoData, ...(prev || [])];
+    });
+  };
+
+  const saveImovelVistoria = (vistoriaData) => {
+    setImoveisVistorias(prev => {
+      const existingIdx = (prev || []).findIndex(v => v.id === vistoriaData.id);
+      if (existingIdx >= 0) {
+        const copy = [...prev];
+        copy[existingIdx] = { ...copy[existingIdx], ...vistoriaData, updatedAt: new Date().toISOString() };
+        return copy;
+      }
+      return [vistoriaData, ...(prev || [])];
+    });
+  };
+
   // Auto-sync non-deleted users to cloud KV API for site authentication
   useEffect(() => {
     const syncUsersToCloud = async () => {
@@ -855,12 +968,43 @@ export const AppProvider = ({ children }) => {
       images = defaultPics;
     }
 
+    const statusCom = (ficha.statusComercial || ficha.status || 'Disponível').trim();
+    const finalidade = (ficha.finalidadeImovel || 'Para locação').trim();
+
+    // Regras Estritas de Divulgação no Site Oficial (Seção 10)
+    if (statusCom === 'Retirado da carteira' || statusCom === 'Temporariamente indisponível' || statusCom === 'Cancelado') {
+      return null;
+    }
+    if (statusCom === 'Alugado' && finalidade === 'Para locação') {
+      return null; // Imóvel alugado: retirado da oferta de locação
+    }
+    if (statusCom === 'Vendido' && finalidade === 'Para venda') {
+      return null; // Imóvel vendido: retirado da oferta de venda
+    }
+
+    let tx = 'alugar';
+    if (finalidade === 'Para venda') {
+      tx = 'comprar';
+    } else if (finalidade === 'Para venda e locação') {
+      if (statusCom === 'Alugado') {
+        tx = 'comprar'; // Se alugado, mantém apenas para venda
+      } else if (statusCom === 'Vendido') {
+        tx = 'alugar'; // Se vendido, mantém apenas para locação
+      } else {
+        tx = 'ambos';
+      }
+    } else if (ficha.finalidadeImovel?.toLowerCase().includes('comprar') || ficha.finalidadeImovel?.toLowerCase().includes('venda')) {
+      tx = 'comprar';
+    }
+
+    const siteStatus = statusCom === 'Reservado' ? 'Reservado' : 'Disponível';
+
     return {
       id,
       code: rawCode,
       title,
       type: tipo,
-      transaction: (ficha.finalidadeImovel || 'alugar').toLowerCase(),
+      transaction: tx,
       price,
       condoFee: Number(ficha.condominio || 0),
       iptu: Number(ficha.iptu || 0),
@@ -876,7 +1020,9 @@ export const AppProvider = ({ children }) => {
       features,
       images,
       featured: true, // Aparece em 'Imóveis em Destaque' no site
-      status: 'Disponível',
+      status: siteStatus,
+      statusComercial: statusCom,
+      finalidadeImovel: finalidade,
       fichaId: ficha.id,
       origemFicha: true,
       corretorResponsavel: ficha.corretorResponsavel || '',
@@ -5193,7 +5339,13 @@ ${fullSearchContext.substring(0, 4000)}
       deleteFichaVisita,
       convertFichaToProperty,
       demandasLocacao,
-      setDemandasLocacao
+      setDemandasLocacao,
+      imoveisContratos,
+      setImoveisContratos,
+      saveImovelContrato,
+      imoveisVistorias,
+      setImoveisVistorias,
+      saveImovelVistoria
     }}>
       {children}
     </AppContext.Provider>

@@ -110,6 +110,8 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
     tipoOutro: '',
     uso: 'Residencial',
     usoOutro: '',
+    finalidadeImovel: 'Para locação', // 'Para locação' | 'Para venda' | 'Para venda e locação'
+    statusComercial: 'Disponível para locação', // 9 classificações do ciclo de vida
     finalidade: 'Locação',
     finalidadeOutro: '',
     finalidadeSite: 'alugar',
@@ -564,10 +566,14 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
       id: `prop_${Date.now()}`,
       title: formData.titulo || `${formData.tipo} - ${cleanNeighborhood}`,
       code: cleanCode,
+      codigoImovel: cleanCode,
       address: cleanAddress,
       shortAddress: `${cleanNeighborhood}, ${cleanCity}`,
       photo: mainPhoto,
-      status: formData.status || 'Disponível',
+      status: formData.statusComercial || formData.status || 'Disponível',
+      statusComercial: formData.statusComercial || 'Disponível para locação',
+      finalidadeImovel: formData.finalidadeImovel || 'Para locação',
+      statusOperacional: 'Liberado para nova locação',
       ownerName: formData.nomeProprietario,
       ownerPhone: formData.telefoneProprietario,
       rentValue: priceNum,
@@ -582,9 +588,12 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
     const propPayload = {
       id: `imovel-${cleanCode.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
       code: cleanCode,
+      codigoImovel: cleanCode,
       title: formData.titulo || `${cleanType} no ${cleanNeighborhood} - ${cleanCity}`,
       type: cleanType,
       transaction: transaction,
+      finalidadeImovel: formData.finalidadeImovel || 'Para locação',
+      statusComercial: formData.statusComercial || 'Disponível para locação',
       price: priceNum,
       condoFee: condoNum,
       iptu: iptuNum,
@@ -966,57 +975,41 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
             </div>
 
             <div className="form-group">
-              <label className="form-label required">Finalidade:</label>
+              <label className="form-label required">Finalidade do Imóvel:</label>
               <select 
                 className="form-input" 
-                value={formData.finalidade} 
-                onChange={e => handleChange('finalidade', e.target.value)}
+                value={formData.finalidadeImovel || 'Para locação'} 
+                onChange={e => {
+                  handleChange('finalidadeImovel', e.target.value);
+                  handleChange('finalidade', e.target.value);
+                }}
               >
-                <option value="Locação">Locação</option>
-                <option value="Venda">Venda</option>
-                <option value="Venda e Locação">Venda e Locação</option>
-                <option value="Permuta">Permuta</option>
-                <option value="Outro">Outro</option>
+                <option value="Para locação">Para locação</option>
+                <option value="Para venda">Para venda</option>
+                <option value="Para venda e locação">Para venda e locação</option>
               </select>
-              {formData.finalidade === 'Outro' && (
-                <div style={{ marginTop: '0.5rem' }}>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    placeholder="Qual a finalidade? (Digite aqui)" 
-                    value={formData.finalidadeOutro || ''} 
-                    onChange={e => handleChange('finalidadeOutro', e.target.value)} 
-                    autoFocus
-                  />
-                </div>
-              )}
             </div>
 
             <div className="form-group">
-              <label className="form-label">Status:</label>
+              <label className="form-label required">Status Comercial:</label>
               <select 
                 className="form-input" 
-                value={formData.status} 
-                onChange={e => handleChange('status', e.target.value)}
+                value={formData.statusComercial || 'Disponível para locação'} 
+                onChange={e => {
+                  handleChange('statusComercial', e.target.value);
+                  handleChange('status', e.target.value);
+                }}
               >
-                <option value="Disponível">Disponível</option>
-                <option value="Em Negociação">Em Negociação</option>
-                <option value="Vendido/Alugado">Vendido/Alugado</option>
-                <option value="Pausado">Pausado</option>
-                <option value="Outro">Outro</option>
+                <option value="Disponível para locação">🟢 Disponível para locação</option>
+                <option value="Disponível para venda">🟢 Disponível para venda</option>
+                <option value="Disponível para venda e locação">🟢 Disponível para venda e locação</option>
+                <option value="Reservado">🟡 Reservado</option>
+                <option value="Em negociação">🔵 Em negociação</option>
+                <option value="Alugado">🟣 Alugado</option>
+                <option value="Vendido">🟣 Vendido</option>
+                <option value="Temporariamente indisponível">⚪ Temporariamente indisponível</option>
+                <option value="Retirado da carteira">🔴 Retirado da carteira</option>
               </select>
-              {formData.status === 'Outro' && (
-                <div style={{ marginTop: '0.5rem' }}>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    placeholder="Qual o status? (Digite aqui)" 
-                    value={formData.statusOutro || ''} 
-                    onChange={e => handleChange('statusOutro', e.target.value)} 
-                    autoFocus
-                  />
-                </div>
-              )}
             </div>
 
             <div className="form-group">

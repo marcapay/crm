@@ -1,7 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import FichaPrintTemplate from './FichaPrintTemplate';
 import FormCadastroImovel from './FormCadastroImovel';
+import ModalCicloVidaImovel from './ModalCicloVidaImovel';
+import PipelineKanban from './PipelineKanban';
+import GestaoVistorias from './GestaoVistorias';
+import ControleAssinaturas from './ControleAssinaturas';
+import CentralPendenciasIA from './CentralPendenciasIA';
+import { 
+  FINALIDADE_IMOVEL, 
+  STATUS_COMERCIAL, 
+  STATUS_OPERACIONAL_POS_LOCACAO, 
+  getStatusComercialInfo,
+  detectPendencias 
+} from '../utils/propertyLifecycle';
 import { 
   ClipboardList, 
   Plus, 
@@ -34,7 +46,16 @@ import {
   ExternalLink,
   MessageSquare,
   RefreshCw,
-  Eye
+  Eye,
+  Building2,
+  Layers,
+  Tag,
+  FileCheck,
+  ClipboardCheck,
+  DollarSign,
+  TrendingUp,
+  ShieldCheck,
+  Filter
 } from 'lucide-react';
 
 const formatLocationUrl = (urlOrCoords) => {
@@ -57,11 +78,20 @@ export default function FichaVisitaTecnica() {
     deleteFichaVisita, 
     convertFichaToProperty,
     profile,
-    portalUsers = []
+    portalUsers = [],
+    imoveisContratos = [],
+    saveImovelContrato,
+    imoveisVistorias = [],
+    saveImovelVistoria
   } = useApp();
 
-  // View modes: 'list' | 'form' | 'print' | 'site_fichas'
+  // View modes: 'list' | 'form' | 'print' | 'site_fichas' | 'cadastro_imovel'
   const [viewMode, setViewMode] = useState('list');
+  // Sub-tabs de Ciclo de Vida: 'carteira' | 'pipeline_locacao' | 'pipeline_venda' | 'contratos' | 'vistorias' | 'pendencias' | 'fichas'
+  const [imoveisSubTab, setImoveisSubTab] = useState('carteira');
+  const [selectedLifecycleImovel, setSelectedLifecycleImovel] = useState(null);
+  const [finalidadeFilter, setFinalidadeFilter] = useState('Todas');
+  const [statusComercialFilter, setStatusComercialFilter] = useState('Todos');
   const [editingId, setEditingId] = useState(null);
   const [selectedPreviewImg, setSelectedPreviewImg] = useState(null);
 
@@ -526,7 +556,49 @@ export default function FichaVisitaTecnica() {
     }
   };
 
-  // List filtering (apenas fichas internas do CRM aparecem na lista padrão; fichas do site aparecem exclusivamente em 'Imóveis site')
+  // Pipeline Movement Handler (Seções 4 & 5)
+  const handleMovePipelineStage = (imovelId, newStageId, newStageLabel, pipelineTipo) => {
+    const imovel = internalFichas.find(f => f.id === imovelId) || { id: imovelId };
+    const now = new Date().toISOString();
+    const historicoMovimentacoes = Array.isArray(imovel.historicoMovimentacoes) ? [...imovel.historicoMovimentacoes] : [];
+    historicoMovimentacoes.push({
+      data: now,
+      tipo: pipelineTipo,
+      etapaId: newStageId,
+      etapa: newStageLabel,
+      usuario: profile?.name || 'Corretor Araújo Imóveis',
+      observacao: `Avançou para ${newStageLabel}`
+    });
+
+    const field = pipelineTipo === 'venda' ? 'etapaPipelineVenda' : 'etapaPipelineLocacao';
+    updateFichaVisita(imovelId, {
+      [field]: newStageId,
+      etapaPipeline: newStageId,
+      historicoMovimentacoes,
+      updatedAt: now
+    });
+    setSuccessMsg(`Imóvel movimentado para "${newStageLabel}" com registro de data/hora e corretor!`);
+    setTimeout(() => setSuccessMsg(''), 4000);
+  };
+
+  // Filtragem da Carteira de Imóveis (Seções 2 & 3)
+  const filteredCarteira = internalFichas.filter(f => {
+    const q = searchQuery.toLowerCase();
+    const matchesSearch = 
+      (f.nomeProprietario || '').toLowerCase().includes(q) ||
+      (f.codigoImovel || '').toLowerCase().includes(q) ||
+      (f.bairroImovel || '').toLowerCase().includes(q) ||
+      (f.enderecoImovel || '').toLowerCase().includes(q) ||
+      (f.tituloImovel || '').toLowerCase().includes(q) ||
+      (f.corretorResponsavel || '').toLowerCase().includes(q);
+
+    const matchesFinalidade = finalidadeFilter === 'Todas' || (f.finalidadeImovel || 'Para locação') === finalidadeFilter;
+    const matchesStatusComercial = statusComercialFilter === 'Todos' || (f.statusComercial || 'Disponível para locação') === statusComercialFilter;
+
+    return matchesSearch && matchesFinalidade && matchesStatusComercial;
+  });
+
+  // List filtering para a Ficha 01 de Visita Técnica
   const filteredFichas = internalFichas.filter(f => {
     const matchesSearch = 
       (f.nomeProprietario || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -574,11 +646,11 @@ export default function FichaVisitaTecnica() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h1 style={{ fontSize: '1.5rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <ClipboardList style={{ color: 'var(--accent-cyan)' }} size={24} />
-            Agendamento de Visita Técnica
+            <Building2 style={{ color: 'var(--accent-cyan)' }} size={24} />
+            Gestão de Imóveis & Ciclo de Vida
           </h1>
           <p style={{ fontSize: '0.875rem', color: 'var(--text-tertiary)', marginTop: '0.25rem' }}>
-            Cadastro, agendamento de avaliação técnica e emissão de fichas em A4 / PDF.
+            Classificação comercial, pipelines de venda e locação, vistorias técnicas, contratos, assinaturas e pendências.
           </p>
         </div>
 
@@ -747,231 +819,688 @@ export default function FichaVisitaTecnica() {
       )}
 
       {/* ====================================
-          VIEW MODE 1: LISTAGE E CARDS
+          VIEW MODE 1: GESTÃO COMPLETA DE CICLO DE VIDA DOS IMÓVEIS
          ==================================== */}
       {viewMode === 'list' && (
         <>
-          {/* Quick Metrics Bar */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-            <div className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-cyan)' }}>
-                <ClipboardList size={22} />
-              </div>
-              <div>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', display: 'block' }}>Total de Fichas</span>
-                <strong style={{ fontSize: '1.25rem', color: 'var(--text-primary)' }}>{internalFichas.length}</strong>
-              </div>
-            </div>
-
-            <div className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'rgba(245, 158, 11, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f59e0b' }}>
-                <Clock size={22} />
-              </div>
-              <div>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', display: 'block' }}>Aguardando / Agendadas</span>
-                <strong style={{ fontSize: '1.25rem', color: 'var(--text-primary)' }}>
-                  {internalFichas.filter(f => f.status === 'Aguardando agendamento' || f.status === 'Agendado').length}
-                </strong>
-              </div>
-            </div>
-
-            <div className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981' }}>
-                <CheckCircle2 size={22} />
-              </div>
-              <div>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', display: 'block' }}>Confirmadas / Realizadas</span>
-                <strong style={{ fontSize: '1.25rem', color: 'var(--text-primary)' }}>
-                  {internalFichas.filter(f => f.status === 'Confirmado' || f.status === 'Realizado').length}
-                </strong>
-              </div>
-            </div>
-          </div>
-
-          {/* Search & Filter Toolbar */}
-          <div className="glass-panel" style={{ padding: '1rem', marginBottom: '1.5rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', gap: '0.75rem', flex: 1, minWidth: '280px' }}>
-              <div style={{ position: 'relative', flex: 1 }}>
-                <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }} />
-                <input 
-                  type="text"
-                  placeholder="Buscar por proprietário, código (ex: AI-0001), bairro, endereço..."
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
+          {/* Sub-Tabs Navigation */}
+          <div style={{
+            display: 'flex',
+            gap: '0.5rem',
+            borderBottom: '1px solid var(--glass-border)',
+            paddingBottom: '0.75rem',
+            marginBottom: '1.5rem',
+            overflowX: 'auto',
+            alignItems: 'center'
+          }}>
+            {[
+              { id: 'carteira', label: 'Carteira de Imóveis', icon: Building2 },
+              { id: 'pipeline_locacao', label: 'Pipeline Locação (14 Etapas)', icon: Layers },
+              { id: 'pipeline_venda', label: 'Pipeline Venda (14 Etapas)', icon: Tag },
+              { id: 'contratos', label: `Contratos & Assinaturas (${imoveisContratos.length})`, icon: FileCheck },
+              { id: 'vistorias', label: `Gestão de Vistorias (${imoveisVistorias.length})`, icon: ClipboardCheck },
+              { id: 'pendencias', label: `Central de Pendências (IA)`, icon: AlertTriangle },
+              { id: 'fichas', label: `Fichas Visita Técnica (Ficha 01)`, icon: ClipboardList }
+            ].map(tab => {
+              const Icon = tab.icon;
+              const isActive = imoveisSubTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setImoveisSubTab(tab.id)}
                   style={{
-                    width: '100%',
-                    padding: '0.625rem 1rem 0.625rem 2.5rem',
-                    backgroundColor: 'var(--bg-secondary)',
-                    border: '1px solid var(--glass-border)',
-                    borderRadius: 'var(--border-radius-sm)',
-                    color: 'var(--text-primary)',
-                    fontSize: '0.875rem'
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.6rem 1rem',
+                    borderRadius: '8px',
+                    fontSize: '0.85rem',
+                    fontWeight: isActive ? '700' : '500',
+                    backgroundColor: isActive ? 'rgba(56, 189, 248, 0.15)' : 'rgba(255, 255, 255, 0.04)',
+                    color: isActive ? 'var(--accent-cyan)' : 'var(--text-secondary)',
+                    border: `1px solid ${isActive ? 'rgba(56, 189, 248, 0.4)' : 'var(--glass-border)'}`,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    transition: 'all 0.2s ease'
                   }}
-                />
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.875rem', color: 'var(--text-tertiary)' }}>Status:</span>
-              <select
-                value={statusFilter}
-                onChange={e => setStatusFilter(e.target.value)}
-                style={{
-                  padding: '0.625rem 1rem',
-                  backgroundColor: 'var(--bg-secondary)',
-                  border: '1px solid var(--glass-border)',
-                  borderRadius: 'var(--border-radius-sm)',
-                  color: 'var(--text-primary)',
-                  fontSize: '0.875rem'
-                }}
-              >
-                <option value="Todos">Todos os Status</option>
-                <option value="Aguardando agendamento">Aguardando agendamento</option>
-                <option value="Agendado">Agendado</option>
-                <option value="Confirmado">Confirmado</option>
-                <option value="Realizado">Realizado</option>
-                <option value="Reagendar">Reagendar</option>
-              </select>
-            </div>
+                >
+                  <Icon size={16} />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
           </div>
 
-          {/* Fichas Data Table */}
-          <div className="glass-panel" style={{ overflow: 'hidden' }}>
-            {filteredFichas.length === 0 ? (
-              <div style={{ padding: '3rem 1.5rem', textAlign: 'center', color: 'var(--text-tertiary)' }}>
-                <FileSpreadsheet size={48} style={{ opacity: 0.3, marginBottom: '1rem' }} />
-                <p style={{ fontSize: '1rem', fontWeight: '500' }}>Nenhuma ficha de visita técnica encontrada.</p>
-                <p style={{ fontSize: '0.875rem', marginTop: '0.25rem' }}>Clique em <strong>Nova Ficha</strong> para cadastrar um agendamento ou altere os filtros.</p>
+          {/* SUB-ABA 1: CARTEIRA DE IMÓVEIS */}
+          {imoveisSubTab === 'carteira' && (
+            <>
+              {/* Quick Metrics Bar com Status Comercial Colorido */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+                <div className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-cyan)' }}>
+                    <Building2 size={20} />
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', display: 'block' }}>Total de Imóveis</span>
+                    <strong style={{ fontSize: '1.25rem', color: 'var(--text-primary)' }}>{internalFichas.length}</strong>
+                  </div>
+                </div>
+
+                <div className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', borderLeft: '4px solid #10b981' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(16, 185, 129, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981' }}>
+                    <Home size={20} />
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.75rem', color: '#10b981', display: 'block', fontWeight: '600' }}>Disp. Locação</span>
+                    <strong style={{ fontSize: '1.25rem', color: '#10b981' }}>
+                      {internalFichas.filter(f => (f.statusComercial || 'Disponível para locação') === 'Disponível para locação').length}
+                    </strong>
+                  </div>
+                </div>
+
+                <div className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', borderLeft: '4px solid #10b981' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(16, 185, 129, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981' }}>
+                    <Tag size={20} />
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.75rem', color: '#10b981', display: 'block', fontWeight: '600' }}>Disp. Venda</span>
+                    <strong style={{ fontSize: '1.25rem', color: '#10b981' }}>
+                      {internalFichas.filter(f => (f.statusComercial || '') === 'Disponível para venda' || (f.statusComercial || '') === 'Disponível para venda e locação').length}
+                    </strong>
+                  </div>
+                </div>
+
+                <div className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', borderLeft: '4px solid #f59e0b' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(245, 158, 11, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f59e0b' }}>
+                    <Clock size={20} />
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.75rem', color: '#f59e0b', display: 'block', fontWeight: '600' }}>Reservados</span>
+                    <strong style={{ fontSize: '1.25rem', color: '#f59e0b' }}>
+                      {internalFichas.filter(f => (f.statusComercial || '') === 'Reservado').length}
+                    </strong>
+                  </div>
+                </div>
+
+                <div className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', borderLeft: '4px solid #3b82f6' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(59, 130, 246, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6' }}>
+                    <TrendingUp size={20} />
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.75rem', color: '#3b82f6', display: 'block', fontWeight: '600' }}>Em Negociação</span>
+                    <strong style={{ fontSize: '1.25rem', color: '#3b82f6' }}>
+                      {internalFichas.filter(f => (f.statusComercial || '') === 'Em negociação').length}
+                    </strong>
+                  </div>
+                </div>
+
+                <div className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', borderLeft: '4px solid #8b5cf6' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(139, 92, 246, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8b5cf6' }}>
+                    <CheckCircle2 size={20} />
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.75rem', color: '#8b5cf6', display: 'block', fontWeight: '600' }}>Alugados / Vendidos</span>
+                    <strong style={{ fontSize: '1.25rem', color: '#8b5cf6' }}>
+                      {internalFichas.filter(f => (f.statusComercial || '') === 'Alugado' || (f.statusComercial || '') === 'Vendido').length}
+                    </strong>
+                  </div>
+                </div>
               </div>
-            ) : (
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid var(--glass-border)', background: 'var(--glass-highlight)' }}>
-                      <th style={{ padding: '1rem', color: 'var(--text-secondary)' }}>Código / Data Visita</th>
-                      <th style={{ padding: '1rem', color: 'var(--text-secondary)' }}>Proprietário / Telefone</th>
-                      <th style={{ padding: '1rem', color: 'var(--text-secondary)' }}>Imóvel / Bairro</th>
-                      <th style={{ padding: '1rem', color: 'var(--text-secondary)' }}>Responsável</th>
-                      <th style={{ padding: '1rem', color: 'var(--text-secondary)' }}>Status</th>
-                      <th style={{ padding: '1rem', color: 'var(--text-secondary)', textAlign: 'right' }}>Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredFichas.map(f => (
-                      <tr key={f.id} style={{ borderBottom: '1px solid var(--glass-border)' }} className="table-row-hover">
-                        <td style={{ padding: '1rem' }}>
-                          <span style={{ fontWeight: '700', color: 'var(--accent-cyan)', display: 'block' }}>
-                            {f.nomeFicha || f.codigoImovel}
-                          </span>
-                          {(f.provisoria || (f.origemCaptacao || '').includes('Site')) && (
-                            <span style={{ display: 'inline-block', marginTop: '3px', marginBottom: '2px', fontSize: '0.68rem', fontWeight: '700', color: '#fbbf24', backgroundColor: 'rgba(245, 158, 11, 0.16)', border: '1px solid rgba(245, 158, 11, 0.35)', padding: '1px 6px', borderRadius: '4px' }}>
-                              Provisória • Análise Site
+
+              {/* Toolbar de Filtros Inteligentes */}
+              <div className="glass-panel" style={{ padding: '1rem', marginBottom: '1.5rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', gap: '0.75rem', flex: 1, minWidth: '280px' }}>
+                  <div style={{ position: 'relative', flex: 1 }}>
+                    <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }} />
+                    <input 
+                      type="text"
+                      placeholder="Buscar por código (ex: AI-1001), proprietário, bairro, título..."
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.625rem 1rem 0.625rem 2.5rem',
+                        backgroundColor: 'var(--bg-secondary)',
+                        border: '1px solid var(--glass-border)',
+                        borderRadius: 'var(--border-radius-sm)',
+                        color: 'var(--text-primary)',
+                        fontSize: '0.875rem'
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>Finalidade:</span>
+                    <select
+                      value={finalidadeFilter}
+                      onChange={e => setFinalidadeFilter(e.target.value)}
+                      style={{
+                        padding: '0.5rem 0.85rem',
+                        backgroundColor: 'var(--bg-secondary)',
+                        border: '1px solid var(--glass-border)',
+                        borderRadius: 'var(--border-radius-sm)',
+                        color: 'var(--text-primary)',
+                        fontSize: '0.825rem'
+                      }}
+                    >
+                      <option value="Todas">Todas as Finalidades</option>
+                      {FINALIDADE_IMOVEL.map(fin => (
+                        <option key={fin} value={fin}>{fin}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>Status Comercial:</span>
+                    <select
+                      value={statusComercialFilter}
+                      onChange={e => setStatusComercialFilter(e.target.value)}
+                      style={{
+                        padding: '0.5rem 0.85rem',
+                        backgroundColor: 'var(--bg-secondary)',
+                        border: '1px solid var(--glass-border)',
+                        borderRadius: 'var(--border-radius-sm)',
+                        color: 'var(--text-primary)',
+                        fontSize: '0.825rem'
+                      }}
+                    >
+                      <option value="Todos">Todos os Status</option>
+                      {STATUS_COMERCIAL.map(st => (
+                        <option key={st.id} value={st.label}>
+                          {st.label} ({st.cor})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Grid de Imóveis da Carteira */}
+              {filteredCarteira.length === 0 ? (
+                <div className="glass-panel" style={{ padding: '3.5rem 1.5rem', textAlign: 'center', color: 'var(--text-tertiary)' }}>
+                  <Building2 size={48} style={{ opacity: 0.3, marginBottom: '1rem' }} />
+                  <p style={{ fontSize: '1rem', fontWeight: '500' }}>Nenhum imóvel encontrado com os filtros selecionados.</p>
+                  <p style={{ fontSize: '0.85rem', marginTop: '0.25rem' }}>
+                    Altere os filtros acima ou cadastre um novo imóvel completo.
+                  </p>
+                </div>
+              ) : (
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                  gap: '1.25rem'
+                }}>
+                  {filteredCarteira.map(imovel => {
+                    const statusCom = getStatusComercialInfo(imovel.statusComercial || 'Disponível para locação');
+                    const preco = Number(imovel.valorImovel || imovel.price || imovel.valorPretendidoAluguel || 0);
+                    const photo = Array.isArray(imovel.imagensImovel) && imovel.imagensImovel.length > 0 
+                      ? imovel.imagensImovel[0] 
+                      : (imovel.photo || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=600&auto=format&fit=crop');
+
+                    return (
+                      <div 
+                        key={imovel.id}
+                        className="glass-card glass-panel-hover"
+                        style={{
+                          borderRadius: '12px',
+                          overflow: 'hidden',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          backgroundColor: 'var(--bg-secondary)',
+                          border: '1px solid var(--glass-border)'
+                        }}
+                      >
+                        {/* Imagem do Imóvel com Badges */}
+                        <div style={{ position: 'relative', height: '180px', width: '100%', backgroundColor: '#000' }}>
+                          <img 
+                            src={photo} 
+                            alt={imovel.tituloImovel || 'Imóvel'} 
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                          
+                          {/* Marca d'água Araújo Imóveis */}
+                          <div style={{
+                            position: 'absolute',
+                            bottom: '8px',
+                            right: '8px',
+                            backgroundColor: 'rgba(0, 0, 0, 0.65)',
+                            padding: '3px 8px',
+                            borderRadius: '4px',
+                            fontSize: '0.65rem',
+                            fontWeight: '700',
+                            color: '#ffffff',
+                            letterSpacing: '0.5px'
+                          }}>
+                            ARAÚJO IMÓVEIS
+                          </div>
+
+                          {/* Badge de Status Comercial com cor da especificação */}
+                          <div style={{
+                            position: 'absolute',
+                            top: '8px',
+                            left: '8px',
+                            backgroundColor: statusCom.bg,
+                            border: `1px solid ${statusCom.border}`,
+                            color: statusCom.hex,
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                            fontSize: '0.75rem',
+                            fontWeight: '700',
+                            backdropFilter: 'blur(4px)'
+                          }}>
+                            {statusCom.label}
+                          </div>
+
+                          {/* Badge de Finalidade */}
+                          <div style={{
+                            position: 'absolute',
+                            top: '8px',
+                            right: '8px',
+                            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                            color: 'var(--accent-cyan)',
+                            border: '1px solid rgba(56, 189, 248, 0.35)',
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                            fontSize: '0.72rem',
+                            fontWeight: '600'
+                          }}>
+                            {imovel.finalidadeImovel || 'Para locação'}
+                          </div>
+                        </div>
+
+                        {/* Corpo do Card */}
+                        <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.6rem', flex: 1 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '0.8rem', fontWeight: '800', color: 'var(--accent-cyan)' }}>
+                              {imovel.codigoImovel || imovel.code || `IM-${imovel.id}`}
                             </span>
-                          )}
-                          {f.nomeFicha && f.nomeFicha !== f.codigoImovel && (
-                            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block' }}>
-                              Código: {f.codigoImovel}
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
+                              {imovel.tipoImovel || imovel.type || 'Casa'}
                             </span>
-                          )}
-                          <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
-                            {f.dataVisita ? new Date(f.dataVisita + 'T00:00:00').toLocaleDateString('pt-BR') : '-'} às {f.horarioVisita}
-                          </span>
-                        </td>
-                        <td style={{ padding: '1rem' }}>
-                          <strong style={{ display: 'block', color: 'var(--text-primary)' }}>{f.nomeProprietario}</strong>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{f.telefoneProprietario}</span>
-                        </td>
-                        <td style={{ padding: '1rem' }}>
-                          <span style={{ fontWeight: '500', color: 'var(--text-primary)', display: 'block' }}>
-                            {f.tipoImovel} - {f.bairroImovel}
-                            {(f.precoPretendido || f.valorImovel) ? ` • ${f.precoPretendido || `R$ ${Number(f.valorImovel).toLocaleString('pt-BR')}`}` : ''}
-                          </span>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', display: 'block' }}>{f.enderecoImovel}</span>
-                          {f.linkLocalizacaoImovel && (
-                            <a
-                              href={f.linkLocalizacaoImovel}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '0.72rem', color: '#38bdf8', textDecoration: 'none', fontWeight: '600', marginTop: '2px' }}
-                            >
-                              <MapPin size={11} /> Ver localização no mapa ↗
-                            </a>
-                          )}
-                          {f.observacoesImovel && (
-                            <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', display: 'block', marginTop: '2px', maxWidth: '280px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={f.observacoesImovel}>
-                              {f.observacoesImovel}
+                          </div>
+
+                          <h3 style={{ fontSize: '1rem', color: 'var(--text-primary)', margin: 0, fontWeight: '700', lineHeight: '1.3' }}>
+                            {imovel.tituloImovel || imovel.title || `${imovel.tipoImovel} no ${imovel.bairroImovel}`}
+                          </h3>
+
+                          <div style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                              <MapPin size={13} style={{ flexShrink: 0 }} />
+                              {imovel.bairroImovel || imovel.neighborhood || 'Centro'}, Caratinga
                             </span>
-                          )}
-                          {f.imagensImovel && f.imagensImovel.length > 0 && (
-                            <div style={{ marginTop: '3px' }}>
-                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '0.7rem', color: 'var(--accent-cyan)', backgroundColor: 'rgba(56, 189, 248, 0.12)', padding: '1px 6px', borderRadius: '4px' }}>
-                                <Camera size={11} /> {f.imagensImovel.length} foto(s)
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                              <User size={13} style={{ flexShrink: 0 }} />
+                              Proprietário: <strong style={{ color: 'var(--text-secondary)' }}>{imovel.nomeProprietario || 'Não informado'}</strong>
+                            </span>
+                          </div>
+
+                          {preco > 0 && (
+                            <div style={{ marginTop: '0.25rem', fontSize: '1.1rem', fontWeight: '800', color: '#10b981' }}>
+                              R$ {preco.toLocaleString('pt-BR')}
+                              <span style={{ fontSize: '0.75rem', fontWeight: '400', color: 'var(--text-tertiary)' }}>
+                                {(imovel.finalidadeImovel || '').toLowerCase().includes('loca') ? ' /mês' : ''}
                               </span>
                             </div>
                           )}
-                          {f.publicarNoSite === true && f.status !== 'Cancelado' && (
-                            <div style={{ marginTop: '5px' }}>
-                              <a 
-                                href={`https://www.araujoimoveiscaratinga.com.br/imoveis/${(f.codigoImovel || f.id || '').toLowerCase().replace(/^#+/, '')}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style={{ 
-                                  display: 'inline-flex', 
-                                  alignItems: 'center', 
-                                  gap: '4px', 
-                                  fontSize: '0.75rem', 
-                                  color: 'var(--accent-cyan)', 
-                                  textDecoration: 'none',
-                                  fontWeight: '600'
-                                }}
-                                title="Ver anúncio publicado no Site Oficial"
-                              >
-                                <Globe size={12} /> Ver no site oficial ↗
-                              </a>
-                            </div>
-                          )}
-                        </td>
-                        <td style={{ padding: '1rem' }}>
-                          <span style={{ color: 'var(--text-primary)' }}>{f.corretorResponsavel || f.profissionalResponsavel}</span>
-                        </td>
-                        <td style={{ padding: '1rem' }}>
-                          <span className={`status-badge status-${(f.status || 'aguardando').toLowerCase().replace(/\s+/g, '-')}`}>
-                            {f.status}
-                          </span>
-                        </td>
-                        <td style={{ padding: '1rem', textAlign: 'right' }}>
-                          <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
-                            <button 
-                              onClick={() => handlePrintFilled(f)}
-                              title="Imprimir Ficha Preenchida"
-                              className="btn-icon-glass"
+
+                          {/* Site Status */}
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', display: 'flex', alignItems: 'center', gap: '0.35rem', marginTop: 'auto' }}>
+                            <Globe size={13} style={{ color: imovel.publicarNoSite !== false ? '#10b981' : '#94a3b8' }} />
+                            <span>
+                              {imovel.publicarNoSite !== false 
+                                ? (statusCom.label === 'Reservado' ? 'Publicado no site (Selo Reservado)' : 'Ativo e publicado no site')
+                                : 'Não publicado no site'}
+                            </span>
+                          </div>
+
+                          {/* Card Actions */}
+                          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--glass-border)' }}>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedLifecycleImovel(imovel)}
+                              className="btn btn-primary"
+                              style={{ flex: 1, fontSize: '0.8rem', padding: '0.45rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}
                             >
-                              <Printer size={16} />
+                              <Layers size={14} />
+                              <span>Ciclo de Vida</span>
                             </button>
-                            <button 
-                              onClick={() => handleOpenEditForm(f)}
-                              title="Editar Ficha"
-                              className="btn-icon-glass"
+
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditForm(imovel)}
+                              className="btn btn-secondary"
+                              style={{ padding: '0.45rem 0.75rem', fontSize: '0.8rem' }}
+                              title="Editar Ficha e Cadastro"
                             >
-                              <Edit3 size={16} />
-                            </button>
-                            <button 
-                              onClick={() => handleDelete(f.id)}
-                              title="Excluir Ficha"
-                              className="btn-icon-glass text-danger"
-                            >
-                              <Trash2 size={16} />
+                              <Edit3 size={14} />
                             </button>
                           </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* SUB-ABA 2: PIPELINE DE LOCAÇÃO (14 ETAPAS) */}
+          {imoveisSubTab === 'pipeline_locacao' && (
+            <PipelineKanban 
+              tipo="locacao"
+              imoveis={internalFichas}
+              onMoveStage={handleMovePipelineStage}
+              onSelectImovel={setSelectedLifecycleImovel}
+              currentUser={profile?.name || 'Administrador'}
+            />
+          )}
+
+          {/* SUB-ABA 3: PIPELINE DE VENDA (14 ETAPAS) */}
+          {imoveisSubTab === 'pipeline_venda' && (
+            <PipelineKanban 
+              tipo="venda"
+              imoveis={internalFichas}
+              onMoveStage={handleMovePipelineStage}
+              onSelectImovel={setSelectedLifecycleImovel}
+              currentUser={profile?.name || 'Administrador'}
+            />
+          )}
+
+          {/* SUB-ABA 4: CONTRATOS & ASSINATURAS */}
+          {imoveisSubTab === 'contratos' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <div className="glass-panel" style={{ padding: '1.25rem' }}>
+                <h3 style={{ fontSize: '1.15rem', color: 'var(--text-primary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <FileCheck size={20} style={{ color: 'var(--accent-cyan)' }} />
+                  Central de Contratos e Controle de Assinaturas
+                </h3>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-tertiary)', margin: 0 }}>
+                  Acompanhamento de contratos de locação e venda, controle de cada signatário e validação de assinaturas obrigatórias.
+                </p>
               </div>
-            )}
-          </div>
+
+              {imoveisContratos.map(contrato => (
+                <div key={contrato.id} className="glass-panel" style={{ padding: '1.25rem' }}>
+                  <ControleAssinaturas 
+                    contrato={contrato}
+                    onUpdateContrato={saveImovelContrato}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* SUB-ABA 5: GESTÃO DE VISTORIAS */}
+          {imoveisSubTab === 'vistorias' && (
+            <GestaoVistorias 
+              vistorias={imoveisVistorias}
+              onSaveVistoria={saveImovelVistoria}
+            />
+          )}
+
+          {/* SUB-ABA 6: CENTRAL DE PENDÊNCIAS (IA) */}
+          {imoveisSubTab === 'pendencias' && (
+            <CentralPendenciasIA 
+              imoveis={internalFichas}
+              contratos={imoveisContratos}
+              vistorias={imoveisVistorias}
+              onResolvePendencia={(p) => {
+                if (p.imovelId) {
+                  const target = internalFichas.find(f => f.id === p.imovelId || f.codigoImovel === p.imovelCodigo);
+                  if (target) setSelectedLifecycleImovel(target);
+                }
+              }}
+            />
+          )}
+
+          {/* SUB-ABA 7: FICHAS DE VISITA TÉCNICA (ORIGINAL A4 / PDF) */}
+          {imoveisSubTab === 'fichas' && (
+            <>
+              {/* Quick Metrics Bar Original */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+                <div className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-cyan)' }}>
+                    <ClipboardList size={22} />
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', display: 'block' }}>Total de Fichas</span>
+                    <strong style={{ fontSize: '1.25rem', color: 'var(--text-primary)' }}>{internalFichas.length}</strong>
+                  </div>
+                </div>
+
+                <div className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'rgba(245, 158, 11, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f59e0b' }}>
+                    <Clock size={22} />
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', display: 'block' }}>Aguardando / Agendadas</span>
+                    <strong style={{ fontSize: '1.25rem', color: 'var(--text-primary)' }}>
+                      {internalFichas.filter(f => f.status === 'Aguardando agendamento' || f.status === 'Agendado').length}
+                    </strong>
+                  </div>
+                </div>
+
+                <div className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981' }}>
+                    <CheckCircle2 size={22} />
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', display: 'block' }}>Confirmadas / Realizadas</span>
+                    <strong style={{ fontSize: '1.25rem', color: 'var(--text-primary)' }}>
+                      {internalFichas.filter(f => f.status === 'Confirmado' || f.status === 'Realizado').length}
+                    </strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* Search & Filter Toolbar Original */}
+              <div className="glass-panel" style={{ padding: '1rem', marginBottom: '1.5rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', gap: '0.75rem', flex: 1, minWidth: '280px' }}>
+                  <div style={{ position: 'relative', flex: 1 }}>
+                    <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }} />
+                    <input 
+                      type="text"
+                      placeholder="Buscar por proprietário, código (ex: AI-0001), bairro, endereço..."
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.625rem 1rem 0.625rem 2.5rem',
+                        backgroundColor: 'var(--bg-secondary)',
+                        border: '1px solid var(--glass-border)',
+                        borderRadius: 'var(--border-radius-sm)',
+                        color: 'var(--text-primary)',
+                        fontSize: '0.875rem'
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.875rem', color: 'var(--text-tertiary)' }}>Status:</span>
+                  <select
+                    value={statusFilter}
+                    onChange={e => setStatusFilter(e.target.value)}
+                    style={{
+                      padding: '0.625rem 1rem',
+                      backgroundColor: 'var(--bg-secondary)',
+                      border: '1px solid var(--glass-border)',
+                      borderRadius: 'var(--border-radius-sm)',
+                      color: 'var(--text-primary)',
+                      fontSize: '0.875rem'
+                    }}
+                  >
+                    <option value="Todos">Todos os Status</option>
+                    <option value="Aguardando agendamento">Aguardando agendamento</option>
+                    <option value="Agendado">Agendado</option>
+                    <option value="Confirmado">Confirmado</option>
+                    <option value="Realizado">Realizado</option>
+                    <option value="Reagendar">Reagendar</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Fichas Data Table */}
+              <div className="glass-panel" style={{ overflow: 'hidden' }}>
+                {filteredFichas.length === 0 ? (
+                  <div style={{ padding: '3rem 1.5rem', textAlign: 'center', color: 'var(--text-tertiary)' }}>
+                    <FileSpreadsheet size={48} style={{ opacity: 0.3, marginBottom: '1rem' }} />
+                    <p style={{ fontSize: '1rem', fontWeight: '500' }}>Nenhuma ficha de visita técnica encontrada.</p>
+                    <p style={{ fontSize: '0.875rem', marginTop: '0.25rem' }}>Clique em <strong>Nova Ficha</strong> para cadastrar um agendamento ou altere os filtros.</p>
+                  </div>
+                ) : (
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '1px solid var(--glass-border)', background: 'var(--glass-highlight)' }}>
+                          <th style={{ padding: '1rem', color: 'var(--text-secondary)' }}>Código / Data Visita</th>
+                          <th style={{ padding: '1rem', color: 'var(--text-secondary)' }}>Proprietário / Telefone</th>
+                          <th style={{ padding: '1rem', color: 'var(--text-secondary)' }}>Imóvel / Bairro</th>
+                          <th style={{ padding: '1rem', color: 'var(--text-secondary)' }}>Responsável</th>
+                          <th style={{ padding: '1rem', color: 'var(--text-secondary)' }}>Status</th>
+                          <th style={{ padding: '1rem', color: 'var(--text-secondary)', textAlign: 'right' }}>Ações</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredFichas.map(f => (
+                          <tr key={f.id} style={{ borderBottom: '1px solid var(--glass-border)' }} className="table-row-hover">
+                            <td style={{ padding: '1rem' }}>
+                              <span style={{ fontWeight: '700', color: 'var(--accent-cyan)', display: 'block' }}>
+                                {f.nomeFicha || f.codigoImovel}
+                              </span>
+                              {(f.provisoria || (f.origemCaptacao || '').includes('Site')) && (
+                                <span style={{ display: 'inline-block', marginTop: '3px', marginBottom: '2px', fontSize: '0.68rem', fontWeight: '700', color: '#fbbf24', backgroundColor: 'rgba(245, 158, 11, 0.16)', border: '1px solid rgba(245, 158, 11, 0.35)', padding: '1px 6px', borderRadius: '4px' }}>
+                                  Provisória • Análise Site
+                                </span>
+                              )}
+                              {f.nomeFicha && f.nomeFicha !== f.codigoImovel && (
+                                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block' }}>
+                                  Código: {f.codigoImovel}
+                                </span>
+                              )}
+                              <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
+                                {f.dataVisita ? new Date(f.dataVisita + 'T00:00:00').toLocaleDateString('pt-BR') : '-'} às {f.horarioVisita}
+                              </span>
+                            </td>
+                            <td style={{ padding: '1rem' }}>
+                              <strong style={{ display: 'block', color: 'var(--text-primary)' }}>{f.nomeProprietario}</strong>
+                              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{f.telefoneProprietario}</span>
+                            </td>
+                            <td style={{ padding: '1rem' }}>
+                              <span style={{ fontWeight: '500', color: 'var(--text-primary)', display: 'block' }}>
+                                {f.tipoImovel} - {f.bairroImovel}
+                                {(f.precoPretendido || f.valorImovel) ? ` • ${f.precoPretendido || `R$ ${Number(f.valorImovel).toLocaleString('pt-BR')}`}` : ''}
+                              </span>
+                              <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', display: 'block' }}>{f.enderecoImovel}</span>
+                              {f.linkLocalizacaoImovel && (
+                                <a
+                                  href={f.linkLocalizacaoImovel}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '0.72rem', color: '#38bdf8', textDecoration: 'none', fontWeight: '600', marginTop: '2px' }}
+                                >
+                                  <MapPin size={11} /> Ver localização no mapa ↗
+                                </a>
+                              )}
+                              {f.observacoesImovel && (
+                                <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', display: 'block', marginTop: '2px', maxWidth: '280px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={f.observacoesImovel}>
+                                  {f.observacoesImovel}
+                                </span>
+                              )}
+                              {f.imagensImovel && f.imagensImovel.length > 0 && (
+                                <div style={{ marginTop: '3px' }}>
+                                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '0.7rem', color: 'var(--accent-cyan)', backgroundColor: 'rgba(56, 189, 248, 0.12)', padding: '1px 6px', borderRadius: '4px' }}>
+                                    <Camera size={11} /> {f.imagensImovel.length} foto(s)
+                                  </span>
+                                </div>
+                              )}
+                              {f.publicarNoSite === true && f.status !== 'Cancelado' && (
+                                <div style={{ marginTop: '5px' }}>
+                                  <a 
+                                    href={`https://www.araujoimoveiscaratinga.com.br/imoveis/${(f.codigoImovel || f.id || '').toLowerCase().replace(/^#+/, '')}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{ 
+                                      display: 'inline-flex', 
+                                      alignItems: 'center', 
+                                      gap: '4px', 
+                                      fontSize: '0.75rem', 
+                                      color: 'var(--accent-cyan)', 
+                                      textDecoration: 'none',
+                                      fontWeight: '600'
+                                    }}
+                                    title="Ver anúncio publicado no Site Oficial"
+                                  >
+                                    <Globe size={12} /> Ver no site oficial ↗
+                                  </a>
+                                </div>
+                              )}
+                            </td>
+                            <td style={{ padding: '1rem' }}>
+                              <span style={{ color: 'var(--text-primary)' }}>{f.corretorResponsavel || f.profissionalResponsavel}</span>
+                            </td>
+                            <td style={{ padding: '1rem' }}>
+                              <span className={`status-badge status-${(f.status || 'aguardando').toLowerCase().replace(/\s+/g, '-')}`}>
+                                {f.status}
+                              </span>
+                            </td>
+                            <td style={{ padding: '1rem', textAlign: 'right' }}>
+                              <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
+                                <button 
+                                  onClick={() => handlePrintFilled(f)}
+                                  title="Imprimir Ficha Preenchida"
+                                  className="btn-icon-glass"
+                                >
+                                  <Printer size={16} />
+                                </button>
+                                <button 
+                                  onClick={() => handleOpenEditForm(f)}
+                                  title="Editar Ficha"
+                                  className="btn-icon-glass"
+                                >
+                                  <Edit3 size={16} />
+                                </button>
+                                <button 
+                                  onClick={() => handleDelete(f.id)}
+                                  title="Excluir Ficha"
+                                  className="btn-icon-glass text-danger"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </>
+      )}
+
+      {/* Modal Master de Ciclo de Vida do Imóvel */}
+      {selectedLifecycleImovel && (
+        <ModalCicloVidaImovel 
+          imovel={selectedLifecycleImovel}
+          onClose={() => setSelectedLifecycleImovel(null)}
+          onSaveImovel={(updated) => {
+            updateFichaVisita(updated.id, updated);
+            setSelectedLifecycleImovel(null);
+            setSuccessMsg(`Ciclo de vida do imóvel ${updated.codigoImovel || updated.code} atualizado com sucesso!`);
+            setTimeout(() => setSuccessMsg(''), 4000);
+          }}
+          contratos={imoveisContratos}
+          onSaveContrato={saveImovelContrato}
+          vistorias={imoveisVistorias}
+          onSaveVistoria={saveImovelVistoria}
+          currentUser={profile?.name || 'Administrador'}
+        />
       )}
 
       {/* ====================================

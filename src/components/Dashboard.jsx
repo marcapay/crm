@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { 
   Users, 
@@ -6,8 +6,26 @@ import {
   Columns, 
   Link2, 
   Activity, 
-  ArrowUpRight 
+  ArrowUpRight,
+  Building2,
+  Home,
+  Tag,
+  Clock,
+  TrendingUp,
+  CheckCircle2,
+  FileCheck,
+  Wrench,
+  AlertTriangle,
+  FileText,
+  ClipboardCheck,
+  X,
+  ExternalLink,
+  ChevronRight,
+  Eye,
+  MapPin,
+  DollarSign
 } from 'lucide-react';
+import { getStatusComercialInfo } from '../utils/propertyLifecycle';
 
 export default function Dashboard() {
   const { 
@@ -18,10 +36,41 @@ export default function Dashboard() {
     setActiveModule,
     setActiveChatClientId,
     waStatus,
-    profile
+    profile,
+    fichasVisita = [],
+    imoveisContratos = [],
+    imoveisVistorias = []
   } = useApp();
 
+  const [activeKpiModal, setActiveKpiModal] = useState(null);
+
   const userRole = (profile?.role || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+  // Métricas do Painel Administrativo Inteligente (Seção 9)
+  const totalImoveisCadastrados = fichasVisita;
+  const imoveisDispLocacao = fichasVisita.filter(f => (f.statusComercial || 'Disponível para locação') === 'Disponível para locação');
+  const imoveisDispVenda = fichasVisita.filter(f => (f.statusComercial || '') === 'Disponível para venda' || (f.statusComercial || '') === 'Disponível para venda e locação');
+  const imoveisAlugados = fichasVisita.filter(f => (f.statusComercial || '') === 'Alugado');
+  const imoveisVendidos = fichasVisita.filter(f => (f.statusComercial || '') === 'Vendido');
+  const imoveisReservados = fichasVisita.filter(f => (f.statusComercial || '') === 'Reservado');
+  const imoveisEmNegociacao = fichasVisita.filter(f => (f.statusComercial || '') === 'Em negociação');
+  const imoveisEmVistoria = fichasVisita.filter(f => {
+    return (f.etapaPipelineLocacao || '').includes('vistoria') || 
+      imoveisVistorias.some(v => (v.imovelId === f.id || v.imovelCodigo === f.codigoImovel) && !v.status.includes('concluída'));
+  });
+  const contratosAguardandoAssinaturas = imoveisContratos.filter(c => {
+    return c.signatarios?.some(s => s.obrigatoria !== false && s.status !== 'Assinada' && s.status !== 'Não se aplica');
+  });
+  const contratosProximosVencimento = imoveisContratos.filter(c => {
+    if (!c.dataVencimento) return false;
+    const diff = new Date(c.dataVencimento) - new Date();
+    return diff > 0 && diff <= 60 * 24 * 60 * 60 * 1000;
+  });
+  const imoveisEmManutencao = fichasVisita.filter(f => (f.statusOperacional || '').toLowerCase().includes('manuten'));
+  const imoveisDocPendente = fichasVisita.filter(f => {
+    const doc = f.documentacao || {};
+    return (!doc.matriculaIndividual && !doc.escrituraPublica && !f.matricula) || (f.etapaPipelineLocacao || '').includes('documentacao');
+  });
 
   // Metrics calculations
   const totalClients = clients.length;
@@ -154,6 +203,221 @@ export default function Dashboard() {
           </div>
         </div>
       </section>
+
+      {/* ============================================================
+          PAINEL ADMINISTRATIVO INTELIGENTE (12 INDICADORES CLICÁVEIS)
+         ============================================================ */}
+      <section style={{ marginTop: '1.75rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+          <div>
+            <h2 style={{ fontSize: '1.15rem', color: 'var(--text-primary)', margin: 0, fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Building2 size={20} style={{ color: 'var(--accent-cyan)' }} />
+              Painel Administrativo de Imóveis & Ciclo de Vida
+            </h2>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>
+              Indicadores clicáveis em tempo real. Clique em qualquer card para ver a listagem detalhada.
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setActiveModule('imoveis')}
+            className="btn btn-secondary"
+            style={{ fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.45rem 0.85rem' }}
+          >
+            <span>Ver Módulo Imóveis Completo</span>
+            <ArrowUpRight size={14} />
+          </button>
+        </div>
+
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
+          gap: '0.875rem'
+        }}>
+          {[
+            { id: 'total', label: 'Total de imóveis cadastrados', count: totalImoveisCadastrados.length, color: 'var(--accent-cyan)', icon: Building2, items: totalImoveisCadastrados, type: 'imoveis' },
+            { id: 'disp_loc', label: 'Imóveis disponíveis para locação', count: imoveisDispLocacao.length, color: '#10b981', icon: Home, items: imoveisDispLocacao, type: 'imoveis' },
+            { id: 'disp_ven', label: 'Imóveis disponíveis para venda', count: imoveisDispVenda.length, color: '#10b981', icon: Tag, items: imoveisDispVenda, type: 'imoveis' },
+            { id: 'alugados', label: 'Imóveis alugados', count: imoveisAlugados.length, color: '#8b5cf6', icon: CheckCircle2, items: imoveisAlugados, type: 'imoveis' },
+            { id: 'vendidos', label: 'Imóveis vendidos', count: imoveisVendidos.length, color: '#8b5cf6', icon: CheckCircle2, items: imoveisVendidos, type: 'imoveis' },
+            { id: 'reservados', label: 'Imóveis reservados', count: imoveisReservados.length, color: '#f59e0b', icon: Clock, items: imoveisReservados, type: 'imoveis' },
+            { id: 'negociacao', label: 'Imóveis em negociação', count: imoveisEmNegociacao.length, color: '#3b82f6', icon: TrendingUp, items: imoveisEmNegociacao, type: 'imoveis' },
+            { id: 'vistoria', label: 'Imóveis em vistoria', count: imoveisEmVistoria.length, color: '#38bdf8', icon: ClipboardCheck, items: imoveisEmVistoria, type: 'imoveis' },
+            { id: 'assinaturas', label: 'Contratos aguardando assinaturas', count: contratosAguardandoAssinaturas.length, color: '#f59e0b', icon: FileCheck, items: contratosAguardandoAssinaturas, type: 'contratos' },
+            { id: 'vencendo', label: 'Contratos próximos do vencimento', count: contratosProximosVencimento.length, color: '#fb923c', icon: Calendar, items: contratosProximosVencimento, type: 'contratos' },
+            { id: 'manutencao', label: 'Imóveis em manutenção', count: imoveisEmManutencao.length, color: '#ef4444', icon: Wrench, items: imoveisEmManutencao, type: 'imoveis' },
+            { id: 'doc_pendente', label: 'Imóveis com doc. pendente', count: imoveisDocPendente.length, color: '#ef4444', icon: AlertTriangle, items: imoveisDocPendente, type: 'imoveis' }
+          ].map(kpi => {
+            const Icon = kpi.icon;
+            return (
+              <div
+                key={kpi.id}
+                className="glass-panel glass-panel-hover"
+                onClick={() => setActiveKpiModal(kpi)}
+                style={{
+                  padding: '1rem',
+                  borderRadius: '10px',
+                  cursor: 'pointer',
+                  borderLeft: `4px solid ${kpi.color}`,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  gap: '0.5rem',
+                  transition: 'all 0.2s ease'
+                }}
+                title="Clique para ver os detalhes"
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: '500', lineHeight: '1.25' }}>
+                    {kpi.label}
+                  </span>
+                  <div style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '8px',
+                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: kpi.color,
+                    flexShrink: 0
+                  }}>
+                    <Icon size={16} />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                  <strong style={{ fontSize: '1.4rem', color: kpi.count > 0 ? 'var(--text-primary)' : 'var(--text-tertiary)', fontWeight: '800' }}>
+                    {kpi.count}
+                  </strong>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--accent-cyan)', display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+                    Ver lista <ChevronRight size={12} />
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Modal Interativo ao Clicar em Qualquer Indicador */}
+      {activeKpiModal && (
+        <div className="modal-backdrop" style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.75)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '1rem'
+        }}>
+          <div className="glass-panel" style={{
+            maxWidth: '680px',
+            width: '100%',
+            maxHeight: '85vh',
+            overflowY: 'auto',
+            borderRadius: '12px',
+            backgroundColor: 'var(--bg-secondary)',
+            padding: '1.5rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1rem'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem' }}>
+              <div>
+                <h3 style={{ fontSize: '1.15rem', color: 'var(--text-primary)', margin: 0, fontWeight: '700' }}>
+                  {activeKpiModal.label}
+                </h3>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>
+                  Total encontrado: {activeKpiModal.count} registro(s)
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setActiveKpiModal(null)}
+                className="btn btn-secondary"
+                style={{ padding: '0.4rem', borderRadius: '50%' }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Lista dos itens correspondentes */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', maxHeight: '50vh', overflowY: 'auto' }}>
+              {activeKpiModal.items.length === 0 ? (
+                <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: '0.9rem' }}>
+                  Nenhum registro encontrado nesta categoria no momento.
+                </div>
+              ) : (
+                activeKpiModal.items.map((item, idx) => {
+                  const isContrato = activeKpiModal.type === 'contratos';
+                  const code = isContrato ? (item.numero || item.id) : (item.codigoImovel || item.code || `IM-${item.id}`);
+                  const title = isContrato ? `Contrato de ${item.tipo === 'venda' ? 'Venda' : 'Locação'} (${item.imovelCodigo})` : (item.tituloImovel || item.title || `${item.tipoImovel || 'Imóvel'} no ${item.bairroImovel || 'Centro'}`);
+                  const sub = isContrato ? `Responsável: ${item.responsavel || 'Contratos'}` : `Proprietário: ${item.nomeProprietario || 'Não informado'} • Bairro: ${item.bairroImovel || 'Caratinga'}`;
+                  const valor = Number(item.valorImovel || item.valor || item.rentValue || 0);
+
+                  return (
+                    <div 
+                      key={item.id || idx}
+                      style={{
+                        padding: '0.85rem',
+                        borderRadius: '8px',
+                        backgroundColor: 'var(--bg-primary)',
+                        border: '1px solid var(--glass-border)',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        gap: '0.75rem'
+                      }}
+                    >
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <span style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--accent-cyan)' }}>
+                            {code}
+                          </span>
+                          <strong style={{ fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                            {title}
+                          </strong>
+                        </div>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)', display: 'block', marginTop: '0.2rem' }}>
+                          {sub}
+                        </span>
+                      </div>
+
+                      {valor > 0 && (
+                        <span style={{ fontSize: '0.9rem', fontWeight: '700', color: '#10b981', whiteSpace: 'nowrap' }}>
+                          R$ {valor.toLocaleString('pt-BR')}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', borderTop: '1px solid var(--glass-border)', paddingTop: '0.75rem' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveKpiModal(null);
+                  setActiveModule('visita-tecnica');
+                }}
+                className="btn btn-primary"
+                style={{ fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+              >
+                <span>Abrir no Módulo Imóveis</span>
+                <ArrowUpRight size={14} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Charts & Connection Panel */}
       <div className="grid-cols-12" style={{ marginTop: '2rem' }}>
