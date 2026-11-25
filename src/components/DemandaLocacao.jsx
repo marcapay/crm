@@ -267,42 +267,6 @@ export default function DemandaLocacao() {
     return list;
   }, [properties, fichasVisita]);
 
-  // Compute stats / KPIs
-  const stats = useMemo(() => {
-    const totalAtivas = demandas.filter(d => !['locacao_concluida', 'demanda_encerrada'].includes(d.status)).length;
-    const novas = demandas.filter(d => d.status === 'nova').length;
-    const urgentes = demandas.filter(d => ['imediata', '7_dias'].includes(d.urgencia) && !['locacao_concluida', 'demanda_encerrada'].includes(d.status)).length;
-    const emAtendimento = demandas.filter(d => ['em_atendimento', 'buscando_imovel', 'imoveis_apresentados'].includes(d.status)).length;
-    const concluidas = demandas.filter(d => d.status === 'locacao_concluida').length;
-    const visitas = demandas.filter(d => d.status === 'visita_agendada').length;
-
-    // Matching counts
-    let comImoveisCompativeis = 0;
-    let semImoveisCompativeis = 0;
-
-    demandas.forEach(d => {
-      if (!['locacao_concluida', 'demanda_encerrada'].includes(d.status)) {
-        const matches = findMatchesForDemand(d, allRentalProperties);
-        if (matches.length > 0 && matches[0].score >= 60) {
-          comImoveisCompativeis++;
-        } else {
-          semImoveisCompativeis++;
-        }
-      }
-    });
-
-    return {
-      totalAtivas,
-      novas,
-      urgentes,
-      emAtendimento,
-      comImoveisCompativeis,
-      semImoveisCompativeis,
-      concluidas,
-      visitas
-    };
-  }, [demandas, allRentalProperties]);
-
   // Filtered Demands
   const filteredDemandas = useMemo(() => {
     return demandas.filter(item => {
@@ -603,47 +567,6 @@ export default function DemandaLocacao() {
             <Plus size={16} /> Cadastrar Demanda Manual
           </button>
         </div>
-      </div>
-
-      {/* 8 Indicadores / Métricas do Topo */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
-        gap: '0.75rem',
-        marginBottom: '1.5rem'
-      }}>
-        {[
-          { label: 'Demandas Ativas', val: stats.totalAtivas, icon: Users, color: 'var(--text-primary)' },
-          { label: 'Novas Demandas', val: stats.novas, icon: Sparkles, color: '#38bdf8', badge: stats.novas > 0 ? 'Novas' : null },
-          { label: 'Com Urgência', val: stats.urgentes, icon: Clock, color: '#f59e0b' },
-          { label: 'Em Atendimento', val: stats.emAtendimento, icon: MessageSquare, color: '#60a5fa' },
-          { label: 'Com Imóveis Compatíveis', val: stats.comImoveisCompativeis, icon: CheckCircle2, color: '#10b981' },
-          { label: 'Visitas Agendadas', val: stats.visitas, icon: Calendar, color: '#f43f5e' },
-          { label: 'Locações Concluídas', val: stats.concluidas, icon: Building2, color: '#10b981' },
-          { label: 'Sem Imóvel (Captação)', val: stats.semImoveisCompativeis, icon: AlertTriangle, color: '#f97316' }
-        ].map((kpi, idx) => {
-          const Icon = kpi.icon;
-          return (
-            <div key={idx} className="glass-panel" style={{ padding: '0.9rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: '600' }}>
-                  {kpi.label}
-                </span>
-                <Icon size={16} style={{ color: kpi.color }} />
-              </div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
-                <strong style={{ fontSize: '1.35rem', fontWeight: '800', color: 'var(--text-primary)' }}>
-                  {kpi.val}
-                </strong>
-                {kpi.badge && (
-                  <span style={{ fontSize: '0.65rem', padding: '1px 6px', borderRadius: '4px', backgroundColor: '#e0f2fe', color: '#0369a1', fontWeight: '700' }}>
-                    {kpi.badge}
-                  </span>
-                )}
-              </div>
-            </div>
-          );
-        })}
       </div>
 
       {/* Sub Tabs Navigation: Demandas | Cruzamento | Oportunidades */}
