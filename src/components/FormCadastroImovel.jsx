@@ -2,6 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import ModalPreenchimentoIA from './ModalPreenchimentoIA';
 import { 
+  applyWatermarkToImage, 
+  applyWatermarkToMultipleImages, 
+  getWatermarkSettings, 
+  saveWatermarkSettings 
+} from '../utils/watermark';
+import { 
   Building, 
   User, 
   MapPin, 
@@ -24,7 +30,11 @@ import {
   Compass,
   Upload,
   Check,
-  Globe
+  Globe,
+  ShieldCheck,
+  RefreshCw,
+  Sliders,
+  Eye
 } from 'lucide-react';
 
 const DIFERENCIAIS_LIST = [
@@ -75,6 +85,17 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
   const [showAiModal, setShowAiModal] = useState(false);
   const [successToast, setSuccessToast] = useState('');
   const [errorToast, setErrorToast] = useState('');
+
+  // Watermark States
+  const [watermarkConfig, setWatermarkConfig] = useState(getWatermarkSettings);
+  const [isWatermarking, setIsWatermarking] = useState(false);
+  const [watermarkProgress, setWatermarkProgress] = useState({ current: 0, total: 0 });
+  const [previewPhoto, setPreviewPhoto] = useState(null);
+
+  const handleUpdateWatermarkConfig = (updates) => {
+    const updated = saveWatermarkSettings(updates);
+    setWatermarkConfig(updated);
+  };
 
   // Initial State based on elooscrmimobiliario.com.br/cadastro-imovel
   const [formData, setFormData] = useState({
@@ -249,21 +270,83 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
     }
   };
 
-  // Photo upload
-  const handlePhotoUpload = (e) => {
+  // Photo upload with automatic Araújo Imóveis watermark
+  const handlePhotoUpload = async (e) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
 
-    files.forEach(file => {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setFormData(prev => ({
-          ...prev,
-          fotos: [...(prev.fotos || []), event.target.result]
-        }));
-      };
-      reader.readAsDataURL(file);
-    });
+    setIsWatermarking(true);
+    setWatermarkProgress({ current: 0, total: files.length });
+
+    try {
+      const readFilesPromises = files.map(file => {
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (event) => resolve(event.target.result);
+          reader.onerror = () => resolve(null);
+          reader.readAsDataURL(file);
+        });
+      });
+
+      const rawDataUrls = (await Promise.all(readFilesPromises)).filter(Boolean);
+
+      let processedUrls = rawDataUrls;
+      if (watermarkConfig.enabled) {
+        processedUrls = await applyWatermarkToMultipleImages(
+          rawDataUrls,
+          watermarkConfig,
+          (curr, tot) => setWatermarkProgress({ current: curr, total: tot })
+        );
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        fotos: [...(prev.fotos || []), ...processedUrls]
+      }));
+
+      setSuccessToast(
+        watermarkConfig.enabled
+          ? `✓ ${processedUrls.length} foto(s) adicionada(s) com a Marca d'Água oficial da Araújo Imóveis!`
+          : `✓ ${processedUrls.length} foto(s) adicionada(s)!`
+      );
+      setTimeout(() => setSuccessToast(''), 4500);
+    } catch (err) {
+      console.error('Erro no upload de fotos:', err);
+    } finally {
+      setIsWatermarking(false);
+      setWatermarkProgress({ current: 0, total: 0 });
+      if (e.target) e.target.value = '';
+    }
+  };
+
+  // Reapply watermark to existing photos
+  const handleReapplyWatermarks = async () => {
+    const currentPhotos = formData.fotos || [];
+    if (currentPhotos.length === 0) return;
+
+    setIsWatermarking(true);
+    setWatermarkProgress({ current: 0, total: currentPhotos.length });
+
+    try {
+      const reprocessed = await applyWatermarkToMultipleImages(
+        currentPhotos,
+        watermarkConfig,
+        (curr, tot) => setWatermarkProgress({ current: curr, total: tot })
+      );
+
+      setFormData(prev => ({
+        ...prev,
+        fotos: reprocessed
+      }));
+
+      setSuccessToast(`✓ Marca d'água reaplicada com sucesso em ${reprocessed.length} foto(s)!`);
+      setTimeout(() => setSuccessToast(''), 4500);
+    } catch (err) {
+      console.error('Erro ao reaplicar marca dágua:', err);
+    } finally {
+      setIsWatermarking(false);
+      setWatermarkProgress({ current: 0, total: 0 });
+    }
   };
 
   const handleRemovePhoto = (idxToRemove) => {
@@ -285,8 +368,26 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
   };
 
   // Handler to receive structured data from AI Preenchimento
-  const handleApplyAiData = (aiData) => {
+  const handleApplyAiData = async (aiData) => {
     if (!aiData) return;
+
+    let incomingPhotos = Array.isArray(aiData.fotos) ? aiData.fotos : [];
+    if (incomingPhotos.length > 0 && watermarkConfig.enabled) {
+      try {
+        setIsWatermarking(true);
+        setWatermarkProgress({ current: 0, total: incomingPhotos.length });
+        incomingPhotos = await applyWatermarkToMultipleImages(
+          incomingPhotos,
+          watermarkConfig,
+          (curr, tot) => setWatermarkProgress({ current: curr, total: tot })
+        );
+      } catch (err) {
+        console.warn('Erro ao carimbar fotos da IA:', err);
+      } finally {
+        setIsWatermarking(false);
+        setWatermarkProgress({ current: 0, total: 0 });
+      }
+    }
 
     setFormData(prev => {
       const updated = { ...prev };
@@ -1566,19 +1667,149 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
             9. FOTOS E MÍDIAS
            ============================================================ */}
         <div className="glass-panel" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
-          <h3 style={sectionHeaderStyle}>
-            <Camera size={18} /> 9. Fotos e Mídias
-          </h3>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1.25rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem' }}>
+            <h3 style={{ ...sectionHeaderStyle, margin: 0, paddingBottom: 0, borderBottom: 'none' }}>
+              <Camera size={18} /> 9. Fotos e Mídias
+            </h3>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+              {(formData.fotos || []).length} foto(s) anexada(s)
+            </span>
+          </div>
+
+          {/* Painel de Controle de Marca d'Água Oficial Araújo Imóveis */}
+          <div style={{
+            background: 'var(--bg-tertiary)',
+            border: '1px solid var(--glass-border)',
+            borderRadius: 'var(--border-radius-sm)',
+            padding: '0.85rem 1.15rem',
+            marginBottom: '1rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.65rem'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer', margin: 0 }}>
+                <input 
+                  type="checkbox"
+                  checked={watermarkConfig.enabled}
+                  onChange={(e) => handleUpdateWatermarkConfig({ enabled: e.target.checked })}
+                  style={{ width: '17px', height: '17px', accentColor: 'var(--text-primary)' }}
+                />
+                <span style={{ fontWeight: '600', fontSize: '0.9rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <ShieldCheck size={16} /> Aplicar Marca d'Água da Araújo Imóveis automaticamente
+                </span>
+              </label>
+
+              {watermarkConfig.enabled && (formData.fotos || []).length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleReapplyWatermarks}
+                  disabled={isWatermarking}
+                  className="btn btn-secondary"
+                  style={{ fontSize: '0.78rem', padding: '0.35rem 0.8rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+                  title="Reaplicar marca d'água com as configurações atuais em todas as fotos da lista"
+                >
+                  <RefreshCw size={13} style={{ animation: isWatermarking ? 'spin 1.2s linear infinite' : 'none' }} />
+                  {isWatermarking ? `Aplicando (${watermarkProgress.current}/${watermarkProgress.total})...` : 'Reaplicar Marca em Todas'}
+                </button>
+              )}
+            </div>
+
+            {watermarkConfig.enabled && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '1rem',
+                paddingTop: '0.5rem',
+                borderTop: '1px solid var(--glass-border)',
+                fontSize: '0.8rem',
+                color: 'var(--text-secondary)'
+              }}>
+                {/* Posição da Marca */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <span style={{ color: 'var(--text-tertiary)' }}>Posição:</span>
+                  <div style={{ display: 'flex', gap: '0.25rem' }}>
+                    {[
+                      { id: 'center', label: 'Centro (Padrão)' },
+                      { id: 'bottom-right', label: 'Canto Inferior' },
+                      { id: 'both', label: 'Centro + Canto' }
+                    ].map(pos => (
+                      <button
+                        key={pos.id}
+                        type="button"
+                        onClick={() => handleUpdateWatermarkConfig({ position: pos.id })}
+                        style={{
+                          padding: '3px 8px',
+                          borderRadius: '4px',
+                          fontSize: '0.75rem',
+                          cursor: 'pointer',
+                          background: watermarkConfig.position === pos.id ? 'var(--text-primary)' : 'var(--glass-highlight)',
+                          color: watermarkConfig.position === pos.id ? 'var(--bg-primary)' : 'var(--text-secondary)',
+                          border: '1px solid var(--glass-border)',
+                          fontWeight: watermarkConfig.position === pos.id ? '600' : '400'
+                        }}
+                      >
+                        {pos.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Opacidade */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <span style={{ color: 'var(--text-tertiary)' }}>Intensidade:</span>
+                  <div style={{ display: 'flex', gap: '0.25rem' }}>
+                    {[
+                      { val: 0.30, label: 'Discreta' },
+                      { val: 0.45, label: 'Média (45%)' },
+                      { val: 0.65, label: 'Marcante' }
+                    ].map(op => (
+                      <button
+                        key={op.label}
+                        type="button"
+                        onClick={() => handleUpdateWatermarkConfig({ opacity: op.val })}
+                        style={{
+                          padding: '3px 8px',
+                          borderRadius: '4px',
+                          fontSize: '0.75rem',
+                          cursor: 'pointer',
+                          background: Math.abs(watermarkConfig.opacity - op.val) < 0.05 ? 'var(--text-primary)' : 'var(--glass-highlight)',
+                          color: Math.abs(watermarkConfig.opacity - op.val) < 0.05 ? 'var(--bg-primary)' : 'var(--text-secondary)',
+                          border: '1px solid var(--glass-border)',
+                          fontWeight: Math.abs(watermarkConfig.opacity - op.val) < 0.05 ? '600' : '400'
+                        }}
+                      >
+                        {op.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Rodapé institucional */}
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', marginLeft: 'auto' }}>
+                  <input 
+                    type="checkbox"
+                    checked={watermarkConfig.includeText}
+                    onChange={(e) => handleUpdateWatermarkConfig({ includeText: e.target.checked })}
+                    style={{ width: '14px', height: '14px', accentColor: 'var(--text-primary)' }}
+                  />
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Incluir site no rodapé</span>
+                </label>
+              </div>
+            )}
+          </div>
 
           <div style={{
             border: '2px dashed var(--glass-border)',
             borderRadius: '12px',
             padding: '2rem 1.5rem',
             textAlign: 'center',
-            backgroundColor: 'rgba(255, 255, 255, 0.02)',
-            cursor: 'pointer',
+            backgroundColor: 'var(--glass-highlight)',
+            cursor: isWatermarking ? 'not-allowed' : 'pointer',
             marginBottom: '1rem',
-            transition: 'border-color 0.2s ease'
+            transition: 'border-color 0.2s ease',
+            opacity: isWatermarking ? 0.7 : 1
           }}>
             <input 
               type="file" 
@@ -1586,47 +1817,89 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
               accept="image/*" 
               id="upload-fotos-imovel"
               style={{ display: 'none' }}
+              disabled={isWatermarking}
               onChange={handlePhotoUpload} 
             />
-            <label htmlFor="upload-fotos-imovel" style={{ cursor: 'pointer', display: 'block' }}>
-              <Upload size={36} style={{ color: 'var(--accent-cyan)', margin: '0 auto 0.75rem auto' }} />
-              <strong style={{ display: 'block', fontSize: '1rem', color: 'var(--text-primary)' }}>
-                Anexar Fotos do Imóvel
-              </strong>
-              <span style={{ fontSize: '0.825rem', color: 'var(--text-tertiary)', marginTop: '0.25rem', display: 'block' }}>
-                Arraste as imagens aqui ou clique para selecionar fotos do seu dispositivo (JPEG, PNG, WebP)
-              </span>
+            <label htmlFor="upload-fotos-imovel" style={{ cursor: isWatermarking ? 'not-allowed' : 'pointer', display: 'block' }}>
+              {isWatermarking ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+                  <RefreshCw size={32} style={{ color: 'var(--text-primary)', animation: 'spin 1.2s linear infinite' }} />
+                  <strong style={{ display: 'block', fontSize: '1rem', color: 'var(--text-primary)' }}>
+                    Aplicando Marca d'Água Oficial Araújo Imóveis... ({watermarkProgress.current}/{watermarkProgress.total})
+                  </strong>
+                  <span style={{ fontSize: '0.825rem', color: 'var(--text-secondary)' }}>
+                    Processando imagem e carimbando logotipo com proteção de direitos autorais
+                  </span>
+                </div>
+              ) : (
+                <>
+                  <Upload size={36} style={{ color: 'var(--text-primary)', margin: '0 auto 0.75rem auto' }} />
+                  <strong style={{ display: 'block', fontSize: '1rem', color: 'var(--text-primary)' }}>
+                    Anexar Fotos do Imóvel {watermarkConfig.enabled ? '(com Marca d\'Água)' : ''}
+                  </strong>
+                  <span style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', marginTop: '0.25rem', display: 'block' }}>
+                    Arraste as imagens aqui ou clique para selecionar fotos (JPEG, PNG, WebP)
+                  </span>
+                </>
+              )}
             </label>
           </div>
 
           {/* Galeria de Fotos */}
           {(formData.fotos || []).length > 0 && (
             <div style={{ marginBottom: '1.5rem' }}>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>
-                Fotos carregadas ({(formData.fotos || []).length}): primeira imagem é a foto principal
-              </span>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: '0.75rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: '600' }}>
+                  Fotos carregadas ({(formData.fotos || []).length}): primeira imagem é a foto principal
+                </span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
+                  Clique em qualquer foto para ver ampliada com a marca d'água
+                </span>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '0.75rem' }}>
                 {(formData.fotos || []).map((photoUrl, idx) => (
                   <div key={idx} style={{
                     position: 'relative',
                     aspectRatio: '1',
                     borderRadius: '8px',
                     overflow: 'hidden',
-                    border: idx === 0 ? '2px solid var(--accent-cyan)' : '1px solid var(--glass-border)',
-                    backgroundColor: 'var(--bg-tertiary)'
-                  }}>
+                    border: idx === 0 ? '2px solid var(--text-primary)' : '1px solid var(--glass-border)',
+                    backgroundColor: 'var(--bg-tertiary)',
+                    cursor: 'pointer'
+                  }} onClick={() => setPreviewPhoto(photoUrl)}>
                     <img 
                       src={photoUrl} 
                       alt={`Foto ${idx + 1}`} 
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                     />
+                    
+                    {/* Badge Marca d'água */}
+                    <span style={{
+                      position: 'absolute',
+                      top: '4px',
+                      left: '4px',
+                      backgroundColor: 'rgba(8, 9, 13, 0.75)',
+                      color: 'var(--text-secondary)',
+                      fontSize: '0.62rem',
+                      fontWeight: '600',
+                      padding: '1px 5px',
+                      borderRadius: '3px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '2px',
+                      backdropFilter: 'blur(2px)'
+                    }}>
+                      <ShieldCheck size={10} /> Marca
+                    </span>
+
                     {idx === 0 && (
                       <span style={{
                         position: 'absolute',
                         bottom: '4px',
                         left: '4px',
-                        backgroundColor: 'var(--accent-cyan)',
-                        color: '#000000',
+                        backgroundColor: 'var(--text-primary)',
+                        color: 'var(--bg-primary)',
                         fontSize: '0.65rem',
                         fontWeight: '800',
                         padding: '1px 5px',
@@ -1635,32 +1908,52 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
                         PRINCIPAL
                       </span>
                     )}
-                    <button
-                      type="button"
-                      onClick={() => handleRemovePhoto(idx)}
-                      style={{
-                        position: 'absolute',
-                        top: '4px',
-                        right: '4px',
-                        width: '22px',
-                        height: '22px',
-                        borderRadius: '50%',
-                        backgroundColor: 'rgba(239, 68, 68, 0.9)',
-                        color: '#ffffff',
-                        border: 'none',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: 'pointer'
-                      }}
-                      title="Remover foto"
-                    >
-                      <X size={13} />
-                    </button>
+
+                    <div style={{ position: 'absolute', top: '4px', right: '4px', display: 'flex', gap: '3px' }} onClick={e => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        onClick={() => setPreviewPhoto(photoUrl)}
+                        style={{
+                          width: '22px',
+                          height: '22px',
+                          borderRadius: '50%',
+                          backgroundColor: 'rgba(0, 0, 0, 0.75)',
+                          color: '#ffffff',
+                          border: 'none',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer'
+                        }}
+                        title="Ver foto ampliada"
+                      >
+                        <Eye size={12} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRemovePhoto(idx)}
+                        style={{
+                          width: '22px',
+                          height: '22px',
+                          borderRadius: '50%',
+                          backgroundColor: 'rgba(239, 68, 68, 0.9)',
+                          color: '#ffffff',
+                          border: 'none',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer'
+                        }}
+                        title="Remover foto"
+                      >
+                        <X size={13} />
+                      </button>
+                    </div>
+
                     {idx > 0 && (
                       <button
                         type="button"
-                        onClick={() => handleSetMainPhoto(idx)}
+                        onClick={(e) => { e.stopPropagation(); handleSetMainPhoto(idx); }}
                         style={{
                           position: 'absolute',
                           bottom: '4px',
@@ -1669,7 +1962,7 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
                           backgroundColor: 'rgba(0,0,0,0.7)',
                           color: '#ffffff',
                           border: 'none',
-                          padding: '1px 4px',
+                          padding: '1px 5px',
                           borderRadius: '3px',
                           cursor: 'pointer'
                         }}
@@ -1926,6 +2219,73 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
         onApply={handleApplyAiData}
         existingFormData={formData}
       />
+
+      {/* Modal de Prévia Ampliada da Foto com Marca d'Água */}
+      {previewPhoto && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            backgroundColor: 'rgba(0, 0, 0, 0.88)',
+            backdropFilter: 'blur(6px)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 999999,
+            padding: '1.5rem'
+          }}
+          onClick={() => setPreviewPhoto(null)}
+        >
+          <div 
+            style={{
+              position: 'relative',
+              maxWidth: '92vw',
+              maxHeight: '88vh',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center'
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{
+              width: '100%',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '0.75rem',
+              color: 'var(--text-primary)'
+            }}>
+              <span style={{ fontSize: '0.85rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <ShieldCheck size={16} /> Foto com Marca d'Água Oficial Araújo Imóveis
+              </span>
+              <button 
+                type="button"
+                onClick={() => setPreviewPhoto(null)}
+                className="btn btn-secondary"
+                style={{ padding: '0.35rem', borderRadius: '50%' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <img 
+              src={previewPhoto} 
+              alt="Foto ampliada com marca d'água" 
+              style={{
+                maxWidth: '100%',
+                maxHeight: '80vh',
+                objectFit: 'contain',
+                borderRadius: '8px',
+                border: '1px solid var(--glass-border)',
+                boxShadow: 'var(--card-shadow)'
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

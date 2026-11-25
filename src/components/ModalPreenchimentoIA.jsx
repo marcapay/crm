@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { applyWatermarkToImage, applyWatermarkToMultipleImages } from '../utils/watermark';
 import { 
   Sparkles, 
   Upload, 
@@ -60,7 +61,13 @@ export default function ModalPreenchimentoIA({ isOpen, onClose, onApply, existin
       const reader = new FileReader();
       
       if (file.type.startsWith('image/')) {
-        reader.onload = (event) => {
+        reader.onload = async (event) => {
+          let finalUrl = event.target.result;
+          try {
+            finalUrl = await applyWatermarkToImage(event.target.result);
+          } catch (err) {
+            console.warn('Erro ao aplicar marca dágua na foto:', err);
+          }
           setAttachedFiles(prev => [
             ...prev,
             {
@@ -69,7 +76,7 @@ export default function ModalPreenchimentoIA({ isOpen, onClose, onApply, existin
               name: file.name,
               size: file.size,
               type: file.type,
-              dataUrl: event.target.result
+              dataUrl: finalUrl
             }
           ]);
         };
@@ -321,10 +328,11 @@ export default function ModalPreenchimentoIA({ isOpen, onClose, onApply, existin
     setProcessingStep('Iniciando análise dos arquivos e anotações...');
 
     try {
-      // 1. Gather all photos and texts
-      const photos = attachedFiles
+      // 1. Gather all photos and texts (ensuring watermark is applied)
+      const rawPhotos = attachedFiles
         .filter(f => f.type.startsWith('image/') && f.dataUrl)
         .map(f => f.dataUrl);
+      const photos = await applyWatermarkToMultipleImages(rawPhotos);
 
       setExtractedPhotos(photos);
 
