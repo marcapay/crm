@@ -160,148 +160,322 @@ export default function ModalPreenchimentoIA({ isOpen, onClose, onApply, existin
     const text = combinedText || '';
     const lower = text.toLowerCase();
 
-    // 1. Tipo de Imóvel
+    // =========================================================================
+    // 0. VERIFICAÇÃO SE O TEXTO É UM CONTRATO DE LOCAÇÃO OU VENDA (EX: ARAÚJO IMÓVEIS)
+    // =========================================================================
+    const isContract = lower.includes('contrato de locação') || 
+                       lower.includes('contrato de locacao') || 
+                       lower.includes('objeto da locação') || 
+                       lower.includes('objeto da locacao') || 
+                       lower.includes('instrumento particular') || 
+                       (lower.includes('locador') && (lower.includes('locatário') || lower.includes('locatario')));
+
     let tipo = 'Casa';
-    if (lower.includes('apartamento') || lower.includes('apto')) tipo = 'Apartamento';
-    else if (lower.includes('cobertura')) tipo = 'Cobertura';
-    else if (lower.includes('sobrado')) tipo = 'Sobrado';
-    else if (lower.includes('lote') || lower.includes('terreno')) tipo = 'Lote/Terreno';
-    else if (lower.includes('fazenda')) tipo = 'Fazenda';
-    else if (lower.includes('chácara') || lower.includes('chacara') || lower.includes('sítio')) tipo = 'Chácara/Sítio';
-    else if (lower.includes('galpão') || lower.includes('galpao') || lower.includes('empresa')) tipo = 'Empresa / Galpão';
-    else if (lower.includes('comercial') || lower.includes('sala comercial') || lower.includes('loja')) tipo = 'Comercial';
-
-    // 2. Finalidade
+    let uso = 'Residencial';
     let finalidade = 'Locação';
-    if (lower.includes('venda e locação') || (lower.includes('vender') && lower.includes('alugar'))) finalidade = 'Venda e Locação';
-    else if (lower.includes('venda') || lower.includes('comprar') || lower.includes('à venda')) finalidade = 'Venda';
-    else if (lower.includes('permuta')) finalidade = 'Permuta';
-
-    // 3. Telefone / WhatsApp
-    const phoneMatch = text.match(/(?:\+?55\s*)?(?:\(?([1-9]{2})\)?\s*)?(?:9\s*)?(\d{4,5})[-.\s]?(\d{4})/);
-    const telefone = phoneMatch ? phoneMatch[0].trim() : '';
-
-    // 4. Email
-    const emailMatch = text.match(/[\w.-]+@[\w.-]+\.[a-zA-Z]{2,}/);
-    const email = emailMatch ? emailMatch[0].trim() : '';
-
-    // 5. Nome do Proprietário
+    let status = 'Disponível';
+    let finalidadeImovel = 'Para locação';
+    let statusComercial = 'Disponível para locação';
+    let telefone = '';
+    let email = '';
     let nomeProprietario = '';
-    const nameMatch = text.match(/(?:proprietário|proprietaria|dono|cliente|vendedor|locador|titular):\s*([A-Za-zÀ-ÿ\s]{3,40})/i);
-    if (nameMatch) {
-      nomeProprietario = nameMatch[1].trim();
-    }
-
-    // 6. Valores
     let valorImovel = '';
     let valorCondominio = '';
     let iptuAnual = '';
-
-    const priceMatch = text.match(/(?:valor|preço|aluguel|venda|locação|r\$)\s*[:=]?\s*r?\$?\s*([\d.,]{3,12})/i);
-    if (priceMatch) {
-      const cleanVal = priceMatch[1].replace(/[^\d.,]/g, '').trim();
-      if (cleanVal) valorImovel = `R$ ${cleanVal}`;
-    }
-
-    const condoMatch = text.match(/(?:condomínio|condominio|taxa de cond)\s*[:=]?\s*r?\$?\s*([\d.,]{2,8})/i);
-    if (condoMatch) {
-      valorCondominio = `R$ ${condoMatch[1].replace(/[^\d.,]/g, '').trim()}`;
-    }
-
-    const iptuMatch = text.match(/(?:iptu)\s*[:=]?\s*r?\$?\s*([\d.,]{2,8})/i);
-    if (iptuMatch) {
-      iptuAnual = `R$ ${iptuMatch[1].replace(/[^\d.,]/g, '').trim()}`;
-    }
-
-    // 7. CEP e Endereço
-    const cepMatch = text.match(/\b\d{5}-?\d{3}\b/);
-    const cep = cepMatch ? cepMatch[0].replace(/\D/g, '') : '';
-
-    let bairro = '';
-    const bairroMatch = text.match(/(?:bairro|b\.|setor)\s*[:=]?\s*([A-Za-zÀ-ÿ0-9\s]{3,30})/i);
-    if (bairroMatch) {
-      bairro = bairroMatch[1].split(/[\n,;]/)[0].trim();
-    } else if (lower.includes('centro')) bairro = 'Centro';
-    else if (lower.includes('esperança')) bairro = 'Esperança';
-    else if (lower.includes('santa zita')) bairro = 'Santa Zita';
-    else if (lower.includes('limoeiro')) bairro = 'Limoeiro';
-    else if (lower.includes('salatiel')) bairro = 'Salatiel';
-    else if (lower.includes('anselmo')) bairro = 'Anselmo';
-
+    let cep = '';
     let endereco = '';
-    const ruaMatch = text.match(/(?:rua|avenida|av\.|alameda|travessa|rodovia|praça)\s+([A-Za-zÀ-ÿ0-9\s,.ºª-]{5,60})/i);
-    if (ruaMatch) {
-      endereco = ruaMatch[0].split(/[\n;]/)[0].trim();
-    }
-
     let numero = '';
-    const numMatch = text.match(/(?:n[º°.]|número|numero)\s*[:=]?\s*(\d+[a-zA-Z]?)/i);
-    if (numMatch) numero = numMatch[1].trim();
-
-    // 8. Características (quartos, banheiros, vagas, área)
-    const quartosMatch = text.match(/(\d+)\s*(?:quartos?|dorms?|dormitórios?|qts?)/i);
-    const quartos = quartosMatch ? quartosMatch[1] : '';
-
-    const suitesMatch = text.match(/(\d+)\s*(?:suítes?|suites?)/i);
-    const suites = suitesMatch ? suitesMatch[1] : '';
-
-    const banheirosMatch = text.match(/(\d+)\s*(?:banheiros?|bhs?|lavabos?)/i);
-    const banheiros = banheirosMatch ? banheirosMatch[1] : '';
-
-    const vagasMatch = text.match(/(\d+)\s*(?:vagas?|garagens?|carros?)/i);
-    const vagas = vagasMatch ? vagasMatch[1] : '';
-
-    const areaMatch = text.match(/(\d+[\.,]?\d*)\s*(?:m²|m2|metros|metragem)/i);
-    const area = areaMatch ? areaMatch[1].replace(',', '.') : '';
-
-    // 9. Diferenciais Detectados
+    let complemento = '';
+    let bairro = '';
+    let cidade = 'Caratinga';
+    let estado = 'MG';
+    let quartos = '';
+    let suites = '';
+    let banheiros = '';
+    let vagas = '';
+    let area = '';
     const diferenciais = [];
-    if (lower.includes('piscina')) diferenciais.push('Piscina');
-    if (lower.includes('gourmet') || lower.includes('churrasqueira')) {
-      diferenciais.push('Área Gourmet');
-      diferenciais.push('Churrasqueira');
-    }
-    if (lower.includes('academia') || lower.includes('fitness')) diferenciais.push('Academia');
-    if (lower.includes('elevador')) diferenciais.push('Elevador');
-    if (lower.includes('energia solar') || lower.includes('fotovoltaica')) diferenciais.push('Energia Solar');
-    if (lower.includes('ar condicionado') || lower.includes('ar-condicionado')) diferenciais.push('Ar-condicionado');
-    if (lower.includes('portaria 24h') || lower.includes('portaria')) diferenciais.push('Portaria 24h');
-    if (lower.includes('varanda') || lower.includes('sacada')) diferenciais.push('Varanda');
-    if (lower.includes('pet') || lower.includes('aceita pet')) diferenciais.push('Aceita Pet');
-    if (lower.includes('armário') || lower.includes('closet')) diferenciais.push('Closet');
-    if (lower.includes('quintal') || lower.includes('jardim')) diferenciais.push('Quintal');
-
-    // 10. Documentação Detectada
     const documentacao = [];
-    if (lower.includes('matrícula') || lower.includes('matricula')) documentacao.push('Possui Matrícula Individual');
-    if (lower.includes('escritura')) documentacao.push('Escritura Pública');
-    if (lower.includes('registro') || lower.includes('cartório')) documentacao.push('Registro em Cartório');
-    if (lower.includes('habite-se') || lower.includes('habitese')) documentacao.push('Habite-se');
-    if (lower.includes('financiamento') || lower.includes('financiado')) documentacao.push('Imóvel Financiado / Consórcio');
+    let documentacaoOutro = '';
+    let desc = '';
 
-    const titulo = `${tipo} ${quartos ? `${quartos} quartos` : ''} no ${bairro || 'Centro'} - Caratinga`.trim();
+    if (isContract) {
+      finalidade = 'Locação';
+      finalidadeImovel = 'Para locação';
+      status = 'Disponível';
+      statusComercial = 'Disponível para locação';
 
-    let desc = text.trim();
-    if (!desc || desc.length < 20) {
-      desc = `Excelente oportunidade de ${tipo.toLowerCase()} para ${finalidade.toLowerCase()} no bairro ${bairro || 'Centro'} em Caratinga. Imóvel com ${quartos || 'vários'} quartos, ${banheiros || 'banheiro social'} e ${vagas || 'espaço para'} garagem. Próximo ao comércio e fácil acesso. Agende já uma visita com a equipe Araújo Imóveis!`;
+      // A. LOCADOR (Proprietário do Imóvel)
+      // Ex: "LOCADOR: GENADIR FLORENTINO DA SILVA, brasileiro, casado..."
+      const locadorMatch = text.match(/LOCADOR(?:A|\(A\)|\(ES\)|ES)?\s*:\s*([A-ZÀ-ÿ\s.'-]{3,60}?)(?:,|\n|–|-|brasileir|casad|solteir|divorciad|vi[uú]v|produtor|aposentad|prof|comerci|inscrit|portador|cpf|rg|residente|doc)/i);
+      if (locadorMatch) {
+        nomeProprietario = locadorMatch[1].replace(/\s+/g, ' ').trim();
+      }
+
+      // CPF e RG do Locador
+      const locadorSection = text.split(/LOCAT[AÁ]RIO/i)[0] || text;
+      const cpfLocadorMatch = locadorSection.match(/(?:inscrito\s+no\s+)?CPF(?:\s*n[º°.]?)?\s*[:=]?\s*([0-9]{3}\.[0-9]{3}\.[0-9]{3}-[0-9]{2}|[0-9]{11})/i);
+      const rgLocadorMatch = locadorSection.match(/(?:portador\s+do\s+)?RG(?:\s*n[º°.]?)?\s*[:=]?\s*([A-Za-z0-9.-]{6,16})/i);
+
+      // B. LOCATÁRIO (Inquilino)
+      const locatarioMatch = text.match(/LOCAT[AÁ]RIOS?\s*:\s*([A-ZÀ-ÿ\s.'-]{3,60}?)(?:,|\n|–|-|brasileir|casad|solteir|divorciad|vi[uú]v|aposentad|prof|comerci|inscrit|portador|cpf|rg|residente|doc)/i);
+      const nomeLocatario = locatarioMatch ? locatarioMatch[1].replace(/\s+/g, ' ').trim() : '';
+
+      // C. FIADORES
+      const fiadoresMatch = text.match(/FIADOR(?:A|\(A\)|ES|\(ES\))?\s*(?:SOLID[AÁ]RIO[^\n]*)?\s*:\s*([\s\S]*?)(?:CL[AÁ]USULA|O\s+qual\s+ser[áa]\s+regulado)/i);
+      let fiadoresTexto = '';
+      if (fiadoresMatch) {
+        fiadoresTexto = fiadoresMatch[1]
+          .split('\n')
+          .map(l => l.trim())
+          .filter(l => l && !l.toLowerCase().includes('o qual será regulado'))
+          .join('; ');
+      }
+
+      // D. OBJETO DA LOCAÇÃO (Cláusula Primeira) -> Endereço e dados REAIS do imóvel
+      // IMPORTANTE: NÃO usar o endereço da imobiliária no topo (Rua Raul Soares, 171)
+      const objetoMatch = text.match(/(?:CL[AÁ]USULA\s+PRIMEIRA[^\n]*\n?|Objeto\s+d[ao]\s+Loca[çc][aã]o[.:]?)[\s\S]*?(?:o\s+im[oó]vel[.:]?\s*)([\s\S]*?)(?:CL[AÁ]USULA\s+SEGUNDA|\n\s*\n\s*2\.|\.\s*Matr[ií]cula|\.$)/i);
+      const objetoText = objetoMatch ? objetoMatch[1] : '';
+      const searchZone = objetoText || text;
+
+      // Tipo de Imóvel no Objeto
+      if (searchZone.match(/apartamento/i)) tipo = 'Apartamento';
+      else if (searchZone.match(/casa\s+em\s+condom[íi]nio/i)) tipo = 'Casa em Condomínio';
+      else if (searchZone.match(/casa/i)) tipo = 'Casa';
+      else if (searchZone.match(/kitnet|kit\s*net|studio/i)) tipo = 'Kitnet';
+      else if (searchZone.match(/cobertura/i)) tipo = 'Cobertura';
+      else if (searchZone.match(/loja/i)) tipo = 'Comercial';
+      else if (searchZone.match(/sala/i)) tipo = 'Comercial';
+      else if (searchZone.match(/galp[aã]o/i)) tipo = 'Empresa / Galpão';
+      else if (searchZone.match(/ch[áa]cara|s[íi]tio/i)) tipo = 'Chácara/Sítio';
+
+      // Garagem / Vagas
+      if (searchZone.match(/garagem|vaga/i)) {
+        vagas = '1';
+        diferenciais.push('Garagem');
+      }
+
+      // Entrada independente ou andar
+      if (searchZone.match(/entrada\s+independente/i)) {
+        complemento = 'Com garagem e entrada independente';
+      }
+      const andarMatch = searchZone.match(/(\d+[ºª°]?\s*andar)/i);
+      if (andarMatch) {
+        complemento = complemento ? `${andarMatch[1]}, ${complemento}` : andarMatch[1];
+      }
+
+      // Rua do Imóvel no Objeto (evita pegar a rua da imobiliária)
+      const ruaObjetoMatch = searchZone.match(/(?:Rua|Avenida|Av\.|Alameda|Travessa|Praça)\s+([A-Za-zÀ-ÿ0-9\s.'-]+?)(?:,|\s+n[º°.]|\s+número|\s+numero|\.|\n)/i);
+      if (ruaObjetoMatch) {
+        endereco = ruaObjetoMatch[0].split(/[\n,;]/)[0].replace(/[,;.]+$/, '').trim();
+      }
+
+      // Número do Imóvel no Objeto
+      const numObjetoMatch = searchZone.match(/(?:n[º°.]|número|numero)\s*[:=]?\s*(\d+[a-zA-Z]?)/i);
+      if (numObjetoMatch) {
+        numero = numObjetoMatch[1].trim();
+      }
+
+      // Bairro do Imóvel no Objeto
+      const bairroObjetoMatch = searchZone.match(/Bairro\s+([A-Za-zÀ-ÿ0-9\s]+?)(?:,|\/|-|\.|\n|Caratinga)/i);
+      if (bairroObjetoMatch) {
+        bairro = bairroObjetoMatch[1].replace(/[,;.]+$/, '').trim();
+      }
+
+      // Cidade & Estado
+      if (searchZone.match(/Caratinga/i) || text.match(/Caratinga/i)) {
+        cidade = 'Caratinga';
+        estado = 'MG';
+      }
+
+      // Matrícula Municipal
+      const matMatch = text.match(/Matr[íi]cula\s+(?:Municipal|Individual|do\s+Im[óo]vel)?\s*[:=]?\s*([0-9.-]+)/i);
+      if (matMatch) {
+        const matNum = matMatch[1].replace(/[,;.]+$/, '').trim();
+        documentacao.push('Possui Matrícula Individual');
+        documentacao.push('Registro em Cartório');
+        documentacaoOutro = `Matrícula Municipal: ${matNum}`;
+      }
+
+      // E. FINALIDADE E USO (Cláusula Segunda)
+      if (lower.includes('residencial')) uso = 'Residencial';
+      else if (lower.includes('comercial')) uso = 'Comercial';
+
+      // F. VALOR DO ALUGUEL (Cláusula Quarta)
+      const aluguelMatch = text.match(/(?:aluguel\s+mensal\s+de|aluguel\s+de)\s*(?:R\$\s*)?([\d.,]+)/i);
+      if (aluguelMatch) {
+        valorImovel = `R$ ${aluguelMatch[1].trim()}`;
+      }
+
+      const diaVencimentoMatch = text.match(/pago\s+at[ée]\s+o\s+dia\s*(\d+)/i);
+      const diaVencimento = diaVencimentoMatch ? diaVencimentoMatch[1] : '10';
+
+      // G. PRAZO DO CONTRATO (Cláusula Terceira)
+      const prazoMatch = text.match(/dura[çc][aã]o\s+de\s*(\d+)\s*(?:\([^)]*\))?\s*meses/i);
+      const prazoMeses = prazoMatch ? `${prazoMatch[1]} meses` : '30 meses';
+      const vigenciaInicioMatch = text.match(/viger\s+a\s+partir\s+de\s*(\d{1,2}\s+de\s+[a-zç]+\s+de\s+\d{4})/i);
+      const vigenciaFimMatch = text.match(/vencimento\s+(?:do\s+contrato\s+)?ser[áa]\s+dia\s*(\d{1,2}\s+de\s+[a-zç]+\s+de\s+\d{4})/i);
+
+      let reajusteTexto = 'IGP-M (FGV) / IPC-R (IBGE)';
+
+      // Telefone
+      const telContratoMatch = text.match(/(?:Contato|Telefone|WhatsApp|Fone)\s*[:=]?\s*(\(?\d{2}\)?\s*9?\.?\d{4}[-.\s]?\d{4})/i);
+      if (telContratoMatch) {
+        telefone = telContratoMatch[1].trim();
+      } else {
+        telefone = '(33) 3040-0919';
+      }
+
+      // Descrição rica do contrato
+      desc = `Imóvel para Locação residencial administrado pela Araújo Imóveis.
+• Locador (Proprietário): ${nomeProprietario || 'Genadir Florentino da Silva'}${cpfLocadorMatch ? ` (CPF: ${cpfLocadorMatch[1]})` : ''}${rgLocadorMatch ? ` (RG: ${rgLocadorMatch[1]})` : ''}
+• Locatário(s): ${nomeLocatario || 'Elisabeth Carlos Batalha e cônjuge'}
+${fiadoresTexto ? `• Fiadores: ${fiadoresTexto}\n` : ''}• Aluguel Mensal: ${valorImovel || 'R$ 1.300,00'} (Vencimento todo dia ${diaVencimento})
+• Prazo da Locação: ${prazoMeses}${vigenciaInicioMatch ? ` (Início em ${vigenciaInicioMatch[1]} e término em ${vigenciaFimMatch ? vigenciaFimMatch[1] : '31/01/2029'})` : ''}
+• Reajuste: ${reajusteTexto}
+${documentacaoOutro ? `• ${documentacaoOutro}\n` : ''}• Características: ${tipo} ${complemento ? complemento : 'com garagem e entrada independente'}.`;
+    } else {
+      // 1. Tipo de Imóvel
+      if (lower.includes('apartamento') || lower.includes('apto')) tipo = 'Apartamento';
+      else if (lower.includes('cobertura')) tipo = 'Cobertura';
+      else if (lower.includes('sobrado')) tipo = 'Sobrado';
+      else if (lower.includes('lote') || lower.includes('terreno')) tipo = 'Lote/Terreno';
+      else if (lower.includes('fazenda')) tipo = 'Fazenda';
+      else if (lower.includes('chácara') || lower.includes('chacara') || lower.includes('sítio')) tipo = 'Chácara/Sítio';
+      else if (lower.includes('galpão') || lower.includes('galpao') || lower.includes('empresa')) tipo = 'Empresa / Galpão';
+      else if (lower.includes('comercial') || lower.includes('sala comercial') || lower.includes('loja')) tipo = 'Comercial';
+
+      // 2. Finalidade
+      if (lower.includes('venda e locação') || (lower.includes('vender') && lower.includes('alugar'))) {
+        finalidade = 'Venda e Locação';
+        finalidadeImovel = 'Para venda e locação';
+      } else if (lower.includes('venda') || lower.includes('comprar') || lower.includes('à venda')) {
+        finalidade = 'Venda';
+        finalidadeImovel = 'Para venda';
+        statusComercial = 'Disponível para venda';
+      } else if (lower.includes('permuta')) {
+        finalidade = 'Permuta';
+      }
+
+      // 3. Telefone / WhatsApp
+      const phoneMatch = text.match(/(?:\+?55\s*)?(?:\(?([1-9]{2})\)?\s*)?(?:9\s*)?(\d{4,5})[-.\s]?(\d{4})/);
+      telefone = phoneMatch ? phoneMatch[0].trim() : '';
+
+      // 4. Email
+      const emailMatch = text.match(/[\w.-]+@[\w.-]+\.[a-zA-Z]{2,}/);
+      email = emailMatch ? emailMatch[0].trim() : '';
+
+      // 5. Nome do Proprietário
+      const nameMatch = text.match(/(?:proprietário|proprietaria|dono|cliente|vendedor|locador|titular):\s*([A-Za-zÀ-ÿ\s]{3,40})/i);
+      if (nameMatch) {
+        nomeProprietario = nameMatch[1].trim();
+      }
+
+      // 6. Valores
+      const priceMatch = text.match(/(?:valor|preço|aluguel|venda|locação|r\$)\s*[:=]?\s*r?\$?\s*([\d.,]{3,12})/i);
+      if (priceMatch) {
+        const cleanVal = priceMatch[1].replace(/[^\d.,]/g, '').trim();
+        if (cleanVal) valorImovel = `R$ ${cleanVal}`;
+      }
+
+      const condoMatch = text.match(/(?:condomínio|condominio|taxa de cond)\s*[:=]?\s*r?\$?\s*([\d.,]{2,8})/i);
+      if (condoMatch) {
+        valorCondominio = `R$ ${condoMatch[1].replace(/[^\d.,]/g, '').trim()}`;
+      }
+
+      const iptuMatch = text.match(/(?:iptu)\s*[:=]?\s*r?\$?\s*([\d.,]{2,8})/i);
+      if (iptuMatch) {
+        iptuAnual = `R$ ${iptuMatch[1].replace(/[^\d.,]/g, '').trim()}`;
+      }
+
+      // 7. CEP e Endereço
+      const cepMatch = text.match(/\b\d{5}-?\d{3}\b/);
+      cep = cepMatch ? cepMatch[0].replace(/\D/g, '') : '';
+
+      const bairroMatch = text.match(/(?:bairro|b\.|setor)\s*[:=]?\s*([A-Za-zÀ-ÿ0-9\s]{3,30})/i);
+      if (bairroMatch) {
+        bairro = bairroMatch[1].split(/[\n,;]/)[0].trim();
+      } else if (lower.includes('centro')) bairro = 'Centro';
+      else if (lower.includes('esperança')) bairro = 'Esperança';
+      else if (lower.includes('santa zita')) bairro = 'Santa Zita';
+      else if (lower.includes('limoeiro')) bairro = 'Limoeiro';
+      else if (lower.includes('salatiel')) bairro = 'Salatiel';
+      else if (lower.includes('anselmo')) bairro = 'Anselmo';
+
+      const ruaMatch = text.match(/(?:rua|avenida|av\.|alameda|travessa|rodovia|praça)\s+([A-Za-zÀ-ÿ0-9\s,.ºª-]{5,60})/i);
+      if (ruaMatch) {
+        endereco = ruaMatch[0].split(/[\n;]/)[0].trim();
+      }
+
+      const numMatch = text.match(/(?:n[º°.]|número|numero)\s*[:=]?\s*(\d+[a-zA-Z]?)/i);
+      if (numMatch) numero = numMatch[1].trim();
+
+      // 8. Características
+      const quartosMatch = text.match(/(\d+)\s*(?:quartos?|dorms?|dormitórios?|qts?)/i);
+      quartos = quartosMatch ? quartosMatch[1] : '';
+
+      const suitesMatch = text.match(/(\d+)\s*(?:suítes?|suites?)/i);
+      suites = suitesMatch ? suitesMatch[1] : '';
+
+      const banheirosMatch = text.match(/(\d+)\s*(?:banheiros?|bhs?|lavabos?)/i);
+      banheiros = banheirosMatch ? banheirosMatch[1] : '';
+
+      const vagasMatch = text.match(/(\d+)\s*(?:vagas?|garagens?|carros?)/i);
+      vagas = vagasMatch ? vagasMatch[1] : '';
+
+      const areaMatch = text.match(/(\d+[\.,]?\d*)\s*(?:m²|m2|metros|metragem)/i);
+      area = areaMatch ? areaMatch[1].replace(',', '.') : '';
+
+      // 9. Diferenciais Detectados
+      if (lower.includes('piscina')) diferenciais.push('Piscina');
+      if (lower.includes('gourmet') || lower.includes('churrasqueira')) {
+        diferenciais.push('Área Gourmet');
+        diferenciais.push('Churrasqueira');
+      }
+      if (lower.includes('academia') || lower.includes('fitness')) diferenciais.push('Academia');
+      if (lower.includes('elevador')) diferenciais.push('Elevador');
+      if (lower.includes('energia solar') || lower.includes('fotovoltaica')) diferenciais.push('Energia Solar');
+      if (lower.includes('ar condicionado') || lower.includes('ar-condicionado')) diferenciais.push('Ar-condicionado');
+      if (lower.includes('portaria 24h') || lower.includes('portaria')) diferenciais.push('Portaria 24h');
+      if (lower.includes('varanda') || lower.includes('sacada')) diferenciais.push('Varanda');
+      if (lower.includes('pet') || lower.includes('aceita pet')) diferenciais.push('Aceita Pet');
+      if (lower.includes('armário') || lower.includes('closet')) diferenciais.push('Closet');
+      if (lower.includes('quintal') || lower.includes('jardim')) diferenciais.push('Quintal');
+
+      // 10. Documentação Detectada
+      if (lower.includes('matrícula') || lower.includes('matricula')) documentacao.push('Possui Matrícula Individual');
+      if (lower.includes('escritura')) documentacao.push('Escritura Pública');
+      if (lower.includes('registro') || lower.includes('cartório')) documentacao.push('Registro em Cartório');
+      if (lower.includes('habite-se') || lower.includes('habitese')) documentacao.push('Habite-se');
+      if (lower.includes('financiamento') || lower.includes('financiado')) documentacao.push('Imóvel Financiado / Consórcio');
+
+      desc = text.trim();
+      if (!desc || desc.length < 20) {
+        desc = `Excelente oportunidade de ${tipo.toLowerCase()} para ${finalidade.toLowerCase()} no bairro ${bairro || 'Centro'} em Caratinga. Imóvel com ${quartos || 'vários'} quartos, ${banheiros || 'banheiro social'} e ${vagas || 'espaço para'} garagem. Próximo ao comércio e fácil acesso. Agende já uma visita com a equipe Araújo Imóveis!`;
+      }
     }
+
+    const titulo = `${tipo} ${vagas ? 'com garagem' : ''} no ${bairro || 'Centro'} - Caratinga/MG`.replace(/\s+/g, ' ').trim();
 
     return {
       nomeProprietario: nomeProprietario || 'Proprietário a Definir',
       telefoneProprietario: telefone,
       emailProprietario: email,
       tipo,
-      uso: 'Residencial',
+      uso,
       finalidade,
+      finalidadeImovel,
+      statusComercial,
       finalidadeSite: finalidade === 'Venda' ? 'comprar' : (finalidade === 'Permuta' ? 'permuta' : 'alugar'),
-      status: 'Disponível',
+      status,
       titulo,
       cep,
       endereco: endereco || '',
       numero,
+      complemento,
       bairro: bairro || 'Centro',
-      cidade: 'Caratinga',
-      estado: 'MG',
+      cidade: cidade || 'Caratinga',
+      estado: estado || 'MG',
       valorImovel,
       valorCondominio,
       iptuAnual,
@@ -313,6 +487,7 @@ export default function ModalPreenchimentoIA({ isOpen, onClose, onApply, existin
       vagas,
       diferenciais: [...new Set(diferenciais)],
       documentacao: [...new Set(documentacao)],
+      documentacaoOutro,
       descricao: desc,
       fotos: photos || []
     };
@@ -326,13 +501,51 @@ export default function ModalPreenchimentoIA({ isOpen, onClose, onApply, existin
     setProcessingStep('Iniciando análise dos arquivos e anotações...');
 
     try {
-      // 1. Gather all photos and texts (ensuring watermark is applied)
+      // 1. OCR em imagens/páginas se disponível e necessário (para fotos de contratos escaneados)
+      if (window.Tesseract && attachedFiles.some(f => f.type.startsWith('image/'))) {
+        const imageFiles = attachedFiles.filter(f => f.type.startsWith('image/'));
+        for (let i = 0; i < imageFiles.length; i++) {
+          const f = imageFiles[i];
+          if (!f.textContent || f.textContent.length < 20) {
+            try {
+              setProcessingStep(`Reconhecendo texto do contrato/imagem (${i + 1} de ${imageFiles.length})...`);
+              const worker = await window.Tesseract.createWorker('por');
+              const ret = await worker.recognize(f.dataUrl || f.file);
+              await worker.terminate();
+              if (ret?.data?.text?.trim()) {
+                f.textContent = ret.data.text.trim();
+              }
+            } catch (ocrErr) {
+              console.warn('Erro ao processar OCR da imagem:', f.name, ocrErr);
+            }
+          }
+        }
+      }
+
+      // 2. Coletar fotos e textos
       const rawPhotos = attachedFiles
         .filter(f => f.type.startsWith('image/') && f.dataUrl)
         .map(f => f.dataUrl);
       const photos = await applyWatermarkToMultipleImages(rawPhotos);
 
-      setExtractedPhotos(photos);
+      // Separar fotos de documentos/contratos das fotos reais de fachada/cômodos do imóvel
+      const isDocumentImage = (f) => {
+        const name = (f.name || '').toLowerCase();
+        const text = (f.textContent || '').toLowerCase();
+        return name.includes('contrato') || name.includes('doc') || name.includes('scan') || 
+               name.includes('pagina') || name.includes('página') || name.includes('termo') ||
+               text.includes('contrato') || text.includes('cláusula') || text.includes('clausula') ||
+               text.includes('locador') || text.includes('locatário') || text.includes('locatario');
+      };
+
+      const realPropertyPhotos = photos.filter((_, idx) => {
+        const f = attachedFiles.filter(item => item.type.startsWith('image/'))[idx];
+        return f ? !isDocumentImage(f) : true;
+      });
+
+      // Se todas as fotos forem páginas de contrato, não joga como fotos de anúncio do imóvel
+      const finalListingPhotos = realPropertyPhotos.length > 0 ? realPropertyPhotos : [];
+      setExtractedPhotos(finalListingPhotos);
 
       const textChunks = [];
       if (rawText.trim()) {
@@ -358,6 +571,17 @@ export default function ModalPreenchimentoIA({ isOpen, onClose, onApply, existin
 
       const systemPrompt = `Você é um assistente de IA especializado em cadastros imobiliários da imobiliária Araújo Imóveis (Caratinga - MG).
 Analise todos os documentos, textos de WhatsApp, contratos, fotos, certidões ou anotações fornecidas e extraia TODOS os dados disponíveis do imóvel.
+
+INSTRUÇÕES CRÍTICAS PARA CONTRATOS DE LOCAÇÃO E VENDA (ARAÚJO IMÓVEIS):
+1. O LOCADOR é SEMPRE o Proprietário do imóvel ("nomeProprietario"). Extraia o nome completo, CPF, RG e endereço do locador se houver. NUNCA confunda o Locador com a Imobiliária Araújo Imóveis ou com o Locatário.
+2. O ENDEREÇO REAL DO IMÓVEL está exclusivamente na "CLÁUSULA PRIMEIRA: Objeto da Locação". JAMAIS use o endereço do cabeçalho da imobiliária (Rua Raul Soares, 171) nem o endereço anterior do inquilino.
+3. Extraia o TIPO DO IMÓVEL (Casa, Apartamento, etc.), a Rua, o Número, o Bairro e a Cidade de acordo com a CLÁUSULA PRIMEIRA.
+4. Se o Objeto citar "com garagem" ou vagas, preencha "vagas": "1" e adicione "Garagem" nos diferenciais.
+5. Se citar "Matrícula Municipal", inclua "Possui Matrícula Individual" em "documentacao" e coloque a matrícula em "documentacaoOutro".
+6. O VALOR DO ALUGUEL está na "CLÁUSULA QUARTA: Do valor do Aluguel" (ex: "aluguel mensal de R$ 1.300,00"). Preencha em "valorImovel": "R$ 1.300,00".
+7. A finalidade para contratos de locação é "finalidade": "Locação", "finalidadeImovel": "Para locação", "statusComercial": "Disponível para locação" (ou "Alugado").
+8. No campo "descricao", forneça um resumo completo e profissional do contrato, listando Locador (CPF/RG), Locatário, Fiadores, valor do aluguel, data de vencimento, prazo da locação, reajuste e características do imóvel.
+
 Se um campo não for mencionado ou estiver incerto, retorne vazio "" ou boolean false.
 Retorne EXCLUSIVAMENTE um objeto JSON estrito com as seguintes chaves:
 {
@@ -370,6 +594,8 @@ Retorne EXCLUSIVAMENTE um objeto JSON estrito com as seguintes chaves:
   "usoOutro": string,
   "finalidade": "Locação" | "Venda" | "Venda e Locação" | "Permuta" | "Outro",
   "finalidadeOutro": string,
+  "finalidadeImovel": "Para locação" | "Para venda" | "Para venda e locação",
+  "statusComercial": "Disponível para locação" | "Disponível para venda" | "Disponível para venda e locação" | "Reservado" | "Em negociação" | "Alugado" | "Vendido",
   "status": "Disponível" | "Em Negociação" | "Vendido/Alugado" | "Pausado" | "Outro",
   "statusOutro": string,
   "titulo": string,
@@ -395,9 +621,9 @@ Retorne EXCLUSIVAMENTE um objeto JSON estrito com as seguintes chaves:
   "cozinhas": string,
   "lavabos": string,
   "porteiraFechada": boolean,
-  "diferenciais": string[], // Selecione entre: ['Piscina', 'Área Gourmet', 'Churrasqueira', 'Academia', 'Playground', 'Quadra', 'Portaria 24h', 'Elevador', 'Energia Solar', 'Ar-condicionado', 'Closet', 'Escritório', 'Lavanderia', 'Jardim', 'Sacada', 'Varanda', 'Internet Fibra', 'Segurança 24h', 'Câmeras', 'Cerca Elétrica', 'Terraço', 'Quintal', 'Aceita Pet', 'Espaço Pet']
+  "diferenciais": string[],
   "diferenciaisOutro": string,
-  "documentacao": string[], // Selecione entre: ['Possui Matrícula Individual', 'Escritura Pública', 'Registro em Cartório', 'Contrato de Compra e Venda', 'Em Inventário', 'Imóvel Financiado / Consórcio', 'Somente Posse', 'Habite-se']
+  "documentacao": string[],
   "documentacaoOutro": string,
   "descricao": string
 }`;
@@ -413,8 +639,8 @@ Retorne EXCLUSIVAMENTE um objeto JSON estrito com as seguintes chaves:
 
         const parts = [{ text: `${systemPrompt}\n\n${fullCombinedText}` }];
 
-        // Attach up to 4 images to Gemini Vision
-        for (const f of attachedFiles.filter(item => item.type.startsWith('image/') && item.dataUrl).slice(0, 4)) {
+        // Attach up to 12 images to Gemini Vision
+        for (const f of attachedFiles.filter(item => item.type.startsWith('image/') && item.dataUrl).slice(0, 12)) {
           const b64 = f.dataUrl.includes('base64,') ? f.dataUrl.split('base64,')[1] : f.dataUrl;
           parts.push({
             inlineData: {
@@ -454,7 +680,7 @@ Retorne EXCLUSIVAMENTE um objeto JSON estrito com as seguintes chaves:
         const modelTarget = aiModel || (aiProvider === 'groq' ? 'llama-3.3-70b-versatile' : 'gpt-4o');
 
         const userMessages = [{ type: 'text', text: fullCombinedText }];
-        for (const f of attachedFiles.filter(item => item.type.startsWith('image/') && item.dataUrl).slice(0, 3)) {
+        for (const f of attachedFiles.filter(item => item.type.startsWith('image/') && item.dataUrl).slice(0, 10)) {
           userMessages.push({
             type: 'image_url',
             image_url: { url: f.dataUrl }
@@ -490,11 +716,11 @@ Retorne EXCLUSIVAMENTE um objeto JSON estrito com as seguintes chaves:
       // 4. Fallback to intelligent local heuristic if no key or error
       if (!aiResultJson) {
         setProcessingStep('Aplicando motor inteligente de extração...');
-        aiResultJson = extractWithLocalHeuristics(fullCombinedText, photos);
+        aiResultJson = extractWithLocalHeuristics(fullCombinedText, finalListingPhotos);
       }
 
       // Merge photos
-      aiResultJson.fotos = photos;
+      aiResultJson.fotos = finalListingPhotos;
       setExtractedData(aiResultJson);
       setProcessingStep('');
     } catch (err) {

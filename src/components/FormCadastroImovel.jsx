@@ -406,6 +406,15 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
       if (aiData.usoOutro) updated.usoOutro = aiData.usoOutro;
       if (aiData.finalidade) updated.finalidade = aiData.finalidade;
       if (aiData.finalidadeOutro) updated.finalidadeOutro = aiData.finalidadeOutro;
+      if (aiData.finalidadeImovel) updated.finalidadeImovel = aiData.finalidadeImovel;
+      else if (aiData.finalidade === 'Locação') updated.finalidadeImovel = 'Para locação';
+      else if (aiData.finalidade === 'Venda') updated.finalidadeImovel = 'Para venda';
+      else if (aiData.finalidade === 'Venda e Locação') updated.finalidadeImovel = 'Para venda e locação';
+
+      if (aiData.statusComercial) updated.statusComercial = aiData.statusComercial;
+      else if (aiData.finalidade === 'Locação') updated.statusComercial = 'Disponível para locação';
+      else if (aiData.finalidade === 'Venda') updated.statusComercial = 'Disponível para venda';
+
       if (aiData.finalidadeSite) updated.finalidadeSite = aiData.finalidadeSite;
       if (aiData.status) updated.status = aiData.status;
       if (aiData.statusOutro) updated.statusOutro = aiData.statusOutro;
