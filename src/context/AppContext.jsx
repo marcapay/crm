@@ -56,6 +56,104 @@ const safeJsonParse = (str, fallback) => {
   }
 };
 
+// Sanitiza dados antes de salvar no LocalStorage para evitar ultrapassar a cota do navegador (QuotaExceededError)
+export const sanitizeForStorage = (data) => {
+  if (!data) return data;
+  if (typeof data !== 'object') return data;
+
+  try {
+    const pruneItem = (item) => {
+      if (!item || typeof item !== 'object') return item;
+      const clone = { ...item };
+
+      // Se details contiver fotos ou documentos pesados em base64, limpa do details
+      if (clone.details && typeof clone.details === 'object') {
+        const cleanDetails = { ...clone.details };
+        if (Array.isArray(cleanDetails.fotos)) {
+          cleanDetails.fotos = cleanDetails.fotos.map(f => (typeof f === 'string' && f.startsWith('data:image/') && f.length > 40000 ? '[foto_armazenada]' : f));
+        }
+        delete cleanDetails.uploadedDocument;
+        delete cleanDetails.rawDocumentText;
+        clone.details = cleanDetails;
+      }
+
+      // Limita imagens armazenadas a fotos compactas
+      if (Array.isArray(clone.imagensImovel)) {
+        clone.imagensImovel = clone.imagensImovel.slice(0, 4).map(f => (typeof f === 'string' && f.startsWith('data:image/') && f.length > 70000 ? f.slice(0, 70000) : f));
+      }
+      if (Array.isArray(clone.fotos)) {
+        clone.fotos = clone.fotos.slice(0, 4).map(f => (typeof f === 'string' && f.startsWith('data:image/') && f.length > 70000 ? f.slice(0, 70000) : f));
+      }
+      if (Array.isArray(clone.images)) {
+        clone.images = clone.images.slice(0, 4).map(f => (typeof f === 'string' && f.startsWith('data:image/') && f.length > 70000 ? f.slice(0, 70000) : f));
+      }
+
+      // Se a foto principal for um base64 imenso, reduz para não estourar a cota
+      if (typeof clone.photo === 'string' && clone.photo.startsWith('data:image/') && clone.photo.length > 80000) {
+        clone.photo = clone.photo.slice(0, 80000);
+      }
+
+      return clone;
+    };
+
+    if (Array.isArray(data)) {
+      return data.map(pruneItem);
+    }
+    return pruneItem(data);
+  } catch (e) {
+    return data;
+  }
+};
+
+export const safeStorageSet = (key, value) => {
+  try {
+    const serialized = typeof value === 'string' ? value : JSON.stringify(value);
+    localStorage.setItem(key, serialized);
+  } catch (err) {
+    console.warn(`[SafeStorage] Alerta ao gravar ${key} no localStorage (${err?.message || err}). Sanitizando payload...`);
+    try {
+      // 1. Tenta sanitizar o payload removendo excesso de base64
+      const sanitized = sanitizeForStorage(value);
+      const sanitizedStr = typeof sanitized === 'string' ? sanitized : JSON.stringify(sanitized);
+      localStorage.setItem(key, sanitizedStr);
+    } catch (err2) {
+      console.warn(`[SafeStorage] QuotaExceeded ao salvar ${key}. Liberando espaço de caches temporários...`);
+      try {
+        // 2. Limpa chaves dispensáveis de log e cache temporário
+        Object.keys(localStorage).forEach(k => {
+          if (k.startsWith('crmbase_triage_routed_') || 
+              k.startsWith('crmbase_pic_') || 
+              k.startsWith('crmbase_read_ts_') ||
+              k.includes('poll_handled') ||
+              k.includes('temp_')) {
+            localStorage.removeItem(k);
+          }
+        });
+        // Tenta salvar novamente
+        const sanitized = sanitizeForStorage(value);
+        localStorage.setItem(key, JSON.stringify(sanitized));
+      } catch (err3) {
+        // 3. Se ainda assim a cota estiver no limite estrito do navegador, remove fotos e grava dados cadastrais essenciais
+        try {
+          if (Array.isArray(value)) {
+            const ultraLight = value.map(item => {
+              if (!item || typeof item !== 'object') return item;
+              const { fotos, imagensImovel, images, photo, details, ...rest } = item;
+              return { 
+                ...rest, 
+                photo: (typeof photo === 'string' && !photo.startsWith('data:image/')) ? photo : '' 
+              };
+            });
+            localStorage.setItem(key, JSON.stringify(ultraLight));
+          }
+        } catch (finalErr) {
+          console.error(`[SafeStorage] Falha de cota no localStorage para ${key}:`, finalErr);
+        }
+      }
+    }
+  }
+};
+
 export const isMessageUnder30Days = (msg) => {
   if (!msg) return false;
   const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
@@ -676,26 +774,26 @@ export const AppProvider = ({ children }) => {
     });
   });
 
-  useEffect(() => { localStorage.setItem('araujo_portal_users', JSON.stringify(portalUsers)); }, [portalUsers]);
-  useEffect(() => { localStorage.setItem('araujo_portal_properties', JSON.stringify(properties)); }, [properties]);
-  useEffect(() => { localStorage.setItem('araujo_portal_contracts', JSON.stringify(contracts)); }, [contracts]);
-  useEffect(() => { localStorage.setItem('araujo_portal_financial_records', JSON.stringify(financialRecords)); }, [financialRecords]);
-  useEffect(() => { localStorage.setItem('araujo_portal_maintenance_requests', JSON.stringify(maintenanceRequests)); }, [maintenanceRequests]);
+  useEffect(() => { safeStorageSet('araujo_portal_users', portalUsers); }, [portalUsers]);
+  useEffect(() => { safeStorageSet('araujo_portal_properties', properties); }, [properties]);
+  useEffect(() => { safeStorageSet('araujo_portal_contracts', contracts); }, [contracts]);
+  useEffect(() => { safeStorageSet('araujo_portal_financial_records', financialRecords); }, [financialRecords]);
+  useEffect(() => { safeStorageSet('araujo_portal_maintenance_requests', maintenanceRequests); }, [maintenanceRequests]);
   useEffect(() => { 
     const filtered = filterMessagesUnder30Days(portalMessages);
-    localStorage.setItem('araujo_portal_messages', JSON.stringify(filtered)); 
+    safeStorageSet('araujo_portal_messages', filtered); 
   }, [portalMessages]);
   useEffect(() => { 
     const filtered = filterLogsFromToday(activityLogs);
-    localStorage.setItem('araujo_portal_activity_logs', JSON.stringify(filtered)); 
+    safeStorageSet('araujo_portal_activity_logs', filtered); 
   }, [activityLogs]);
-  useEffect(() => { localStorage.setItem('crmbase_fichas_visita', JSON.stringify(fichasVisita)); }, [fichasVisita]);
+  useEffect(() => { safeStorageSet('crmbase_fichas_visita', fichasVisita); }, [fichasVisita]);
 
   const [demandasLocacao, setDemandasLocacao] = useState(() => {
     const saved = localStorage.getItem('araujo_demandas_locacao');
     return safeJsonParse(saved, []);
   });
-  useEffect(() => { localStorage.setItem('araujo_demandas_locacao', JSON.stringify(demandasLocacao)); }, [demandasLocacao]);
+  useEffect(() => { safeStorageSet('araujo_demandas_locacao', demandasLocacao); }, [demandasLocacao]);
 
   // Rotina de expiração diária: os logs de atividade somem automaticamente ao final do dia
   useEffect(() => {
@@ -792,7 +890,7 @@ export const AppProvider = ({ children }) => {
       }
     ];
   });
-  useEffect(() => { localStorage.setItem('araujo_imoveis_contratos', JSON.stringify(imoveisContratos)); }, [imoveisContratos]);
+  useEffect(() => { safeStorageSet('araujo_imoveis_contratos', imoveisContratos); }, [imoveisContratos]);
 
   const [imoveisVistorias, setImoveisVistorias] = useState(() => {
     const saved = localStorage.getItem('araujo_imoveis_vistorias');
@@ -830,7 +928,7 @@ export const AppProvider = ({ children }) => {
       }
     ];
   });
-  useEffect(() => { localStorage.setItem('araujo_imoveis_vistorias', JSON.stringify(imoveisVistorias)); }, [imoveisVistorias]);
+  useEffect(() => { safeStorageSet('araujo_imoveis_vistorias', imoveisVistorias); }, [imoveisVistorias]);
 
   const saveImovelContrato = (contratoData) => {
     setImoveisContratos(prev => {
@@ -5346,7 +5444,9 @@ ${fullSearchContext.substring(0, 4000)}
       saveImovelContrato,
       imoveisVistorias,
       setImoveisVistorias,
-      saveImovelVistoria
+      saveImovelVistoria,
+      safeStorageSet,
+      sanitizeForStorage
     }}>
       {children}
     </AppContext.Provider>

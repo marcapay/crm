@@ -16,14 +16,71 @@ class ErrorBoundary extends Component {
 
   componentDidCatch(error, errorInfo) {
     console.error("ErrorBoundary detectou erro crítico no CRM:", error, errorInfo);
+    // Limpeza profilática se for erro de cota de armazenamento
+    const msg = String(error?.message || error);
+    if (msg.includes('QuotaExceeded') || msg.includes('setItem') || msg.includes('quota')) {
+      try {
+        Object.keys(localStorage).forEach(key => {
+          if (key.startsWith('crmbase_triage_') || 
+              key.startsWith('crmbase_pic_') || 
+              key.startsWith('crmbase_read_ts_') ||
+              key.includes('poll_handled') ||
+              key.includes('temp_')) {
+            localStorage.removeItem(key);
+          }
+        });
+      } catch (e) {}
+    }
   }
 
   handleReload = () => {
     window.location.reload();
   };
 
+  handleClearStorageAndReload = () => {
+    try {
+      // 1. Limpa chaves de cache e logs temporários
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('crmbase_triage_') || 
+            key.startsWith('crmbase_pic_') || 
+            key.startsWith('crmbase_read_ts_') ||
+            key.includes('poll_handled') ||
+            key.includes('temp_') ||
+            key.includes('cache')) {
+          localStorage.removeItem(key);
+        }
+      });
+
+      // 2. Comprime e remove fotos pesadas em base64 do localStorage que causaram o estouro de cota
+      ['crmbase_fichas_visita', 'araujo_fichas_visita', 'araujo_portal_properties', 'araujo_imoveis_cadastrados'].forEach(key => {
+        try {
+          const raw = localStorage.getItem(key);
+          if (raw) {
+            const list = JSON.parse(raw);
+            if (Array.isArray(list)) {
+              const cleaned = list.map(item => {
+                if (!item || typeof item !== 'object') return item;
+                const { fotos, imagensImovel, images, photo, details, ...rest } = item;
+                return {
+                  ...rest,
+                  photo: (typeof photo === 'string' && !photo.startsWith('data:image/')) ? photo : ''
+                };
+              });
+              localStorage.setItem(key, JSON.stringify(cleaned));
+            }
+          }
+        } catch (e) {}
+      });
+    } catch (e) {}
+    window.location.reload();
+  };
+
   render() {
     if (this.state.hasError) {
+      const isQuotaError = String(this.state.error?.message || this.state.error).includes('QuotaExceeded') ||
+                           String(this.state.error?.message || this.state.error).includes('setItem') ||
+                           String(this.state.error?.message || this.state.error).includes('quota');
+
       return (
         <div style={{
           minHeight: '100vh',
@@ -68,7 +125,9 @@ class ErrorBoundary extends Component {
               Sistema em Recuperação
             </h2>
             <p style={{ fontSize: '0.875rem', color: '#94a3b8', marginBottom: '1.25rem', lineHeight: '1.5' }}>
-              Ocorreu uma instabilidade momentânea na renderização. Seus dados estão preservados com segurança no banco de dados.
+              {isQuotaError 
+                ? 'O armazenamento local do navegador atingiu o limite de fotos/documentos pesados. Clique no botão abaixo para liberar o cache com segurança e restaurar o sistema.'
+                : 'Ocorreu uma instabilidade momentânea na renderização. Seus dados estão preservados com segurança no banco de dados.'}
             </p>
 
             {this.state.error && (
@@ -87,22 +146,40 @@ class ErrorBoundary extends Component {
               </pre>
             )}
 
-            <button
-              type="button"
-              onClick={this.handleReload}
-              style={{
-                backgroundColor: '#0284c7',
-                color: '#ffffff',
-                border: 'none',
-                borderRadius: '8px',
-                padding: '0.65rem 1.5rem',
-                fontWeight: '600',
-                fontSize: '0.875rem',
-                cursor: 'pointer'
-              }}
-            >
-              Recarregar Sistema
-            </button>
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={this.handleClearStorageAndReload}
+                style={{
+                  backgroundColor: '#0284c7',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '0.65rem 1.5rem',
+                  fontWeight: '600',
+                  fontSize: '0.875rem',
+                  cursor: 'pointer'
+                }}
+              >
+                Liberar Espaço & Restaurar Sistema
+              </button>
+              <button
+                type="button"
+                onClick={this.handleReload}
+                style={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                  color: '#cbd5e1',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  borderRadius: '8px',
+                  padding: '0.65rem 1.25rem',
+                  fontWeight: '500',
+                  fontSize: '0.875rem',
+                  cursor: 'pointer'
+                }}
+              >
+                Recarregar Página
+              </button>
+            </div>
           </div>
         </div>
       );

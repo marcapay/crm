@@ -5,7 +5,8 @@ import {
   applyWatermarkToImage, 
   applyWatermarkToMultipleImages, 
   getWatermarkSettings, 
-  saveWatermarkSettings 
+  saveWatermarkSettings,
+  compressImageForStorage
 } from '../utils/watermark';
 import { 
   Building, 
@@ -87,7 +88,8 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
     addClient,
     fichasVisita = [],
     addFichaVisita,
-    setFichasVisita
+    setFichasVisita,
+    safeStorageSet
   } = useApp();
 
   const [loadingCep, setLoadingCep] = useState(false);
@@ -567,9 +569,23 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
       'Atendimento Exclusivo Araújo Imóveis'
     ].filter(Boolean);
 
-    const mainPhoto = (formData.fotos && formData.fotos.length > 0)
-      ? formData.fotos[0]
-      : 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=600&auto=format&fit=crop';
+    // Comprime fotos para armazenamento seguro e leve no navegador sem estourar o LocalStorage
+    let cleanFotos = [];
+    if (Array.isArray(formData.fotos) && formData.fotos.length > 0) {
+      try {
+        cleanFotos = await Promise.all(
+          formData.fotos.slice(0, 8).map(photo => compressImageForStorage(photo, 1000, 0.75))
+        );
+      } catch (err) {
+        cleanFotos = formData.fotos.slice(0, 8);
+      }
+    }
+    const mainPhoto = cleanFotos[0] || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=600&auto=format&fit=crop';
+
+    // Detalhes higienizados sem duplicação de dados brutos
+    const cleanDetails = { ...formData, fotos: cleanFotos.slice(0, 4) };
+    delete cleanDetails.uploadedDocument;
+    delete cleanDetails.rawDocumentText;
 
     const newProperty = {
       id: `prop_${Date.now()}`,
@@ -590,7 +606,7 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
       iptuValue: iptuNum,
       publicarNoSite: formData.publicarNoSite !== false,
       createdAt: new Date().toISOString(),
-      details: { ...formData }
+      details: cleanDetails
     };
 
     // Publicação direta na API do site oficial (araujoimoveiscaratinga.com.br)
@@ -616,7 +632,7 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
       area: Number(formData.areaConstruida || formData.areaTotal) || 0,
       description: desc,
       features: features,
-      images: Array.isArray(formData.fotos) && formData.fotos.length > 0 ? formData.fotos : [],
+      images: cleanFotos,
       featured: formData.destaque !== undefined ? Boolean(formData.destaque) : true,
       status: formData.status || 'Disponível',
       linkYoutube: formData.linkYoutube || '',
@@ -628,7 +644,7 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
       linkWhatsappCorretor: profile?.whatsapp || 'https://wa.me/5533999000000',
       publicarNoSite: formData.publicarNoSite !== false,
       origemCadastroImovel: true,
-      details: { ...formData },
+      details: cleanDetails,
       createdAt: new Date().toISOString()
     };
 
@@ -717,15 +733,15 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
       descricaoGeral: desc,
       descricao: desc,
       description: desc,
-      imagensImovel: Array.isArray(formData.fotos) && formData.fotos.length > 0 ? formData.fotos : [],
-      fotos: Array.isArray(formData.fotos) && formData.fotos.length > 0 ? formData.fotos : [],
-      images: Array.isArray(formData.fotos) && formData.fotos.length > 0 ? formData.fotos : [],
+      imagensImovel: cleanFotos,
+      fotos: cleanFotos,
+      images: cleanFotos,
       photo: mainPhoto,
       publicarNoSite: formData.publicarNoSite !== false,
       corretorResponsavel: profile?.name || 'Araújo Imóveis',
       origemCadastroImovel: true,
       origemCaptacao: 'Cadastro Completo de Imóvel',
-      details: { ...formData },
+      details: cleanDetails,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -738,7 +754,12 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
 
     try {
       const existingFichas = JSON.parse(localStorage.getItem('araujo_fichas_visita') || '[]');
-      localStorage.setItem('araujo_fichas_visita', JSON.stringify([fichaPayload, ...existingFichas.filter(f => f.id !== fichaPayload.id && f.codigoImovel !== cleanCode)]));
+      const updatedFichas = [fichaPayload, ...existingFichas.filter(f => f.id !== fichaPayload.id && f.codigoImovel !== cleanCode)];
+      if (typeof safeStorageSet === 'function') {
+        safeStorageSet('araujo_fichas_visita', updatedFichas);
+      } else {
+        localStorage.setItem('araujo_fichas_visita', JSON.stringify(updatedFichas));
+      }
     } catch (e) {
       console.warn("Erro ao salvar ficha no localStorage:", e);
     }
@@ -746,7 +767,12 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
     // Save in standalone list for persistence
     try {
       const existing = JSON.parse(localStorage.getItem('araujo_imoveis_cadastrados') || '[]');
-      localStorage.setItem('araujo_imoveis_cadastrados', JSON.stringify([newProperty, ...existing]));
+      const updatedProps = [newProperty, ...existing.filter(p => p.id !== newProperty.id && p.codigoImovel !== cleanCode)];
+      if (typeof safeStorageSet === 'function') {
+        safeStorageSet('araujo_imoveis_cadastrados', updatedProps);
+      } else {
+        localStorage.setItem('araujo_imoveis_cadastrados', JSON.stringify(updatedProps));
+      }
     } catch (err) {
       console.error("Erro ao salvar imóvel localmente:", err);
     }

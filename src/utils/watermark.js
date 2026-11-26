@@ -9,9 +9,53 @@ export const DEFAULT_WATERMARK_CONFIG = {
   opacity: 0.45,       // 0.2 a 0.8
   includeText: true,
   footerText: 'Araújo Imóveis • araujoimoveiscaratinga.com.br',
-  quality: 0.92,
-  maxWidth: 2048
+  quality: 0.78,
+  maxWidth: 1200
 };
+
+/**
+ * Comprime e redimensiona imagem para armazenamento seguro no CRM/LocalStorage
+ * @param {string} imageSrc - URL ou base64
+ * @param {number} maxDim - Dimensão máxima (largura ou altura)
+ * @param {number} quality - Qualidade JPEG (0.1 a 1.0)
+ * @returns {Promise<string>}
+ */
+export async function compressImageForStorage(imageSrc, maxDim = 900, quality = 0.75) {
+  if (!imageSrc || typeof imageSrc !== 'string') return imageSrc;
+  if (!imageSrc.startsWith('data:image/')) return imageSrc;
+  if (imageSrc.length < 50000) return imageSrc;
+
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        let width = img.naturalWidth || img.width;
+        let height = img.naturalHeight || img.height;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return resolve(imageSrc);
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      } catch (e) {
+        resolve(imageSrc);
+      }
+    };
+    img.onerror = () => resolve(imageSrc);
+    img.src = imageSrc;
+  });
+}
 
 export function getWatermarkSettings() {
   try {
