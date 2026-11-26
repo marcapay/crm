@@ -78,7 +78,17 @@ const DOCUMENTACAO_LIST = [
 ];
 
 export default function FormCadastroImovel({ onBack, onSaved }) {
-  const { properties = [], setProperties, profile, registerActivityLog, clients = [], addClient } = useApp();
+  const { 
+    properties = [], 
+    setProperties, 
+    profile, 
+    registerActivityLog, 
+    clients = [], 
+    addClient,
+    fichasVisita = [],
+    addFichaVisita,
+    setFichasVisita
+  } = useApp();
 
   const [loadingCep, setLoadingCep] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -645,6 +655,92 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
     // Save in context & localStorage
     if (typeof setProperties === 'function') {
       setProperties(prev => [newProperty, ...(prev || [])]);
+    }
+
+    // Criação e salvamento na Carteira de Imóveis (FichaVisitaTecnica & Ciclo de Vida)
+    const fichaPayload = {
+      id: `ficha_${Date.now()}`,
+      codigoImovel: cleanCode,
+      code: cleanCode,
+      tituloImovel: formData.titulo || `${cleanType} no ${cleanNeighborhood} - ${cleanCity}`,
+      title: formData.titulo || `${cleanType} no ${cleanNeighborhood} - ${cleanCity}`,
+      tipoImovel: cleanType,
+      tipo: cleanType,
+      type: cleanType,
+      usoImovel: cleanUso,
+      uso: cleanUso,
+      finalidadeImovel: formData.finalidadeImovel || 'Para locação',
+      statusComercial: formData.statusComercial || 'Disponível para locação',
+      status: formData.statusComercial || formData.status || 'Disponível',
+      etapaPipelineLocacao: 'etapa_1',
+      etapaPipelineVenda: 'etapa_v1',
+      etapaPipeline: 'etapa_1',
+      bairroImovel: cleanNeighborhood,
+      bairro: cleanNeighborhood,
+      neighborhood: cleanNeighborhood,
+      enderecoImovel: cleanAddress,
+      endereco: cleanAddress,
+      address: cleanAddress,
+      cidadeImovel: cleanCity,
+      cidade: cleanCity,
+      city: cleanCity,
+      estadoImovel: formData.estado || 'MG',
+      estado: formData.estado || 'MG',
+      nomeProprietario: formData.nomeProprietario || 'Proprietário a Definir',
+      ownerName: formData.nomeProprietario || 'Proprietário a Definir',
+      telefoneProprietario: formData.telefoneProprietario || '',
+      ownerPhone: formData.telefoneProprietario || '',
+      emailProprietario: formData.emailProprietario || '',
+      valorImovel: priceNum,
+      valorPretendidoAluguel: priceNum,
+      valorPretendidoVenda: priceNum,
+      price: priceNum,
+      rentValue: priceNum,
+      condominiumValue: condoNum,
+      condoFee: condoNum,
+      iptu: iptuNum,
+      iptuValue: iptuNum,
+      quartos: String(formData.quartos || '0'),
+      bedrooms: Number(formData.quartos) || 0,
+      banheiros: String(formData.banheiros || '0'),
+      bathrooms: Number(formData.banheiros) || 0,
+      suites: String(formData.suites || '0'),
+      vagas: String(formData.vagas || '0'),
+      parkingSpots: Number(formData.vagas) || 0,
+      areaConstruida: String(formData.areaConstruida || ''),
+      areaTotal: String(formData.areaTotal || ''),
+      area: Number(formData.areaConstruida || formData.areaTotal) || 0,
+      caracteristicasDiferenciais: Array.isArray(formData.diferenciais) ? formData.diferenciais : [],
+      features: features,
+      documentacao: Array.isArray(formData.documentacao) ? formData.documentacao : [],
+      documentacaoOutro: formData.documentacaoOutro || '',
+      descricaoGeral: desc,
+      descricao: desc,
+      description: desc,
+      imagensImovel: Array.isArray(formData.fotos) && formData.fotos.length > 0 ? formData.fotos : [],
+      fotos: Array.isArray(formData.fotos) && formData.fotos.length > 0 ? formData.fotos : [],
+      images: Array.isArray(formData.fotos) && formData.fotos.length > 0 ? formData.fotos : [],
+      photo: mainPhoto,
+      publicarNoSite: formData.publicarNoSite !== false,
+      corretorResponsavel: profile?.name || 'Araújo Imóveis',
+      origemCadastroImovel: true,
+      origemCaptacao: 'Cadastro Completo de Imóvel',
+      details: { ...formData },
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    if (typeof addFichaVisita === 'function') {
+      addFichaVisita(fichaPayload);
+    } else if (typeof setFichasVisita === 'function') {
+      setFichasVisita(prev => [fichaPayload, ...(prev || [])]);
+    }
+
+    try {
+      const existingFichas = JSON.parse(localStorage.getItem('araujo_fichas_visita') || '[]');
+      localStorage.setItem('araujo_fichas_visita', JSON.stringify([fichaPayload, ...existingFichas.filter(f => f.id !== fichaPayload.id && f.codigoImovel !== cleanCode)]));
+    } catch (e) {
+      console.warn("Erro ao salvar ficha no localStorage:", e);
     }
 
     // Save in standalone list for persistence

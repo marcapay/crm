@@ -79,6 +79,7 @@ export default function FichaVisitaTecnica() {
     deleteFichaVisita, 
     convertFichaToProperty,
     profile,
+    properties = [],
     portalUsers = [],
     imoveisContratos = [],
     saveImovelContrato,
@@ -114,8 +115,118 @@ export default function FichaVisitaTecnica() {
   // Fichas exclusivas do Site Oficial (Anunciar Imóvel)
   const siteFichas = (fichasVisita || []).filter(isSiteFicha);
 
-  // Fichas internas/oficiais do CRM (apenas estas aparecem na listagem principal)
-  const internalFichas = (fichasVisita || []).filter(f => !isSiteFicha(f));
+  // Fichas internas/oficiais do CRM (mesclando fichas de visita e imóveis cadastrados)
+  const internalFichas = useMemo(() => {
+    const list = [...(fichasVisita || []).filter(f => !isSiteFicha(f))];
+    const existingCodes = new Set(list.map(f => (f.codigoImovel || f.code || f.id || '').toUpperCase()));
+
+    // Incorpora imóveis salvos em properties no AppContext
+    (properties || []).forEach(p => {
+      const pCode = (p.codigoImovel || p.code || p.id || '').toUpperCase();
+      if (pCode && !existingCodes.has(pCode)) {
+        existingCodes.add(pCode);
+        const preco = Number(p.rentValue || p.price || p.valorImovel || 0);
+        list.push({
+          id: p.id || `prop_${Date.now()}`,
+          codigoImovel: p.codigoImovel || p.code || 'IM-0001',
+          code: p.codigoImovel || p.code || 'IM-0001',
+          tituloImovel: p.title || p.titulo || `${p.type || p.tipo || 'Imóvel'} - ${p.neighborhood || p.bairro || 'Centro'}`,
+          title: p.title || p.titulo,
+          tipoImovel: p.type || p.tipo || 'Casa',
+          tipo: p.type || p.tipo || 'Casa',
+          usoImovel: p.uso || 'Residencial',
+          finalidadeImovel: p.finalidadeImovel || (p.transaction === 'comprar' ? 'Para venda' : 'Para locação'),
+          statusComercial: p.statusComercial || 'Disponível para locação',
+          status: p.statusComercial || p.status || 'Disponível',
+          bairroImovel: p.neighborhood || p.bairro || 'Centro',
+          bairro: p.neighborhood || p.bairro || 'Centro',
+          enderecoImovel: p.address || p.endereco || '',
+          endereco: p.address || p.endereco || '',
+          cidadeImovel: p.city || p.cidade || 'Caratinga',
+          cidade: p.city || p.cidade || 'Caratinga',
+          nomeProprietario: p.ownerName || p.nomeProprietario || 'Proprietário a Definir',
+          telefoneProprietario: p.ownerPhone || p.telefoneProprietario || '',
+          valorImovel: preco,
+          valorPretendidoAluguel: preco,
+          valorPretendidoVenda: preco,
+          valorCondominio: Number(p.condoFee || p.valorCondominio || 0),
+          iptu: Number(p.iptu || p.iptuAnual || 0),
+          quartos: String(p.bedrooms || p.quartos || '0'),
+          banheiros: String(p.bathrooms || p.banheiros || '0'),
+          suites: String(p.suites || '0'),
+          vagas: String(p.parkingSpots || p.vagas || '0'),
+          areaConstruida: String(p.area || p.areaConstruida || ''),
+          areaTotal: String(p.area || p.areaTotal || ''),
+          caracteristicasDiferenciais: Array.isArray(p.features) ? p.features : (Array.isArray(p.diferenciais) ? p.diferenciais : []),
+          descricaoGeral: p.description || p.descricao || '',
+          imagensImovel: Array.isArray(p.images) && p.images.length > 0 ? p.images : (Array.isArray(p.fotos) && p.fotos.length > 0 ? p.fotos : (p.photo ? [p.photo] : [])),
+          fotos: Array.isArray(p.images) && p.images.length > 0 ? p.images : (Array.isArray(p.fotos) && p.fotos.length > 0 ? p.fotos : (p.photo ? [p.photo] : [])),
+          photo: p.photo || (Array.isArray(p.images) && p.images[0]) || (Array.isArray(p.fotos) && p.fotos[0]) || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=600&auto=format&fit=crop',
+          publicarNoSite: p.publicarNoSite !== false,
+          origemCadastroImovel: true,
+          details: p.details || { ...p }
+        });
+      }
+    });
+
+    // Incorpora imóveis salvos localmente em araujo_imoveis_cadastrados
+    try {
+      const savedLocal = JSON.parse(localStorage.getItem('araujo_imoveis_cadastrados') || '[]');
+      if (Array.isArray(savedLocal)) {
+        savedLocal.forEach(p => {
+          const pCode = (p.codigoImovel || p.code || p.id || '').toUpperCase();
+          if (pCode && !existingCodes.has(pCode)) {
+            existingCodes.add(pCode);
+            const preco = Number(p.rentValue || p.price || p.valorImovel || 0);
+            list.push({
+              id: p.id || `prop_${Date.now()}`,
+              codigoImovel: p.codigoImovel || p.code || 'IM-0001',
+              code: p.codigoImovel || p.code || 'IM-0001',
+              tituloImovel: p.title || p.titulo || `${p.type || p.tipo || 'Imóvel'} - ${p.neighborhood || p.bairro || 'Centro'}`,
+              title: p.title || p.titulo,
+              tipoImovel: p.type || p.tipo || 'Casa',
+              tipo: p.type || p.tipo || 'Casa',
+              usoImovel: p.uso || 'Residencial',
+              finalidadeImovel: p.finalidadeImovel || 'Para locação',
+              statusComercial: p.statusComercial || 'Disponível para locação',
+              status: p.statusComercial || p.status || 'Disponível',
+              bairroImovel: p.neighborhood || p.bairro || 'Centro',
+              bairro: p.neighborhood || p.bairro || 'Centro',
+              enderecoImovel: p.address || p.endereco || '',
+              endereco: p.address || p.endereco || '',
+              cidadeImovel: p.city || p.cidade || 'Caratinga',
+              cidade: p.city || p.cidade || 'Caratinga',
+              nomeProprietario: p.ownerName || p.nomeProprietario || 'Proprietário a Definir',
+              telefoneProprietario: p.ownerPhone || p.telefoneProprietario || '',
+              valorImovel: preco,
+              valorPretendidoAluguel: preco,
+              valorPretendidoVenda: preco,
+              valorCondominio: Number(p.condoFee || p.valorCondominio || 0),
+              iptu: Number(p.iptu || p.iptuAnual || 0),
+              quartos: String(p.bedrooms || p.quartos || '0'),
+              banheiros: String(p.bathrooms || p.banheiros || '0'),
+              suites: String(p.suites || '0'),
+              vagas: String(p.parkingSpots || p.vagas || '0'),
+              areaConstruida: String(p.area || p.areaConstruida || ''),
+              areaTotal: String(p.area || p.areaTotal || ''),
+              caracteristicasDiferenciais: Array.isArray(p.features) ? p.features : (Array.isArray(p.diferenciais) ? p.diferenciais : []),
+              descricaoGeral: p.description || p.descricao || '',
+              imagensImovel: Array.isArray(p.images) && p.images.length > 0 ? p.images : (Array.isArray(p.fotos) && p.fotos.length > 0 ? p.fotos : (p.photo ? [p.photo] : [])),
+              fotos: Array.isArray(p.images) && p.images.length > 0 ? p.images : (Array.isArray(p.fotos) && p.fotos.length > 0 ? p.fotos : (p.photo ? [p.photo] : [])),
+              photo: p.photo || (Array.isArray(p.images) && p.images[0]) || (Array.isArray(p.fotos) && p.fotos[0]) || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=600&auto=format&fit=crop',
+              publicarNoSite: p.publicarNoSite !== false,
+              origemCadastroImovel: true,
+              details: p.details || { ...p }
+            });
+          }
+        });
+      }
+    } catch (e) {
+      console.warn("Erro ao ler araujo_imoveis_cadastrados:", e);
+    }
+
+    return list;
+  }, [fichasVisita, properties]);
 
   // Print state
   const [printData, setPrintData] = useState(null);
