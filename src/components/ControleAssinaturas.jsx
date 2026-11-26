@@ -105,7 +105,7 @@ export default function ControleAssinaturas({
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <FileCheck size={18} style={{ color: progress.concluido ? '#10b981' : '#38bdf8' }} />
+              <FileCheck size={18} style={{ color: 'var(--accent-cyan)' }} />
               <strong style={{ fontSize: '1rem', color: 'var(--text-primary)' }}>
                 Progresso das Assinaturas Obrigatórias
               </strong>
@@ -117,13 +117,13 @@ export default function ControleAssinaturas({
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <span style={{ 
-              fontWeight: '700', 
-              fontSize: '0.9rem', 
-              color: progress.concluido ? '#10b981' : '#f59e0b',
-              backgroundColor: progress.concluido ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-              padding: '0.3rem 0.75rem',
-              borderRadius: '20px',
-              border: `1px solid ${progress.concluido ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`
+              fontWeight: '600', 
+              fontSize: '0.85rem', 
+              color: 'var(--text-primary)',
+              backgroundColor: 'rgba(255, 255, 255, 0.06)',
+              padding: '0.35rem 0.75rem',
+              borderRadius: '6px',
+              border: '1px solid var(--glass-border)'
             }}>
               {progress.texto} ({progress.percentual}%)
             </span>
@@ -131,27 +131,26 @@ export default function ControleAssinaturas({
         </div>
 
         {/* Progress Bar Container */}
-        <div style={{ width: '100%', height: '10px', backgroundColor: 'var(--bg-secondary)', borderRadius: '6px', overflow: 'hidden' }}>
+        <div style={{ width: '100%', height: '8px', backgroundColor: 'rgba(255, 255, 255, 0.06)', borderRadius: '4px', overflow: 'hidden' }}>
           <div style={{ 
             width: `${progress.percentual}%`, 
             height: '100%', 
-            backgroundColor: progress.concluido ? '#10b981' : '#38bdf8', 
-            transition: 'width 0.4s ease',
-            boxShadow: progress.concluido ? '0 0 10px rgba(16, 185, 129, 0.5)' : '0 0 10px rgba(56, 189, 248, 0.5)'
+            backgroundColor: 'var(--accent-primary)', 
+            transition: 'width 0.4s ease'
           }} />
         </div>
 
         {/* Alerta de bloqueio caso haja pendências */}
         {!progress.concluido && (
-          <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: '#f59e0b' }}>
-            <AlertTriangle size={15} />
+          <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+            <AlertTriangle size={15} style={{ color: 'var(--accent-cyan)' }} />
             <span>Regra de Segurança: O contrato e a entrega de chaves não podem ser concluídos enquanto houver assinaturas obrigatórias pendentes.</span>
           </div>
         )}
 
         {progress.concluido && (
-          <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: '#10b981' }}>
-            <CheckCircle2 size={15} />
+          <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+            <CheckCircle2 size={15} style={{ color: 'var(--accent-cyan)' }} />
             <span>Todas as assinaturas obrigatórias foram concluídas com sucesso. O contrato está apto para vigência.</span>
           </div>
         )}
@@ -161,16 +160,16 @@ export default function ControleAssinaturas({
       {docFileNotice && (
         <div style={{
           padding: '0.75rem 1rem',
-          backgroundColor: 'rgba(16, 185, 129, 0.15)',
-          border: '1px solid #10b981',
-          color: '#10b981',
+          backgroundColor: 'rgba(255, 255, 255, 0.05)',
+          border: '1px solid var(--glass-border)',
+          color: 'var(--text-primary)',
           borderRadius: '8px',
           fontSize: '0.875rem',
           display: 'flex',
           alignItems: 'center',
           gap: '0.5rem'
         }}>
-          <CheckCircle2 size={16} />
+          <CheckCircle2 size={16} style={{ color: 'var(--accent-cyan)' }} />
           <span>{docFileNotice}</span>
         </div>
       )}
@@ -196,7 +195,7 @@ export default function ControleAssinaturas({
                   padding: '1rem',
                   borderRadius: '10px',
                   backgroundColor: 'var(--bg-secondary)',
-                  border: `1px solid ${isAssinada ? 'rgba(16, 185, 129, 0.35)' : isRecusada ? 'rgba(239, 68, 68, 0.35)' : isAguardando ? 'rgba(245, 158, 11, 0.35)' : 'var(--glass-border)'}`,
+                  border: '1px solid var(--glass-border)',
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
@@ -219,11 +218,11 @@ export default function ControleAssinaturas({
                       {sig.papel}
                     </span>
                     {isObrigatoria ? (
-                      <span style={{ fontSize: '0.7rem', color: '#f59e0b', fontWeight: '700' }}>
-                        *Obrigatória
+                      <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: '600', backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: '1px 6px', borderRadius: '4px', border: '1px solid var(--glass-border)' }}>
+                        Obrigatória
                       </span>
                     ) : (
-                      <span style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)' }}>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', padding: '1px 6px' }}>
                         Opcional
                       </span>
                     )}
@@ -233,8 +232,8 @@ export default function ControleAssinaturas({
                     {sig.email && <span>E-mail: {sig.email}</span>}
                     {sig.telefone && <span>WhatsApp: {sig.telefone}</span>}
                     {sig.dataAssinatura && (
-                      <span style={{ color: '#10b981', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                        <Calendar size={13} />
+                      <span style={{ color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <Calendar size={13} style={{ color: 'var(--accent-cyan)' }} />
                         Assinado em: {new Date(sig.dataAssinatura).toLocaleDateString('pt-BR')} às {new Date(sig.dataAssinatura).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     )}
@@ -257,8 +256,8 @@ export default function ControleAssinaturas({
                       borderRadius: '6px',
                       backgroundColor: 'var(--bg-primary)',
                       border: '1px solid var(--glass-border)',
-                      color: sig.status === 'Assinada' ? '#10b981' : sig.status === 'Recusada' ? '#ef4444' : sig.status === 'Aguardando assinatura' ? '#f59e0b' : 'var(--text-secondary)',
-                      fontWeight: '600',
+                      color: 'var(--text-primary)',
+                      fontWeight: '500',
                       fontSize: '0.85rem',
                       cursor: readOnly ? 'default' : 'pointer'
                     }}

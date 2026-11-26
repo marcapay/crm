@@ -375,7 +375,7 @@ export default function ModalCicloVidaImovel({
               {/* Seção 3: Status Comercial */}
               <div className="glass-card" style={{ padding: '1.25rem' }}>
                 <h4 style={{ fontSize: '1rem', color: 'var(--text-primary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <TrendingUp size={18} style={{ color: '#10b981' }} />
+                  <TrendingUp size={18} style={{ color: 'var(--accent-cyan)' }} />
                   2. Status Comercial do Imóvel
                 </h4>
                 <p style={{ fontSize: '0.825rem', color: 'var(--text-tertiary)', marginBottom: '1rem' }}>
@@ -426,7 +426,7 @@ export default function ModalCicloVidaImovel({
               {/* Seção 8: Status Operacional Pós-Locação */}
               <div className="glass-card" style={{ padding: '1.25rem' }}>
                 <h4 style={{ fontSize: '1rem', color: 'var(--text-primary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <ShieldCheck size={18} style={{ color: '#f59e0b' }} />
+                  <ShieldCheck size={18} style={{ color: 'var(--accent-cyan)' }} />
                   3. Gestão Pós-Locação (Status Operacional)
                 </h4>
                 <p style={{ fontSize: '0.825rem', color: 'var(--text-tertiary)', marginBottom: '0.75rem' }}>
@@ -440,15 +440,15 @@ export default function ModalCicloVidaImovel({
                       style={{
                         padding: '0.6rem 0.8rem',
                         borderRadius: '6px',
-                        border: `1px solid ${statusOperacional === op.label ? op.color : 'var(--glass-border)'}`,
+                        border: '1px solid var(--glass-border)',
                         backgroundColor: statusOperacional === op.label ? 'rgba(255, 255, 255, 0.08)' : 'var(--bg-secondary)',
-                        color: statusOperacional === op.label ? op.color : 'var(--text-secondary)',
+                        color: statusOperacional === op.label ? 'var(--text-primary)' : 'var(--text-secondary)',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '0.4rem',
                         cursor: 'pointer',
                         fontSize: '0.825rem',
-                        fontWeight: statusOperacional === op.label ? '700' : '500'
+                        fontWeight: statusOperacional === op.label ? '600' : '500'
                       }}
                     >
                       <input 
@@ -464,10 +464,10 @@ export default function ModalCicloVidaImovel({
               </div>
 
               {/* Seção 10: Regras de Publicação no Site */}
-              <div className="glass-card" style={{ padding: '1.25rem', borderLeft: `5px solid ${siteDecision.publicar ? '#10b981' : '#f59e0b'}` }}>
+              <div className="glass-card" style={{ padding: '1.25rem', border: '1px solid var(--glass-border)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
                   <h4 style={{ fontSize: '1rem', color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Globe size={18} style={{ color: siteDecision.publicar ? '#10b981' : '#f59e0b' }} />
+                    <Globe size={18} style={{ color: 'var(--accent-cyan)' }} />
                     4. Integração com o Site Oficial (araujoimoveiscaratinga.com.br)
                   </h4>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', color: 'var(--text-primary)', cursor: 'pointer' }}>
@@ -485,17 +485,17 @@ export default function ModalCicloVidaImovel({
                     <strong>Comportamento Automático no Site:</strong> {siteDecision.motivo}
                   </p>
                   {siteDecision.reservado && (
-                    <span style={{ color: '#f59e0b', display: 'block', fontSize: '0.8rem' }}>
-                      ⚠️ O anúncio continuará no site oficial com selo visual de <strong>"RESERVADO"</strong>.
+                    <span style={{ color: 'var(--text-secondary)', display: 'block', fontSize: '0.8rem' }}>
+                      ℹ️ O anúncio continuará no site oficial com selo visual de <strong>"RESERVADO"</strong>.
                     </span>
                   )}
                   {statusComercial === 'Alugado' && finalidade === 'Para venda e locação' && (
-                    <span style={{ color: '#10b981', display: 'block', fontSize: '0.8rem' }}>
+                    <span style={{ color: 'var(--text-secondary)', display: 'block', fontSize: '0.8rem' }}>
                       ✓ Imóvel alugado: Saiu da seção de locação, mas <strong>permanece ativo na vitrine de VENDA</strong>!
                     </span>
                   )}
                   {statusComercial === 'Vendido' && finalidade === 'Para venda e locação' && (
-                    <span style={{ color: '#10b981', display: 'block', fontSize: '0.8rem' }}>
+                    <span style={{ color: 'var(--text-secondary)', display: 'block', fontSize: '0.8rem' }}>
                       ✓ Imóvel vendido: Saiu da seção de venda, mas <strong>permanece ativo na vitrine de LOCAÇÃO</strong>!
                     </span>
                   )}

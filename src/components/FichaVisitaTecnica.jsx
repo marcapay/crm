@@ -1150,7 +1150,7 @@ export default function FichaVisitaTecnica() {
               </div>
 
               {imoveisContratos.map(contrato => (
-                <div key={contrato.id} className="glass-panel" style={{ padding: '1.25rem' }}>
+                <div key={contrato.id}>
                   <ControleAssinaturas 
                     contrato={contrato}
                     onUpdateContrato={saveImovelContrato}

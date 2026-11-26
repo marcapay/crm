@@ -171,7 +171,7 @@ export default function GestaoVistorias({
                     padding: '1.25rem',
                     borderRadius: '10px',
                     backgroundColor: 'var(--bg-secondary)',
-                    border: `1px solid ${isConcluida ? 'rgba(16, 185, 129, 0.35)' : 'var(--glass-border)'}`,
+                    border: '1px solid var(--glass-border)',
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '0.75rem'
@@ -182,12 +182,13 @@ export default function GestaoVistorias({
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <span style={{ 
                           fontSize: '0.75rem', 
-                          fontWeight: '700', 
+                          fontWeight: '600', 
                           textTransform: 'uppercase',
                           padding: '0.2rem 0.6rem', 
                           borderRadius: '4px', 
-                          backgroundColor: v.tipo === 'entrada' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(251, 146, 60, 0.15)',
-                          color: v.tipo === 'entrada' ? '#38bdf8' : '#fb923c'
+                          backgroundColor: 'rgba(255, 255, 255, 0.06)',
+                          color: 'var(--text-secondary)',
+                          border: '1px solid var(--glass-border)'
                         }}>
                           Vistoria de {v.tipo === 'saida' ? 'Saída (Devolução)' : 'Entrada'}
                         </span>
@@ -225,9 +226,9 @@ export default function GestaoVistorias({
                           padding: '0.4rem 0.75rem',
                           borderRadius: '6px',
                           backgroundColor: 'var(--bg-primary)',
-                          border: `1px solid ${statusInfo.color}`,
-                          color: statusInfo.color,
-                          fontWeight: '600',
+                          border: '1px solid var(--glass-border)',
+                          color: 'var(--text-primary)',
+                          fontWeight: '500',
                           fontSize: '0.825rem',
                           cursor: readOnly ? 'default' : 'pointer'
                         }}
