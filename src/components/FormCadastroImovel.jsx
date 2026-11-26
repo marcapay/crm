@@ -470,9 +470,9 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
       return updated;
     });
 
-    // Auto-lookup ViaCEP if 8 digits CEP is extracted
+    // Auto-lookup ViaCEP if 8 digits CEP is extracted and no explicit address was provided
     const cleanCep = (aiData.cep || '').replace(/\D/g, '');
-    if (cleanCep.length === 8) {
+    if (cleanCep.length === 8 && !aiData.endereco) {
       fetch(`https://viacep.com.br/ws/${cleanCep}/json/`)
         .then(res => res.json())
         .then(data => {
