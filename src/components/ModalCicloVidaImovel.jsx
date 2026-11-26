@@ -20,7 +20,8 @@ import {
   ShieldCheck, 
   ArrowRight,
   TrendingUp,
-  Tag
+  Tag,
+  Trash2
 } from 'lucide-react';
 import { 
   FINALIDADE_IMOVEL, 
@@ -38,6 +39,7 @@ export default function ModalCicloVidaImovel({
   imovel, 
   onClose, 
   onSaveImovel,
+  onDeleteImovel,
   contratos = [],
   onSaveContrato,
   vistorias = [],
@@ -220,14 +222,36 @@ export default function ModalCicloVidaImovel({
             </div>
           </div>
 
-          <button 
-            type="button" 
-            onClick={onClose}
-            className="btn btn-secondary"
-            style={{ padding: '0.45rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          >
-            <X size={18} />
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            {onDeleteImovel && (
+              <button 
+                type="button" 
+                onClick={() => onDeleteImovel(imovel)}
+                className="btn btn-secondary"
+                style={{ 
+                  padding: '0.45rem', 
+                  borderRadius: '50%', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  color: '#ef4444',
+                  borderColor: 'rgba(239, 68, 68, 0.3)',
+                  backgroundColor: 'rgba(239, 68, 68, 0.08)'
+                }}
+                title="Excluir Imóvel"
+              >
+                <Trash2 size={16} />
+              </button>
+            )}
+            <button 
+              type="button" 
+              onClick={onClose}
+              className="btn btn-secondary"
+              style={{ padding: '0.45rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         {/* Navegação de Abas do Modal */}

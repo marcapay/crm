@@ -74,18 +74,29 @@ const formatLocationUrl = (urlOrCoords) => {
 export default function FichaVisitaTecnica() {
   const { 
     fichasVisita = [], 
+    setFichasVisita,
     addFichaVisita, 
     updateFichaVisita, 
     deleteFichaVisita, 
     convertFichaToProperty,
     profile,
     properties = [],
+    setProperties,
     portalUsers = [],
     imoveisContratos = [],
     saveImovelContrato,
     imoveisVistorias = [],
     saveImovelVistoria
   } = useApp();
+
+  const [deletedIds, setDeletedIds] = useState(() => {
+    try {
+      const raw = localStorage.getItem('crmbase_deleted_fichas');
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  });
 
   // View modes: 'list' | 'form' | 'print' | 'site_fichas' | 'cadastro_imovel'
   const [viewMode, setViewMode] = useState('list');
@@ -117,11 +128,20 @@ export default function FichaVisitaTecnica() {
 
   // Fichas internas/oficiais do CRM (mesclando fichas de visita e imóveis cadastrados)
   const internalFichas = useMemo(() => {
-    const list = [...(fichasVisita || []).filter(f => !isSiteFicha(f))];
+    const deletedUpper = new Set((deletedIds || []).map(id => String(id || '').trim().toUpperCase()));
+    const isDeleted = (item) => {
+      if (!item) return true;
+      const idUpper = String(item.id || '').trim().toUpperCase();
+      const codeUpper = String(item.codigoImovel || item.code || '').trim().toUpperCase();
+      return (idUpper && deletedUpper.has(idUpper)) || (codeUpper && deletedUpper.has(codeUpper));
+    };
+
+    const list = [...(fichasVisita || []).filter(f => !isSiteFicha(f) && !isDeleted(f))];
     const existingCodes = new Set(list.map(f => (f.codigoImovel || f.code || f.id || '').toUpperCase()));
 
     // Incorpora imóveis salvos em properties no AppContext
     (properties || []).forEach(p => {
+      if (isDeleted(p)) return;
       const pCode = (p.codigoImovel || p.code || p.id || '').toUpperCase();
       if (pCode && !existingCodes.has(pCode)) {
         existingCodes.add(pCode);
@@ -174,6 +194,7 @@ export default function FichaVisitaTecnica() {
       const savedLocal = JSON.parse(localStorage.getItem('araujo_imoveis_cadastrados') || '[]');
       if (Array.isArray(savedLocal)) {
         savedLocal.forEach(p => {
+          if (isDeleted(p)) return;
           const pCode = (p.codigoImovel || p.code || p.id || '').toUpperCase();
           if (pCode && !existingCodes.has(pCode)) {
             existingCodes.add(pCode);
@@ -226,7 +247,7 @@ export default function FichaVisitaTecnica() {
     }
 
     return list;
-  }, [fichasVisita, properties]);
+  }, [fichasVisita, properties, deletedIds]);
 
   // Print state
   const [printData, setPrintData] = useState(null);
@@ -666,6 +687,108 @@ export default function FichaVisitaTecnica() {
     if (window.confirm('Tem certeza que deseja excluir esta Ficha de Visita Técnica?')) {
       deleteFichaVisita(id);
     }
+  };
+
+  const handleDeleteImovel = (imovel) => {
+    if (!imovel) return;
+    const identifier = imovel.codigoImovel || imovel.code || imovel.tituloImovel || imovel.title || 'este imóvel';
+    if (!window.confirm(`Tem certeza que deseja excluir o imóvel "${identifier}"? Esta ação removerá o imóvel da carteira e do sistema.`)) {
+      return;
+    }
+
+    const id = imovel.id;
+    const code = (imovel.codigoImovel || imovel.code || '').trim().toUpperCase();
+
+    // 1. Atualiza lista de IDs excluídos no estado e localStorage
+    setDeletedIds(prev => {
+      const next = [...(prev || [])];
+      if (id && !next.includes(id)) next.push(id);
+      if (code && !next.includes(code)) next.push(code);
+      try {
+        localStorage.setItem('crmbase_deleted_fichas', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+
+    // 2. Chama deleteFichaVisita nativa do AppContext se possuir id
+    if (id && typeof deleteFichaVisita === 'function') {
+      try {
+        deleteFichaVisita(id);
+      } catch (e) {}
+    }
+
+    // 3. Remove de fichasVisita no estado
+    if (typeof setFichasVisita === 'function') {
+      setFichasVisita(prev => (prev || []).filter(f => 
+        f.id !== id && 
+        (!code || ((f.codigoImovel || f.code || '').trim().toUpperCase() !== code))
+      ));
+    }
+
+    // 4. Remove de properties no estado
+    if (typeof setProperties === 'function') {
+      setProperties(prev => (prev || []).filter(p => 
+        p.id !== id && 
+        (!code || ((p.codigoImovel || p.code || p.id || '').trim().toUpperCase() !== code))
+      ));
+    }
+
+    // 5. Remove do localStorage araujo_imoveis_cadastrados
+    try {
+      const raw = localStorage.getItem('araujo_imoveis_cadastrados');
+      if (raw) {
+        const list = JSON.parse(raw);
+        if (Array.isArray(list)) {
+          const filtered = list.filter(p => 
+            p.id !== id && 
+            (!code || ((p.codigoImovel || p.code || p.id || '').trim().toUpperCase() !== code))
+          );
+          localStorage.setItem('araujo_imoveis_cadastrados', JSON.stringify(filtered));
+        }
+      }
+    } catch (e) {}
+
+    // 6. Remove do localStorage araujo_fichas_visita
+    try {
+      const raw = localStorage.getItem('araujo_fichas_visita');
+      if (raw) {
+        const list = JSON.parse(raw);
+        if (Array.isArray(list)) {
+          const filtered = list.filter(f => 
+            f.id !== id && 
+            (!code || ((f.codigoImovel || f.code || '').trim().toUpperCase() !== code))
+          );
+          localStorage.setItem('araujo_fichas_visita', JSON.stringify(filtered));
+        }
+      }
+    } catch (e) {}
+
+    // 7. Remove do localStorage araujo_portal_properties
+    try {
+      const raw = localStorage.getItem('araujo_portal_properties');
+      if (raw) {
+        const list = JSON.parse(raw);
+        if (Array.isArray(list)) {
+          const filtered = list.filter(p => 
+            p.id !== id && 
+            (!code || ((p.codigoImovel || p.code || p.id || '').trim().toUpperCase() !== code))
+          );
+          localStorage.setItem('araujo_portal_properties', JSON.stringify(filtered));
+        }
+      }
+    } catch (e) {}
+
+    // 8. Tenta deletar no endpoint de nuvem caso exista
+    try {
+      if (id) fetch(`/api/properties?type=ficha&id=${encodeURIComponent(id)}`, { method: 'DELETE' }).catch(() => {});
+      if (code) {
+        const propId = `imovel-${code.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+        fetch(`/api/properties?id=${propId}`, { method: 'DELETE' }).catch(() => {});
+      }
+    } catch (e) {}
+
+    setSuccessMsg(`Imóvel "${identifier}" excluído com sucesso!`);
+    setTimeout(() => setSuccessMsg(''), 4000);
   };
 
   // Pipeline Movement Handler (Seções 4 & 5)
@@ -1215,6 +1338,33 @@ export default function FichaVisitaTecnica() {
                             >
                               <Edit3 size={14} />
                             </button>
+
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteImovel(imovel);
+                              }}
+                              className="btn btn-secondary"
+                              style={{ 
+                                padding: '0.45rem 0.75rem', 
+                                fontSize: '0.8rem',
+                                color: '#ef4444',
+                                borderColor: 'rgba(239, 68, 68, 0.25)',
+                                backgroundColor: 'rgba(239, 68, 68, 0.08)'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.2)';
+                                e.currentTarget.style.borderColor = '#ef4444';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.08)';
+                                e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.25)';
+                              }}
+                              title="Excluir Imóvel"
+                            >
+                              <Trash2 size={14} />
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -1512,6 +1662,10 @@ export default function FichaVisitaTecnica() {
         <ModalCicloVidaImovel 
           imovel={selectedLifecycleImovel}
           onClose={() => setSelectedLifecycleImovel(null)}
+          onDeleteImovel={(deleted) => {
+            handleDeleteImovel(deleted);
+            setSelectedLifecycleImovel(null);
+          }}
           onSaveImovel={(updated) => {
             updateFichaVisita(updated.id, updated);
             setSelectedLifecycleImovel(null);
