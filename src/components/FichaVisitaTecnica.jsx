@@ -92,7 +92,13 @@ export default function FichaVisitaTecnica() {
   const [deletedIds, setDeletedIds] = useState(() => {
     try {
       const raw = localStorage.getItem('crmbase_deleted_fichas');
-      return raw ? JSON.parse(raw) : [];
+      const list = raw ? JSON.parse(raw) : [];
+      // Remove códigos sequenciais (como IM-0001, IM-0002) que bloqueariam novos cadastros
+      const cleaned = Array.isArray(list) ? list.filter(item => !String(item).match(/^(IM|AI)-\d+$/i)) : [];
+      if (cleaned.length !== (list ? list.length : 0)) {
+        localStorage.setItem('crmbase_deleted_fichas', JSON.stringify(cleaned));
+      }
+      return cleaned;
     } catch {
       return [];
     }
@@ -132,8 +138,8 @@ export default function FichaVisitaTecnica() {
     const isDeleted = (item) => {
       if (!item) return true;
       const idUpper = String(item.id || '').trim().toUpperCase();
-      const codeUpper = String(item.codigoImovel || item.code || '').trim().toUpperCase();
-      return (idUpper && deletedUpper.has(idUpper)) || (codeUpper && deletedUpper.has(codeUpper));
+      // Não bloqueia pelo código sequencial (ex: IM-0001), apenas pelo ID exclusivo
+      return Boolean(idUpper && deletedUpper.has(idUpper));
     };
 
     const list = [...(fichasVisita || []).filter(f => !isSiteFicha(f) && !isDeleted(f))];
@@ -244,6 +250,23 @@ export default function FichaVisitaTecnica() {
       }
     } catch (e) {
       console.warn("Erro ao ler araujo_imoveis_cadastrados:", e);
+    }
+
+    // Incorpora fichas salvas localmente em araujo_fichas_visita
+    try {
+      const savedFichas = JSON.parse(localStorage.getItem('araujo_fichas_visita') || '[]');
+      if (Array.isArray(savedFichas)) {
+        savedFichas.forEach(f => {
+          if (isDeleted(f) || isSiteFicha(f)) return;
+          const fCode = (f.codigoImovel || f.code || f.id || '').toUpperCase();
+          if (fCode && !existingCodes.has(fCode)) {
+            existingCodes.add(fCode);
+            list.push(f);
+          }
+        });
+      }
+    } catch (e) {
+      console.warn("Erro ao ler araujo_fichas_visita:", e);
     }
 
     return list;
@@ -699,16 +722,17 @@ export default function FichaVisitaTecnica() {
     const id = imovel.id;
     const code = (imovel.codigoImovel || imovel.code || '').trim().toUpperCase();
 
-    // 1. Atualiza lista de IDs excluídos no estado e localStorage
-    setDeletedIds(prev => {
-      const next = [...(prev || [])];
-      if (id && !next.includes(id)) next.push(id);
-      if (code && !next.includes(code)) next.push(code);
-      try {
-        localStorage.setItem('crmbase_deleted_fichas', JSON.stringify(next));
-      } catch (e) {}
-      return next;
-    });
+    // 1. Atualiza lista de IDs excluídos no estado e localStorage (apenas pelo id único do imóvel)
+    if (id) {
+      setDeletedIds(prev => {
+        const next = [...(prev || [])];
+        if (!next.includes(id)) next.push(id);
+        try {
+          localStorage.setItem('crmbase_deleted_fichas', JSON.stringify(next));
+        } catch (e) {}
+        return next;
+      });
+    }
 
     // 2. Chama deleteFichaVisita nativa do AppContext se possuir id
     if (id && typeof deleteFichaVisita === 'function') {

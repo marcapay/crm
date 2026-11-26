@@ -204,10 +204,32 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
 
   // Auto-generate code
   useEffect(() => {
-    const nextNumber = (properties?.length || 0) + 1;
-    const generated = `IM-${String(nextNumber).padStart(4, '0')}`;
-    setFormData(prev => ({ ...prev, codigo: generated }));
-  }, [properties]);
+    let max = 0;
+    const all = [
+      ...(properties || []),
+      ...(fichasVisita || [])
+    ];
+    try {
+      const localProps = JSON.parse(localStorage.getItem('araujo_imoveis_cadastrados') || '[]');
+      if (Array.isArray(localProps)) all.push(...localProps);
+    } catch (e) {}
+    try {
+      const localFichas = JSON.parse(localStorage.getItem('araujo_fichas_visita') || '[]');
+      if (Array.isArray(localFichas)) all.push(...localFichas);
+    } catch (e) {}
+
+    all.forEach(item => {
+      const c = String(item.codigoImovel || item.code || item.codigo || '').toUpperCase();
+      const match = c.match(/IM-(\d+)/i) || c.match(/(\d+)/);
+      if (match) {
+        const n = parseInt(match[1], 10);
+        if (!isNaN(n) && n > max) max = n;
+      }
+    });
+
+    const generated = `IM-${String(max + 1).padStart(4, '0')}`;
+    setFormData(prev => ({ ...prev, codigo: prev.codigo || generated }));
+  }, [properties, fichasVisita]);
 
   const handleChange = (field, value) => {
     setFormData(prev => {
@@ -512,6 +534,18 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
     setIsSaving(true);
 
     const cleanCode = (formData.codigo || `IM-${Date.now()}`).toUpperCase().replace(/^#+/, '');
+
+    // Desbloqueia este código de qualquer lista de exclusão do storage
+    try {
+      const rawDeleted = localStorage.getItem('crmbase_deleted_fichas');
+      if (rawDeleted) {
+        const deletedArr = JSON.parse(rawDeleted);
+        if (Array.isArray(deletedArr)) {
+          const cleanDeleted = deletedArr.filter(x => x !== cleanCode && !String(x).match(/^(IM|AI)-\d+$/i));
+          localStorage.setItem('crmbase_deleted_fichas', JSON.stringify(cleanDeleted));
+        }
+      }
+    } catch (e) {}
     const cleanType = (formData.tipo === 'Outro' && formData.tipoOutro?.trim())
       ? formData.tipoOutro.trim()
       : (formData.tipo || 'Casa');
