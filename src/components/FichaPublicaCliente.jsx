@@ -400,7 +400,7 @@ export default function FichaPublicaCliente() {
 
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
             <a 
-              href={`https://wa.me/5537999881122?text=${encodeURIComponent(`Olá! Enviei o formulário de visita técnica para meu imóvel (${formData.enderecoImovel} - Código ${generatedCode}). Gostaria de confirmar o agendamento.`)}`}
+              href={`https://wa.me/553330400919?text=${encodeURIComponent(`Olá! Enviei o formulário de visita técnica para meu imóvel (${formData.enderecoImovel} - Código ${generatedCode}). Gostaria de confirmar o agendamento.`)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="btn-glass-primary"

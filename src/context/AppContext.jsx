@@ -763,7 +763,7 @@ export const AppProvider = ({ children }) => {
         signatarios: [
           { id: 'sig_1', papel: 'Locador (Proprietário)', nome: 'Roberto Alves Fonseca', email: 'roberto.fonseca@email.com', telefone: '(33) 99811-2233', obrigatoria: true, status: 'Assinada', dataAssinatura: '2026-03-02T10:30:00Z', documentoNome: 'contrato_assinado_locador.pdf' },
           { id: 'sig_2', papel: 'Locatário (Inquilino)', nome: 'Lucas Henrique Mendes', email: 'lucas.mendes@email.com', telefone: '(33) 98844-1234', obrigatoria: true, status: 'Aguardando assinatura', dataAssinatura: null },
-          { id: 'sig_3', papel: 'Imobiliária (Intermediadora)', nome: 'Araújo Imóveis Caratinga', email: 'contato@araujoimoveiscaratinga.com.br', telefone: '(33) 3321-0000', obrigatoria: true, status: 'Assinada', dataAssinatura: '2026-03-01T14:00:00Z' },
+          { id: 'sig_3', papel: 'Imobiliária (Intermediadora)', nome: 'Araújo Imóveis Caratinga', email: 'contato@araujoimoveiscaratinga.com.br', telefone: '(33) 3040-0919', obrigatoria: true, status: 'Assinada', dataAssinatura: '2026-03-01T14:00:00Z' },
           { id: 'sig_4', papel: 'Fiador Solidário', nome: 'Mariana Castro Ribeiro', email: 'mari.castro@gmail.com', telefone: '(33) 99123-5566', obrigatoria: false, status: 'Não se aplica' },
           { id: 'sig_5', papel: 'Testemunha 1', nome: 'Testemunha Araújo', email: '', telefone: '', obrigatoria: false, status: 'Assinada', dataAssinatura: '2026-03-01T14:15:00Z' },
           { id: 'sig_6', papel: 'Testemunha 2', nome: 'Testemunha do Inquilino', email: '', telefone: '', obrigatoria: false, status: 'Aguardando assinatura' }
@@ -785,7 +785,7 @@ export const AppProvider = ({ children }) => {
           { id: 'sig_v1', papel: 'Vendedor (Proprietário)', nome: 'Geraldo Magela Pires', email: 'geraldo.magela@gmail.com', telefone: '(33) 98777-6655', obrigatoria: true, status: 'Assinada', dataAssinatura: '2026-02-16T11:00:00Z', documentoNome: 'escritura_promessa_venda.pdf' },
           { id: 'sig_v2', papel: 'Comprador', nome: 'Eduardo Silveira Costa', email: 'edu.silveira@email.com', telefone: '(33) 99888-4422', obrigatoria: true, status: 'Aguardando assinatura' },
           { id: 'sig_v3', papel: 'Cônjuge do Vendedor (Outorga)', nome: 'Helena Pires', email: '', telefone: '', obrigatoria: false, status: 'Assinada', dataAssinatura: '2026-02-16T11:20:00Z' },
-          { id: 'sig_v4', papel: 'Imobiliária Intermediadora', nome: 'Araújo Imóveis Caratinga', email: 'contato@araujoimoveiscaratinga.com.br', telefone: '(33) 3321-0000', obrigatoria: true, status: 'Assinada', dataAssinatura: '2026-02-15T16:00:00Z' },
+          { id: 'sig_v4', papel: 'Imobiliária Intermediadora', nome: 'Araújo Imóveis Caratinga', email: 'contato@araujoimoveiscaratinga.com.br', telefone: '(33) 3040-0919', obrigatoria: true, status: 'Assinada', dataAssinatura: '2026-02-15T16:00:00Z' },
           { id: 'sig_v5', papel: 'Testemunhas Instrumentais', nome: 'Testemunhas Oficiais', email: '', telefone: '', obrigatoria: false, status: 'Aguardando assinatura' }
         ],
         createdAt: '2026-02-15T10:00:00Z'

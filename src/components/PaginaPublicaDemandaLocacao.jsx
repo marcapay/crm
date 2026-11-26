@@ -378,11 +378,11 @@ export default function PaginaPublicaDemandaLocacao() {
     ['Loja comercial', 'Sala comercial', 'Galpão'].includes(t)
   );
 
-  // WhatsApp oficial da Araújo Imóveis para o botão final
+  // WhatsApp oficial da Araújo Imóveis para o botão final (+55 33 3040-0919)
   const zapMessage = encodeURIComponent(
     `Olá Araújo Imóveis! Acabei de enviar minha Demanda de Locação no site (Código: ${generatedCode || 'DL'}). Gostaria de saber se vocês têm opções compatíveis com o meu perfil!`
   );
-  const zapLink = `https://wa.me/5533999999999?text=${zapMessage}`;
+  const zapLink = `https://wa.me/553330400919?text=${zapMessage}`;
 
   return (
     <div style={{
