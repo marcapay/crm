@@ -403,18 +403,8 @@ export default function PaginaPublicaDemandaLocacao() {
         zIndex: 50,
         boxShadow: '0 2px 10px rgba(0, 0, 0, 0.03)'
       }}>
-        <div style={{ maxWidth: '720px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <ClientLogo height={42} theme="light" />
-          </div>
-          <div style={{ textAlign: 'right' }}>
-            <span style={{ fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#0284c7' }}>
-              Demanda de Locação
-            </span>
-            <div style={{ fontSize: '0.7rem', color: '#64748b' }}>
-              Caratinga e Região
-            </div>
-          </div>
+        <div style={{ maxWidth: '720px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <ClientLogo height={44} theme="light" />
         </div>
       </header>
 
@@ -426,20 +416,6 @@ export default function PaginaPublicaDemandaLocacao() {
             <>
               {/* Hero Banner Header */}
               <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
-                <span style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.35rem',
-                  padding: '4px 12px',
-                  borderRadius: '20px',
-                  backgroundColor: '#e0f2fe',
-                  color: '#0369a1',
-                  fontSize: '0.75rem',
-                  fontWeight: '700',
-                  marginBottom: '0.75rem'
-                }}>
-                  <Sparkles size={14} /> Atendimento Personalizado
-                </span>
                 <h1 style={{ fontSize: '1.65rem', fontWeight: '800', color: '#0f172a', margin: '0 0 0.5rem', lineHeight: '1.25' }}>
                   Vamos encontrar o imóvel ideal para você?
                 </h1>
