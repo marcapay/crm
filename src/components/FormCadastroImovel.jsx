@@ -497,16 +497,6 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.nomeProprietario?.trim()) {
-      setErrorToast('Por favor, informe o Nome Completo do Proprietário.');
-      return;
-    }
-
-    if (!formData.tipo?.trim()) {
-      setErrorToast('Por favor, selecione o Tipo do Imóvel.');
-      return;
-    }
-
     setIsSaving(true);
 
     const cleanCode = (formData.codigo || `IM-${Date.now()}`).toUpperCase().replace(/^#+/, '');
@@ -677,10 +667,10 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
                  (cName === formData.nomeProprietario?.trim().toLowerCase());
         });
 
-        if (!clientExists) {
+        if (!clientExists && formData.nomeProprietario?.trim()) {
           addClient({
             name: formData.nomeProprietario.trim(),
-            phone: formData.telefoneProprietario.trim(),
+            phone: formData.telefoneProprietario?.trim() || '',
             email: formData.emailProprietario?.trim() || `proprietario_${cleanPhone || Date.now()}@araujoimoveis.com.br`,
             role: 'Proprietário',
             status: 'Novo Lead / Qualificação',
@@ -882,25 +872,23 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
           </h3>
           <div className="form-grid-2">
             <div className="form-group">
-              <label className="form-label required">Nome Completo do Proprietário:</label>
+              <label className="form-label">Nome Completo do Proprietário:</label>
               <input 
                 type="text" 
                 className="form-input" 
                 placeholder="Nome do dono do imóvel"
                 value={formData.nomeProprietario} 
                 onChange={e => handleChange('nomeProprietario', e.target.value)} 
-                required 
               />
             </div>
             <div className="form-group">
-              <label className="form-label required">Telefone / WhatsApp:</label>
+              <label className="form-label">Telefone / WhatsApp:</label>
               <input 
                 type="text" 
                 className="form-input" 
                 placeholder="(37) 00000-0000"
                 value={formData.telefoneProprietario} 
                 onChange={e => handleChange('telefoneProprietario', e.target.value)} 
-                required 
               />
             </div>
           </div>
@@ -926,7 +914,7 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
             </div>
 
             <div className="form-group">
-              <label className="form-label required">Tipo:</label>
+              <label className="form-label">Tipo:</label>
               <select 
                 className="form-input" 
                 value={formData.tipo} 
@@ -984,7 +972,7 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
             </div>
 
             <div className="form-group">
-              <label className="form-label required">Finalidade do Imóvel:</label>
+              <label className="form-label">Finalidade do Imóvel:</label>
               <select 
                 className="form-input" 
                 value={formData.finalidadeImovel || 'Para locação'} 
@@ -1000,7 +988,7 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
             </div>
 
             <div className="form-group">
-              <label className="form-label required">Status Comercial:</label>
+              <label className="form-label">Status Comercial:</label>
               <select 
                 className="form-input" 
                 value={formData.statusComercial || 'Disponível para locação'} 
@@ -1101,14 +1089,13 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
             </div>
 
             <div className="form-group">
-              <label className="form-label required">Endereço:</label>
+              <label className="form-label">Endereço:</label>
               <input 
                 type="text" 
                 className="form-input" 
                 placeholder="Rua, Avenida, Praça..."
                 value={formData.endereco} 
                 onChange={e => handleChange('endereco', e.target.value)} 
-                required
               />
             </div>
 
@@ -1124,14 +1111,13 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
             </div>
 
             <div className="form-group">
-              <label className="form-label required">Bairro:</label>
+              <label className="form-label">Bairro:</label>
               <input 
                 type="text" 
                 className="form-input" 
                 placeholder="Nome do bairro"
                 value={formData.bairro} 
                 onChange={e => handleChange('bairro', e.target.value)} 
-                required
               />
             </div>
 
@@ -1242,14 +1228,13 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
           </h3>
           <div className="form-grid-2">
             <div className="form-group">
-              <label className="form-label required">Valor do Imóvel / Aluguel (R$):</label>
+              <label className="form-label">Valor do Imóvel / Aluguel (R$):</label>
               <input 
                 type="text" 
                 className="form-input" 
                 placeholder="Ex: R$ 2.500,00 ou 250000"
                 value={formData.valorImovel} 
                 onChange={e => handleChange('valorImovel', e.target.value)} 
-                required 
               />
             </div>
 
