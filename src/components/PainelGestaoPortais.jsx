@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useApp, isMessageUnder30Days, isLogFromToday } from '../context/AppContext';
 import {
   Users,
+  Building,
   Building2,
   Wrench,
   DollarSign,
@@ -20,7 +21,11 @@ import {
   Trash2,
   Search,
   User,
-  Reply
+  Reply,
+  FileText,
+  UploadCloud,
+  X,
+  Paperclip
 } from 'lucide-react';
 
 export default function PainelGestaoPortais() {
@@ -140,6 +145,44 @@ export default function PainelGestaoPortais() {
   const [newPropRent, setNewPropRent] = useState('2500.00');
   const [newPropOwnerId, setNewPropOwnerId] = useState('');
   const [newPropTenantId, setNewPropTenantId] = useState('');
+
+  // Contrato do Imóvel no Cadastro
+  const [newContractFile, setNewContractFile] = useState(null);
+  const [newContractNumber, setNewContractNumber] = useState('');
+  const [newContractStartDate, setNewContractStartDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [newContractEndDate, setNewContractEndDate] = useState(() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() + 1);
+    return d.toISOString().split('T')[0];
+  });
+  const [newContractDueDate, setNewContractDueDate] = useState('10');
+  const [newContractAdjustmentIndex, setNewContractAdjustmentIndex] = useState('IGP-M Anual');
+  const [newContractGuarantee, setNewContractGuarantee] = useState('Fiador Solidário');
+  const contractFileInputRef = useRef(null);
+
+  const handleContractFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 15 * 1024 * 1024) {
+      alert('O arquivo selecionado é maior que 15MB. Por favor selecione um arquivo menor.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setNewContractFile({
+        name: file.name,
+        size: (file.size / 1024 > 1024) 
+          ? (file.size / (1024 * 1024)).toFixed(1) + ' MB' 
+          : Math.round(file.size / 1024) + ' KB',
+        type: file.type,
+        dataUrl: event.target.result,
+        uploadedAt: new Date().toISOString()
+      });
+    };
+    reader.readAsDataURL(file);
+  };
 
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [msgTargetUser, setMsgTargetUser] = useState('');
@@ -299,7 +342,11 @@ export default function PainelGestaoPortais() {
                    tenantOptions.find(u => u.id === newPropTenantId) ||
                    null;
 
-    createProperty({
+    const propId = 'prop_' + Date.now();
+    const contractNum = newContractNumber?.trim() || `LOC-${new Date().getFullYear()}/${String((contracts?.length || 0) + 1).padStart(2, '0')}`;
+
+    const createdProp = createProperty({
+      id: propId,
       title: newPropTitle,
       address: newPropAddress,
       rentValue: newPropRent,
@@ -309,14 +356,79 @@ export default function PainelGestaoPortais() {
       currentTenantName: tenant ? (tenant.name || tenant.nome || 'Inquilino') : null,
       tenantId: tenant ? tenant.id : null,
       tenantName: tenant ? (tenant.name || tenant.nome || 'Inquilino') : null,
-      status: tenant ? 'Alugado' : 'Disponível'
+      status: tenant ? 'Alugado' : 'Disponível',
+      contractNumber: contractNum,
+      contractStartDate: newContractStartDate,
+      contractEndDate: newContractEndDate,
+      contractDueDate: newContractDueDate,
+      contractAdjustmentIndex: newContractAdjustmentIndex,
+      contractGuarantee: newContractGuarantee,
+      contractFile: newContractFile ? {
+        name: newContractFile.name,
+        size: newContractFile.size,
+        type: newContractFile.type,
+        dataUrl: newContractFile.dataUrl,
+        uploadedAt: new Date().toISOString()
+      } : null
     });
+
+    // Registra o contrato formalmente no sistema de contratos
+    if (typeof createContract === 'function') {
+      createContract({
+        propertyId: propId,
+        propertyName: newPropTitle,
+        ownerId: owner.id,
+        ownerName: owner.name || owner.nome || 'Proprietário',
+        tenantId: tenant ? tenant.id : 'a_definir',
+        tenantName: tenant ? (tenant.name || tenant.nome || 'Aguardando Inquilino') : 'Aguardando Inquilino',
+        startDate: newContractStartDate || new Date().toISOString().split('T')[0],
+        endDate: newContractEndDate || '2027-12-31',
+        rentValue: parseFloat(newPropRent) || 2000.00,
+        contractNumber: contractNum,
+        dueDateDay: parseInt(newContractDueDate, 10) || 10,
+        adjustmentIndex: newContractAdjustmentIndex || 'IGP-M Anual',
+        guarantee: newContractGuarantee || 'Fiador Solidário',
+        status: tenant ? 'Ativo' : 'Em Elaboração',
+        documents: newContractFile ? [
+          {
+            id: 'doc_' + Date.now(),
+            title: newContractFile.name,
+            type: 'Contrato de Locação',
+            date: new Date().toLocaleDateString('pt-BR'),
+            size: newContractFile.size,
+            url: newContractFile.dataUrl,
+            fileBase64: newContractFile.dataUrl
+          }
+        ] : [
+          {
+            id: 'doc_' + Date.now(),
+            title: `Contrato de Locação - ${newPropTitle}.pdf`,
+            type: 'Locação',
+            date: new Date().toLocaleDateString('pt-BR'),
+            size: '1.2 MB',
+            url: '#'
+          }
+        ]
+      });
+    }
+
+    // Reset formulário
     setNewPropTitle('');
     setNewPropAddress('');
     setNewPropOwnerId('');
     setNewPropTenantId('');
+    setNewContractFile(null);
+    setNewContractNumber('');
+    setNewContractStartDate(new Date().toISOString().split('T')[0]);
+    const nextYear = new Date();
+    nextYear.setFullYear(nextYear.getFullYear() + 1);
+    setNewContractEndDate(nextYear.toISOString().split('T')[0]);
+    setNewContractDueDate('10');
+    setNewContractAdjustmentIndex('IGP-M Anual');
+    setNewContractGuarantee('Fiador Solidário');
+
     setShowPropModal(false);
-    setActionNotice(`Imóvel "${newPropTitle}" cadastrado com sucesso!`);
+    setActionNotice(`Imóvel "${newPropTitle}" e contrato cadastrados com sucesso!`);
     setTimeout(() => setActionNotice(''), 4000);
   };
 
@@ -551,8 +663,21 @@ export default function PainelGestaoPortais() {
           {/* Modal Novo Imóvel */}
           {showPropModal && (
             <div style={styles.modalOverlay}>
-              <div style={styles.modalCard}>
-                <h3 style={{ color: 'var(--text-primary)', marginBottom: '1rem' }}>Cadastrar Novo Imóvel de Locação</h3>
+              <div style={{ ...styles.modalCard, maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Building size={20} style={{ color: 'var(--accent-cyan)' }} />
+                    <h3 style={{ color: 'var(--text-primary)', margin: 0, fontSize: '1.15rem' }}>Cadastrar Novo Imóvel de Locação</h3>
+                  </div>
+                  <button 
+                    type="button" 
+                    onClick={() => setShowPropModal(false)}
+                    style={{ background: 'transparent', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer', padding: '0.25rem', borderRadius: '4px' }}
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+
                 <form onSubmit={handleCreatePropSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                   <div className="input-group">
                     <label>Título do Imóvel</label>
@@ -566,61 +691,268 @@ export default function PainelGestaoPortais() {
                     <label>Valor Mensal do Aluguel R$</label>
                     <input type="number" step="0.01" className="input-field" value={newPropRent} onChange={e => setNewPropRent(e.target.value)} required />
                   </div>
-                  <div className="input-group">
-                    <label style={{ color: 'var(--text-primary)', marginBottom: '0.375rem', display: 'block', fontSize: '0.875rem' }}>Proprietário Responsável</label>
-                    <select 
-                      className="input-field" 
-                      value={newPropOwnerId} 
-                      onChange={e => setNewPropOwnerId(e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '0.75rem',
-                        backgroundColor: 'var(--bg-secondary)',
-                        color: 'var(--text-primary)',
-                        border: '1px solid var(--glass-border)',
-                        borderRadius: '0.5rem',
-                        fontSize: '0.875rem',
-                        outline: 'none',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <option value="" style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-tertiary)' }}>Selecione o proprietário...</option>
-                      {ownerOptions.map(p => (
-                        <option key={p.id || p.email} value={p.id} style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>
-                          {p.name || p.nome || 'Proprietário'} ({p.email || p.phone || 'Sem e-mail'})
-                        </option>
-                      ))}
-                    </select>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.75rem' }}>
+                    <div className="input-group">
+                      <label style={{ color: 'var(--text-primary)', marginBottom: '0.375rem', display: 'block', fontSize: '0.875rem' }}>Proprietário Responsável</label>
+                      <select 
+                        className="input-field" 
+                        value={newPropOwnerId} 
+                        onChange={e => setNewPropOwnerId(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem',
+                          backgroundColor: 'var(--bg-secondary)',
+                          color: 'var(--text-primary)',
+                          border: '1px solid var(--glass-border)',
+                          borderRadius: '0.5rem',
+                          fontSize: '0.875rem',
+                          outline: 'none',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <option value="" style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-tertiary)' }}>Selecione o proprietário...</option>
+                        {ownerOptions.map(p => (
+                          <option key={p.id || p.email} value={p.id} style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>
+                            {p.name || p.nome || 'Proprietário'} ({p.email || p.phone || 'Sem e-mail'})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="input-group">
+                      <label style={{ color: 'var(--text-primary)', marginBottom: '0.375rem', display: 'block', fontSize: '0.875rem' }}>Inquilino / Locatário (Opcional)</label>
+                      <select 
+                        className="input-field" 
+                        value={newPropTenantId} 
+                        onChange={e => setNewPropTenantId(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem',
+                          backgroundColor: 'var(--bg-secondary)',
+                          color: 'var(--text-primary)',
+                          border: '1px solid var(--glass-border)',
+                          borderRadius: '0.5rem',
+                          fontSize: '0.875rem',
+                          outline: 'none',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <option value="" style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-tertiary)' }}>Selecione o inquilino (se alugado)...</option>
+                        {tenantOptions.map(t => (
+                          <option key={t.id || t.email} value={t.id} style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>
+                            {t.name || t.nome || 'Inquilino'} ({t.email || t.phone || 'Sem e-mail'})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
-                  <div className="input-group">
-                    <label style={{ color: 'var(--text-primary)', marginBottom: '0.375rem', display: 'block', fontSize: '0.875rem' }}>Inquilino / Locatário Responsável (Opcional)</label>
-                    <select 
-                      className="input-field" 
-                      value={newPropTenantId} 
-                      onChange={e => setNewPropTenantId(e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '0.75rem',
-                        backgroundColor: 'var(--bg-secondary)',
-                        color: 'var(--text-primary)',
-                        border: '1px solid var(--glass-border)',
-                        borderRadius: '0.5rem',
-                        fontSize: '0.875rem',
-                        outline: 'none',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <option value="" style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-tertiary)' }}>Selecione o inquilino (se alugado)...</option>
-                      {tenantOptions.map(t => (
-                        <option key={t.id || t.email} value={t.id} style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>
-                          {t.name || t.nome || 'Inquilino'} ({t.email || t.phone || 'Sem e-mail'})
-                        </option>
-                      ))}
-                    </select>
+
+                  {/* SEÇÃO DE CONTRATO DO IMÓVEL */}
+                  <div style={{
+                    marginTop: '0.5rem',
+                    padding: '1rem',
+                    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                    border: '1px solid var(--glass-border)',
+                    borderRadius: '10px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.85rem'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <FileText size={18} style={{ color: 'var(--accent-cyan)' }} />
+                        <strong style={{ color: 'var(--text-primary)', fontSize: '0.925rem' }}>Contrato do Imóvel</strong>
+                      </div>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--accent-cyan)', backgroundColor: 'rgba(56, 189, 248, 0.1)', padding: '0.2rem 0.55rem', borderRadius: '4px', border: '1px solid rgba(56, 189, 248, 0.25)', fontWeight: '600' }}>
+                        Documento & Regras
+                      </span>
+                    </div>
+
+                    {/* Upload / Anexo de Arquivo de Contrato */}
+                    <div>
+                      <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.4rem', display: 'block' }}>
+                        Arquivo do Contrato de Locação:
+                      </label>
+
+                      {!newContractFile ? (
+                        <div 
+                          style={{
+                            border: '2px dashed var(--glass-border)',
+                            borderRadius: '8px',
+                            padding: '1.25rem 1rem',
+                            textAlign: 'center',
+                            backgroundColor: 'rgba(0, 0, 0, 0.2)',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease'
+                          }}
+                          onClick={() => contractFileInputRef.current?.click()}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.borderColor = 'var(--accent-cyan)';
+                            e.currentTarget.style.backgroundColor = 'rgba(56, 189, 248, 0.05)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.borderColor = 'var(--glass-border)';
+                            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.2)';
+                          }}
+                        >
+                          <UploadCloud size={26} style={{ color: 'var(--accent-cyan)', margin: '0 auto 0.35rem auto' }} />
+                          <div style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: '600' }}>
+                            Clique para anexar o Contrato do Imóvel
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', marginTop: '0.25rem' }}>
+                            PDF, DOCX, DOC ou Imagem assinada (Até 15MB)
+                          </div>
+                          <input 
+                            ref={contractFileInputRef}
+                            type="file" 
+                            accept=".pdf,.docx,.doc,.jpg,.jpeg,.png" 
+                            style={{ display: 'none' }}
+                            onChange={handleContractFileUpload}
+                          />
+                        </div>
+                      ) : (
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '0.75rem 1rem',
+                          backgroundColor: 'rgba(16, 185, 129, 0.08)',
+                          border: '1px solid rgba(16, 185, 129, 0.3)',
+                          borderRadius: '8px'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', overflow: 'hidden' }}>
+                            <FileText size={22} style={{ color: '#10b981', flexShrink: 0 }} />
+                            <div style={{ overflow: 'hidden' }}>
+                              <div style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-primary)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                                {newContractFile.name}
+                              </div>
+                              <div style={{ fontSize: '0.725rem', color: 'var(--text-tertiary)' }}>
+                                {newContractFile.size} • Anexo pronto para salvar
+                              </div>
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+                            {newContractFile.dataUrl && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const win = window.open();
+                                  if (win) {
+                                    win.document.write(`<iframe src="${newContractFile.dataUrl}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+                                  }
+                                }}
+                                className="btn btn-secondary"
+                                style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem' }}
+                                title="Visualizar contrato anexado"
+                              >
+                                Visualizar
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => setNewContractFile(null)}
+                              style={{
+                                background: 'transparent',
+                                border: 'none',
+                                color: '#ef4444',
+                                cursor: 'pointer',
+                                padding: '0.35rem',
+                                borderRadius: '4px'
+                              }}
+                              title="Remover anexo"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Dados Detalhados do Contrato */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                      <div className="input-group">
+                        <label style={{ fontSize: '0.8rem' }}>Número do Contrato</label>
+                        <input 
+                          type="text" 
+                          className="input-field" 
+                          value={newContractNumber} 
+                          onChange={e => setNewContractNumber(e.target.value)} 
+                          placeholder="Ex: LOC-2026/01" 
+                        />
+                      </div>
+
+                      <div className="input-group">
+                        <label style={{ fontSize: '0.8rem' }}>Dia do Vencimento</label>
+                        <select
+                          className="input-field"
+                          value={newContractDueDate}
+                          onChange={e => setNewContractDueDate(e.target.value)}
+                        >
+                          {[5, 10, 15, 20, 25, 28].map(dia => (
+                            <option key={dia} value={dia}>Todo dia {dia}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                      <div className="input-group">
+                        <label style={{ fontSize: '0.8rem' }}>Início da Vigência</label>
+                        <input 
+                          type="date" 
+                          className="input-field" 
+                          value={newContractStartDate} 
+                          onChange={e => setNewContractStartDate(e.target.value)} 
+                        />
+                      </div>
+
+                      <div className="input-group">
+                        <label style={{ fontSize: '0.8rem' }}>Término da Vigência</label>
+                        <input 
+                          type="date" 
+                          className="input-field" 
+                          value={newContractEndDate} 
+                          onChange={e => setNewContractEndDate(e.target.value)} 
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                      <div className="input-group">
+                        <label style={{ fontSize: '0.8rem' }}>Índice de Reajuste</label>
+                        <select
+                          className="input-field"
+                          value={newContractAdjustmentIndex}
+                          onChange={e => setNewContractAdjustmentIndex(e.target.value)}
+                        >
+                          <option value="IGP-M Anual">IGP-M Anual</option>
+                          <option value="IPCA Anual">IPCA Anual</option>
+                          <option value="INPC Anual">INPC Anual</option>
+                          <option value="Fixo / Sem Reajuste">Fixo / Sem Reajuste</option>
+                        </select>
+                      </div>
+
+                      <div className="input-group">
+                        <label style={{ fontSize: '0.8rem' }}>Garantia Locatícia</label>
+                        <select
+                          className="input-field"
+                          value={newContractGuarantee}
+                          onChange={e => setNewContractGuarantee(e.target.value)}
+                        >
+                          <option value="Fiador Solidário">Fiador Solidário</option>
+                          <option value="Caução (Depósito)">Caução (Depósito)</option>
+                          <option value="Seguro Fiança">Seguro Fiança</option>
+                          <option value="Título de Capitalização">Título de Capitalização</option>
+                          <option value="Sem Garantia">Sem Garantia</option>
+                        </select>
+                      </div>
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.5rem' }}>
                     <button type="button" className="btn btn-secondary" onClick={() => setShowPropModal(false)}>Cancelar</button>
-                    <button type="submit" className="btn btn-primary">Cadastrar Imóvel</button>
+                    <button type="submit" className="btn btn-primary">Cadastrar Imóvel & Contrato</button>
                   </div>
                 </form>
               </div>

@@ -662,7 +662,23 @@ export default function AreaInquilino() {
                               <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>{doc.type} • {doc.date}</div>
                             </div>
                           </div>
-                          <button style={styles.btnReceiptLink} onClick={() => alert(`Download de ${doc.title}`)}>
+                          <button 
+                            style={styles.btnReceiptLink} 
+                            title="Baixar ou visualizar documento"
+                            onClick={() => {
+                              if (doc.url && doc.url !== '#') {
+                                const link = document.createElement('a');
+                                link.href = doc.url;
+                                link.download = doc.title || 'documento';
+                                link.target = '_blank';
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                              } else {
+                                alert(`Download de ${doc.title}`);
+                              }
+                            }}
+                          >
                             <Download size={14} />
                           </button>
                         </div>

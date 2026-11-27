@@ -632,7 +632,23 @@ export default function AreaProprietario() {
                           <div style={styles.docItemSub}>{doc.type} • {doc.date} • {doc.size}</div>
                         </div>
                       </div>
-                      <button style={styles.docBtnDownload} onClick={() => alert(`Baixando arquivo ${doc.title}`)}>
+                      <button 
+                        style={styles.docBtnDownload} 
+                        title="Baixar ou visualizar contrato"
+                        onClick={() => {
+                          if (doc.url && doc.url !== '#') {
+                            const link = document.createElement('a');
+                            link.href = doc.url;
+                            link.download = doc.title || 'contrato-locacao';
+                            link.target = '_blank';
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                          } else {
+                            alert(`Visualizando/baixando arquivo: ${doc.title}`);
+                          }
+                        }}
+                      >
                         <Download size={14} />
                       </button>
                     </div>
