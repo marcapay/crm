@@ -2226,15 +2226,6 @@ export default function FichaVisitaTecnica() {
                 <span>Voltar</span>
               </button>
 
-              <button 
-                type="button" 
-                onClick={resetForm}
-                className="btn btn-secondary"
-                style={{ padding: '0.5rem 0.875rem', fontSize: '0.85rem' }}
-              >
-                <X size={15} />
-                <span>Cancelar</span>
-              </button>
 
               <button 
                 type="button" 
@@ -2938,14 +2929,6 @@ export default function FichaVisitaTecnica() {
             </button>
 
             <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
-              <button 
-                type="button" 
-                onClick={resetForm}
-                className="btn btn-secondary"
-              >
-                <X size={16} />
-                <span>Cancelar</span>
-              </button>
 
               <button 
                 type="button" 
