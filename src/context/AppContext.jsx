@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { savePhotosToIndexedDB, getAllPhotosFromIndexedDB } from '../utils/imageStorage';
+import { getKnownImovelPhotos } from '../utils/defaultImoveisPhotos';
 
 const AppContext = createContext();
 
@@ -773,7 +774,7 @@ export const AppProvider = ({ children }) => {
         const newName = (fFixed.nomeFicha || '').replace(/\bVT-/gi, 'AI-');
         fFixed = { ...fFixed, codigoImovel: newCode, nomeFicha: newName || `Ficha ${newCode}` };
       }
-      const imgs = (Array.isArray(fFixed.imagensImovel) && fFixed.imagensImovel.length > 0)
+      let imgs = (Array.isArray(fFixed.imagensImovel) && fFixed.imagensImovel.length > 0)
         ? fFixed.imagensImovel
         : (Array.isArray(fFixed.fotos) && fFixed.fotos.length > 0)
           ? fFixed.fotos
@@ -784,12 +785,18 @@ export const AppProvider = ({ children }) => {
               : (Array.isArray(fFixed.details?.imagensImovel) && fFixed.details.imagensImovel.length > 0)
                 ? fFixed.details.imagensImovel
                 : (fFixed.photo ? [fFixed.photo] : []);
-      if (imgs.length > 0) {
-        fFixed.imagensImovel = imgs;
-        fFixed.fotos = imgs;
-        fFixed.images = imgs;
-        fFixed.photo = fFixed.photo || imgs[0];
+
+      if (imgs.length === 0 || (imgs.length === 1 && imgs[0].includes('photo-1560518883-ce09059eeffa'))) {
+        const known = getKnownImovelPhotos(fFixed.codigoImovel || fFixed.code || fFixed.id, fFixed.tipoImovel);
+        if (known && known.length > 0) {
+          imgs = known;
+        }
       }
+
+      fFixed.imagensImovel = imgs;
+      fFixed.fotos = imgs;
+      fFixed.images = imgs;
+      fFixed.photo = (imgs.length > 0 && !imgs[0].includes('photo-1560518883-ce09059eeffa')) ? imgs[0] : (fFixed.photo || imgs[0] || '');
       return fFixed;
     });
   });

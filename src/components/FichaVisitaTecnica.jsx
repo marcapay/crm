@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { savePhotosToIndexedDB, getPhotosFromIndexedDB } from '../utils/imageStorage';
+import { getKnownImovelPhotos } from '../utils/defaultImoveisPhotos';
 import FichaPrintTemplate from './FichaPrintTemplate';
 import FormCadastroImovel from './FormCadastroImovel';
 import ModalCicloVidaImovel from './ModalCicloVidaImovel';
@@ -271,7 +272,10 @@ export default function FichaVisitaTecnica() {
     }
 
     return list.map(item => {
-      const imgs = (Array.isArray(item.imagensImovel) && item.imagensImovel.length > 0)
+      const codeOrId = item.codigoImovel || item.code || item.id;
+      const knownPhotos = getKnownImovelPhotos(codeOrId, item.tipoImovel || item.tipo);
+
+      let imgs = (Array.isArray(item.imagensImovel) && item.imagensImovel.length > 0)
         ? item.imagensImovel
         : (Array.isArray(item.fotos) && item.fotos.length > 0)
           ? item.fotos
@@ -281,13 +285,25 @@ export default function FichaVisitaTecnica() {
               ? item.details.fotos
               : (Array.isArray(item.details?.imagensImovel) && item.details.imagensImovel.length > 0)
                 ? item.details.imagensImovel
-                : (item.photo ? [item.photo] : []);
+                : [];
+
+      // Se não tiver fotos ou tiver apenas a foto da casa de brinquedo genérica, restaura as fotos originais do imóvel
+      if (imgs.length === 0 || (imgs.length === 1 && imgs[0].includes('photo-1560518883-ce09059eeffa'))) {
+        if (knownPhotos && knownPhotos.length > 0) {
+          imgs = knownPhotos;
+        }
+      }
+
+      const mainPhoto = (imgs.length > 0 && !imgs[0].includes('photo-1560518883-ce09059eeffa'))
+        ? imgs[0]
+        : (knownPhotos[0] || (item.photo && !item.photo.includes('photo-1560518883-ce09059eeffa') ? item.photo : 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&auto=format&fit=crop'));
+
       return {
         ...item,
         imagensImovel: imgs,
         fotos: imgs,
         images: imgs,
-        photo: item.photo || imgs[0] || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=600&auto=format&fit=crop'
+        photo: mainPhoto
       };
     });
   }, [fichasVisita, properties, deletedIds]);
@@ -483,7 +499,10 @@ export default function FichaVisitaTecnica() {
     setFormErrors({});
     setSuccessMsg('');
 
-    const initialPhotos = (Array.isArray(ficha.imagensImovel) && ficha.imagensImovel.length > 0)
+    const codeOrId = ficha.codigoImovel || ficha.code || ficha.id;
+    const knownPhotos = getKnownImovelPhotos(codeOrId, ficha.tipoImovel || ficha.tipo);
+
+    let initialPhotos = (Array.isArray(ficha.imagensImovel) && ficha.imagensImovel.length > 0)
       ? ficha.imagensImovel
       : (Array.isArray(ficha.fotos) && ficha.fotos.length > 0)
         ? ficha.fotos
@@ -493,7 +512,13 @@ export default function FichaVisitaTecnica() {
             ? ficha.details.fotos
             : (Array.isArray(ficha.details?.imagensImovel) && ficha.details.imagensImovel.length > 0)
               ? ficha.details.imagensImovel
-              : (ficha.photo && !ficha.photo.includes('unsplash') ? [ficha.photo] : []);
+              : (ficha.photo && !ficha.photo.includes('photo-1560518883-ce09059eeffa') ? [ficha.photo] : []);
+
+    if (initialPhotos.length === 0 || (initialPhotos.length === 1 && initialPhotos[0].includes('photo-1560518883-ce09059eeffa'))) {
+      if (knownPhotos && knownPhotos.length > 0) {
+        initialPhotos = knownPhotos;
+      }
+    }
 
     setFormData({
       nomeFicha: ficha.nomeFicha || (ficha.codigoImovel ? `Ficha ${ficha.codigoImovel}` : ''),
@@ -1291,9 +1316,11 @@ export default function FichaVisitaTecnica() {
                   {filteredCarteira.map(imovel => {
                     const statusCom = getStatusComercialInfo(imovel.statusComercial || 'Disponível para locação');
                     const preco = Number(imovel.valorImovel || imovel.price || imovel.valorPretendidoAluguel || 0);
-                    const photo = Array.isArray(imovel.imagensImovel) && imovel.imagensImovel.length > 0 
+                    const photo = (Array.isArray(imovel.imagensImovel) && imovel.imagensImovel.length > 0 && !imovel.imagensImovel[0].includes('photo-1560518883-ce09059eeffa'))
                       ? imovel.imagensImovel[0] 
-                      : (imovel.photo || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=600&auto=format&fit=crop');
+                      : (imovel.photo && !imovel.photo.includes('photo-1560518883-ce09059eeffa')
+                          ? imovel.photo 
+                          : (getKnownImovelPhotos(imovel.codigoImovel || imovel.code || imovel.id, imovel.tipoImovel || imovel.tipo)[0] || 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&auto=format&fit=crop'));
 
                     return (
                       <div 
