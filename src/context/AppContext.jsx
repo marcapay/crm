@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { savePhotosToIndexedDB, getAllPhotosFromIndexedDB } from '../utils/imageStorage';
 
 const AppContext = createContext();
 
@@ -69,28 +70,20 @@ export const sanitizeForStorage = (data) => {
       // Se details contiver fotos ou documentos pesados em base64, limpa do details
       if (clone.details && typeof clone.details === 'object') {
         const cleanDetails = { ...clone.details };
-        if (Array.isArray(cleanDetails.fotos)) {
-          cleanDetails.fotos = cleanDetails.fotos.map(f => (typeof f === 'string' && f.startsWith('data:image/') && f.length > 40000 ? '[foto_armazenada]' : f));
-        }
         delete cleanDetails.uploadedDocument;
         delete cleanDetails.rawDocumentText;
         clone.details = cleanDetails;
       }
 
-      // Limita imagens armazenadas a fotos compactas
+      // Preserva fotos completas e válidas (até 6 fotos por imóvel, sem corromper ou cortar base64)
       if (Array.isArray(clone.imagensImovel)) {
-        clone.imagensImovel = clone.imagensImovel.slice(0, 4).map(f => (typeof f === 'string' && f.startsWith('data:image/') && f.length > 70000 ? f.slice(0, 70000) : f));
+        clone.imagensImovel = clone.imagensImovel.slice(0, 6);
       }
       if (Array.isArray(clone.fotos)) {
-        clone.fotos = clone.fotos.slice(0, 4).map(f => (typeof f === 'string' && f.startsWith('data:image/') && f.length > 70000 ? f.slice(0, 70000) : f));
+        clone.fotos = clone.fotos.slice(0, 6);
       }
       if (Array.isArray(clone.images)) {
-        clone.images = clone.images.slice(0, 4).map(f => (typeof f === 'string' && f.startsWith('data:image/') && f.length > 70000 ? f.slice(0, 70000) : f));
-      }
-
-      // Se a foto principal for um base64 imenso, reduz para não estourar a cota
-      if (typeof clone.photo === 'string' && clone.photo.startsWith('data:image/') && clone.photo.length > 80000) {
-        clone.photo = clone.photo.slice(0, 80000);
+        clone.images = clone.images.slice(0, 6);
       }
 
       return clone;
@@ -112,43 +105,52 @@ export const safeStorageSet = (key, value) => {
   } catch (err) {
     console.warn(`[SafeStorage] Alerta ao gravar ${key} no localStorage (${err?.message || err}). Sanitizando payload...`);
     try {
-      // 1. Tenta sanitizar o payload removendo excesso de base64
+      // 1. Limpa chaves dispensáveis de log e cache temporário
+      Object.keys(localStorage).forEach(k => {
+        if (k.startsWith('crmbase_triage_routed_') || 
+            k.startsWith('crmbase_pic_') || 
+            k.startsWith('crmbase_read_ts_') ||
+            k.includes('poll_handled') ||
+            k.includes('temp_')) {
+          localStorage.removeItem(k);
+        }
+      });
+      // 2. Tenta salvar sanitizado
       const sanitized = sanitizeForStorage(value);
       const sanitizedStr = typeof sanitized === 'string' ? sanitized : JSON.stringify(sanitized);
       localStorage.setItem(key, sanitizedStr);
     } catch (err2) {
-      console.warn(`[SafeStorage] QuotaExceeded ao salvar ${key}. Liberando espaço de caches temporários...`);
+      console.warn(`[SafeStorage] QuotaExceeded ao salvar ${key}. Preservando mídia via IndexedDB...`);
       try {
-        // 2. Limpa chaves dispensáveis de log e cache temporário
-        Object.keys(localStorage).forEach(k => {
-          if (k.startsWith('crmbase_triage_routed_') || 
-              k.startsWith('crmbase_pic_') || 
-              k.startsWith('crmbase_read_ts_') ||
-              k.includes('poll_handled') ||
-              k.includes('temp_')) {
-            localStorage.removeItem(k);
-          }
-        });
-        // Tenta salvar novamente
-        const sanitized = sanitizeForStorage(value);
-        localStorage.setItem(key, JSON.stringify(sanitized));
-      } catch (err3) {
-        // 3. Se ainda assim a cota estiver no limite estrito do navegador, remove fotos e grava dados cadastrais essenciais
-        try {
-          if (Array.isArray(value)) {
-            const ultraLight = value.map(item => {
-              if (!item || typeof item !== 'object') return item;
-              const { fotos, imagensImovel, images, photo, details, ...rest } = item;
-              return { 
-                ...rest, 
-                photo: (typeof photo === 'string' && !photo.startsWith('data:image/')) ? photo : '' 
-              };
-            });
-            localStorage.setItem(key, JSON.stringify(ultraLight));
-          }
-        } catch (finalErr) {
-          console.error(`[SafeStorage] Falha de cota no localStorage para ${key}:`, finalErr);
+        if (Array.isArray(value)) {
+          // Salva fotos no IndexedDB para garantia permanente e ilimitada
+          value.forEach(item => {
+            if (item && item.id) {
+              const photos = item.imagensImovel || item.fotos || item.images || [];
+              if (Array.isArray(photos) && photos.length > 0) {
+                savePhotosToIndexedDB(item.id, photos);
+                if (item.codigoImovel) savePhotosToIndexedDB(item.codigoImovel, photos);
+              }
+            }
+          });
+
+          // Grava no LocalStorage versão compacta sem estourar cota do navegador
+          const compact = value.map(item => {
+            if (!item || typeof item !== 'object') return item;
+            const mainPhoto = item.photo || (Array.isArray(item.imagensImovel) && item.imagensImovel[0]) || (Array.isArray(item.fotos) && item.fotos[0]) || '';
+            const existingPhotos = item.imagensImovel || item.fotos || item.images || [];
+            return {
+              ...item,
+              photo: mainPhoto,
+              imagensImovel: existingPhotos.slice(0, 2),
+              fotos: existingPhotos.slice(0, 2),
+              images: existingPhotos.slice(0, 2)
+            };
+          });
+          localStorage.setItem(key, JSON.stringify(compact));
         }
+      } catch (finalErr) {
+        console.error(`[SafeStorage] Falha de cota no localStorage para ${key}:`, finalErr);
       }
     }
   }
@@ -765,14 +767,83 @@ export const AppProvider = ({ children }) => {
     const parsed = safeJsonParse(saved, []);
     const cleaned = parsed.filter(f => f && f.id !== 'ficha_site_teste' && f.nomeProprietario !== 'Carlos Araújo' && f.nomeProprietario !== 'Carlos Araújo Teste');
     return cleaned.map(f => {
-      if (f && f.codigoImovel && f.codigoImovel.startsWith('VT-')) {
-        const newCode = f.codigoImovel.replace(/^VT-/i, 'AI-');
-        const newName = (f.nomeFicha || '').replace(/\bVT-/gi, 'AI-');
-        return { ...f, codigoImovel: newCode, nomeFicha: newName || `Ficha ${newCode}` };
+      let fFixed = { ...f };
+      if (fFixed.codigoImovel && fFixed.codigoImovel.startsWith('VT-')) {
+        const newCode = fFixed.codigoImovel.replace(/^VT-/i, 'AI-');
+        const newName = (fFixed.nomeFicha || '').replace(/\bVT-/gi, 'AI-');
+        fFixed = { ...fFixed, codigoImovel: newCode, nomeFicha: newName || `Ficha ${newCode}` };
       }
-      return f;
+      const imgs = (Array.isArray(fFixed.imagensImovel) && fFixed.imagensImovel.length > 0)
+        ? fFixed.imagensImovel
+        : (Array.isArray(fFixed.fotos) && fFixed.fotos.length > 0)
+          ? fFixed.fotos
+          : (Array.isArray(fFixed.images) && fFixed.images.length > 0)
+            ? fFixed.images
+            : (Array.isArray(fFixed.details?.fotos) && fFixed.details.fotos.length > 0)
+              ? fFixed.details.fotos
+              : (Array.isArray(fFixed.details?.imagensImovel) && fFixed.details.imagensImovel.length > 0)
+                ? fFixed.details.imagensImovel
+                : (fFixed.photo ? [fFixed.photo] : []);
+      if (imgs.length > 0) {
+        fFixed.imagensImovel = imgs;
+        fFixed.fotos = imgs;
+        fFixed.images = imgs;
+        fFixed.photo = fFixed.photo || imgs[0];
+      }
+      return fFixed;
     });
   });
+
+  // Hidratação assíncrona de fotos através do IndexedDB (evita perda de fotos caso o LocalStorage tenha sido esvaziado)
+  useEffect(() => {
+    getAllPhotosFromIndexedDB().then(idbPhotosMap => {
+      if (!idbPhotosMap || Object.keys(idbPhotosMap).length === 0) return;
+
+      setFichasVisita(prev => {
+        let changed = false;
+        const next = (prev || []).map(f => {
+          const idbImgs = idbPhotosMap[f.id] || idbPhotosMap[f.codigoImovel] || idbPhotosMap[f.code];
+          if (idbImgs && Array.isArray(idbImgs) && idbImgs.length > 0) {
+            const currentImgs = f.imagensImovel || f.fotos || f.images || [];
+            if (currentImgs.length === 0 || currentImgs.length < idbImgs.length) {
+              changed = true;
+              return {
+                ...f,
+                imagensImovel: idbImgs,
+                fotos: idbImgs,
+                images: idbImgs,
+                photo: f.photo || idbImgs[0]
+              };
+            }
+          }
+          return f;
+        });
+        return changed ? next : prev;
+      });
+
+      setProperties(prev => {
+        let changed = false;
+        const next = (prev || []).map(p => {
+          const idbImgs = idbPhotosMap[p.id] || idbPhotosMap[p.codigoImovel] || idbPhotosMap[p.code];
+          if (idbImgs && Array.isArray(idbImgs) && idbImgs.length > 0) {
+            const currentImgs = p.images || p.fotos || p.imagensImovel || [];
+            if (currentImgs.length === 0 || currentImgs.length < idbImgs.length) {
+              changed = true;
+              return {
+                ...p,
+                images: idbImgs,
+                fotos: idbImgs,
+                imagensImovel: idbImgs,
+                photo: p.photo || idbImgs[0]
+              };
+            }
+          }
+          return p;
+        });
+        return changed ? next : prev;
+      });
+    }).catch(err => console.warn('[AppContext] Erro ao sincronizar fotos do IndexedDB:', err));
+  }, []);
 
   useEffect(() => { safeStorageSet('araujo_portal_users', portalUsers); }, [portalUsers]);
   useEffect(() => { safeStorageSet('araujo_portal_properties', properties); }, [properties]);
@@ -3749,14 +3820,33 @@ export const AppProvider = ({ children }) => {
     const now = new Date().toISOString();
     const count = (fichasVisita?.length || 0) + 1;
     const autoCodigo = fichaData.codigoImovel || `AI-${String(count).padStart(4, '0')}`;
+    const newId = 'ficha_' + Date.now();
+
+    const imgs = (Array.isArray(fichaData.imagensImovel) && fichaData.imagensImovel.length > 0)
+      ? fichaData.imagensImovel
+      : (Array.isArray(fichaData.fotos) && fichaData.fotos.length > 0)
+        ? fichaData.fotos
+        : (Array.isArray(fichaData.images) && fichaData.images.length > 0)
+          ? fichaData.images
+          : (fichaData.photo ? [fichaData.photo] : []);
+
+    if (imgs.length > 0) {
+      savePhotosToIndexedDB(newId, imgs);
+      savePhotosToIndexedDB(autoCodigo, imgs);
+    }
+
     const newFicha = {
-      id: 'ficha_' + Date.now(),
+      id: newId,
       codigoImovel: autoCodigo,
       createdAt: now,
       updatedAt: now,
       createdBy: profile?.name || 'Usuário Sistema',
       updatedBy: profile?.name || 'Usuário Sistema',
-      ...fichaData
+      ...fichaData,
+      photo: fichaData.photo || imgs[0] || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=600&auto=format&fit=crop',
+      fotos: imgs,
+      images: imgs,
+      imagensImovel: imgs
     };
     setFichasVisita(prev => [newFicha, ...(prev || [])]);
     if (typeof registerActivityLog === 'function') {
@@ -3855,11 +3945,30 @@ export const AppProvider = ({ children }) => {
 
   const updateFichaVisita = (id, updatedFields) => {
     const now = new Date().toISOString();
+
+    const imgs = (Array.isArray(updatedFields.imagensImovel) && updatedFields.imagensImovel.length > 0)
+      ? updatedFields.imagensImovel
+      : (Array.isArray(updatedFields.fotos) && updatedFields.fotos.length > 0)
+        ? updatedFields.fotos
+        : (Array.isArray(updatedFields.images) && updatedFields.images.length > 0)
+          ? updatedFields.images
+          : (updatedFields.photo ? [updatedFields.photo] : null);
+
+    if (imgs && imgs.length > 0) {
+      savePhotosToIndexedDB(id, imgs);
+      if (updatedFields.codigoImovel) savePhotosToIndexedDB(updatedFields.codigoImovel, imgs);
+    }
+
     setFichasVisita(prev => (prev || []).map(f => {
       if (f.id === id) {
+        const mergedImgs = imgs || f.imagensImovel || f.fotos || f.images || [];
         return {
           ...f,
           ...updatedFields,
+          imagensImovel: mergedImgs,
+          fotos: mergedImgs,
+          images: mergedImgs,
+          photo: updatedFields.photo || f.photo || mergedImgs[0] || '',
           updatedAt: now,
           updatedBy: profile?.name || 'Usuário Sistema'
         };

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
+import { savePhotosToIndexedDB, getPhotosFromIndexedDB } from '../utils/imageStorage';
 import FichaPrintTemplate from './FichaPrintTemplate';
 import FormCadastroImovel from './FormCadastroImovel';
 import ModalCicloVidaImovel from './ModalCicloVidaImovel';
@@ -269,7 +270,26 @@ export default function FichaVisitaTecnica() {
       console.warn("Erro ao ler araujo_fichas_visita:", e);
     }
 
-    return list;
+    return list.map(item => {
+      const imgs = (Array.isArray(item.imagensImovel) && item.imagensImovel.length > 0)
+        ? item.imagensImovel
+        : (Array.isArray(item.fotos) && item.fotos.length > 0)
+          ? item.fotos
+          : (Array.isArray(item.images) && item.images.length > 0)
+            ? item.images
+            : (Array.isArray(item.details?.fotos) && item.details.fotos.length > 0)
+              ? item.details.fotos
+              : (Array.isArray(item.details?.imagensImovel) && item.details.imagensImovel.length > 0)
+                ? item.details.imagensImovel
+                : (item.photo ? [item.photo] : []);
+      return {
+        ...item,
+        imagensImovel: imgs,
+        fotos: imgs,
+        images: imgs,
+        photo: item.photo || imgs[0] || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=600&auto=format&fit=crop'
+      };
+    });
   }, [fichasVisita, properties, deletedIds]);
 
   // Print state
@@ -462,6 +482,19 @@ export default function FichaVisitaTecnica() {
     setEditingId(ficha.id);
     setFormErrors({});
     setSuccessMsg('');
+
+    const initialPhotos = (Array.isArray(ficha.imagensImovel) && ficha.imagensImovel.length > 0)
+      ? ficha.imagensImovel
+      : (Array.isArray(ficha.fotos) && ficha.fotos.length > 0)
+        ? ficha.fotos
+        : (Array.isArray(ficha.images) && ficha.images.length > 0)
+          ? ficha.images
+          : (Array.isArray(ficha.details?.fotos) && ficha.details.fotos.length > 0)
+            ? ficha.details.fotos
+            : (Array.isArray(ficha.details?.imagensImovel) && ficha.details.imagensImovel.length > 0)
+              ? ficha.details.imagensImovel
+              : (ficha.photo && !ficha.photo.includes('unsplash') ? [ficha.photo] : []);
+
     setFormData({
       nomeFicha: ficha.nomeFicha || (ficha.codigoImovel ? `Ficha ${ficha.codigoImovel}` : ''),
       nomeProprietario: ficha.nomeProprietario || '',
@@ -484,7 +517,7 @@ export default function FichaVisitaTecnica() {
       energiaLigada: ficha.energiaLigada || 'Sim',
       animaisImovel: ficha.animaisImovel || 'Não',
       observacoesImovel: ficha.observacoesImovel || '',
-      imagensImovel: ficha.imagensImovel || [],
+      imagensImovel: initialPhotos,
 
       valorPretendidoAluguel: ficha.valorPretendidoAluguel !== undefined ? ficha.valorPretendidoAluguel : (ficha.valorImovel !== undefined ? ficha.valorImovel : (ficha.precoPretendido || '')),
       valorAvaliadoImobiliaria: ficha.valorAvaliadoImobiliaria !== undefined ? ficha.valorAvaliadoImobiliaria : '',
@@ -510,6 +543,20 @@ export default function FichaVisitaTecnica() {
       origemCaptacao: ficha.origemCaptacao || 'WhatsApp',
       status: ficha.status || 'Aguardando agendamento'
     });
+
+    // Se as fotos não estiverem em memória no momento, busca automaticamente no IndexedDB
+    if (initialPhotos.length === 0 && (ficha.id || ficha.codigoImovel || ficha.code)) {
+      const searchKey = ficha.id || ficha.codigoImovel || ficha.code;
+      getPhotosFromIndexedDB(searchKey).then(idbPhotos => {
+        if (Array.isArray(idbPhotos) && idbPhotos.length > 0) {
+          setFormData(prev => ({
+            ...prev,
+            imagensImovel: idbPhotos
+          }));
+        }
+      });
+    }
+
     setViewMode('form');
   };
 
@@ -554,7 +601,7 @@ export default function FichaVisitaTecnica() {
           const canvas = document.createElement('canvas');
           let width = img.width;
           let height = img.height;
-          const maxDim = 1200;
+          const maxDim = 850;
           if (width > maxDim || height > maxDim) {
             if (width > height) {
               height = Math.round((height * maxDim) / width);
@@ -568,12 +615,19 @@ export default function FichaVisitaTecnica() {
           canvas.height = height;
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
-          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.72);
 
-          setFormData(prev => ({
-            ...prev,
-            imagensImovel: [...(prev.imagensImovel || []), compressedDataUrl]
-          }));
+          setFormData(prev => {
+            const nextList = [...(prev.imagensImovel || []), compressedDataUrl];
+            if (editingId) {
+              savePhotosToIndexedDB(editingId, nextList);
+              if (prev.codigoImovel) savePhotosToIndexedDB(prev.codigoImovel, nextList);
+            }
+            return {
+              ...prev,
+              imagensImovel: nextList
+            };
+          });
 
           // Upload through CRM serverless API /api/upload-image (no browser CORS block)
           fetch('/api/upload-image', {
@@ -678,13 +732,29 @@ export default function FichaVisitaTecnica() {
       return;
     }
 
+    const photos = formData.imagensImovel || [];
+    const mainPhoto = photos.length > 0 ? photos[0] : (formData.photo || '');
+    const cleanFormData = {
+      ...formData,
+      photo: mainPhoto,
+      fotos: photos,
+      images: photos,
+      imagensImovel: photos
+    };
+
     if (editingId) {
-      updateFichaVisita(editingId, formData);
-      setSuccessMsg('Ficha salva');
+      updateFichaVisita(editingId, cleanFormData);
+      savePhotosToIndexedDB(editingId, photos);
+      if (formData.codigoImovel) savePhotosToIndexedDB(formData.codigoImovel, photos);
+      setSuccessMsg('Ficha salva com sucesso!');
     } else {
-      const newFicha = addFichaVisita(formData);
-      setEditingId(newFicha.id);
-      setSuccessMsg('Ficha salva');
+      const newFicha = addFichaVisita(cleanFormData);
+      if (newFicha?.id) {
+        setEditingId(newFicha.id);
+        savePhotosToIndexedDB(newFicha.id, photos);
+        if (newFicha.codigoImovel) savePhotosToIndexedDB(newFicha.codigoImovel, photos);
+      }
+      setSuccessMsg('Ficha salva com sucesso!');
     }
 
     setTimeout(() => {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import ModalPreenchimentoIA from './ModalPreenchimentoIA';
+import { savePhotosToIndexedDB } from '../utils/imageStorage';
 import { 
   applyWatermarkToImage, 
   applyWatermarkToMultipleImages, 
@@ -779,6 +780,12 @@ export default function FormCadastroImovel({ onBack, onSaved }) {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
+
+    if (cleanFotos.length > 0) {
+      savePhotosToIndexedDB(newProperty.id, cleanFotos);
+      savePhotosToIndexedDB(fichaPayload.id, cleanFotos);
+      if (cleanCode) savePhotosToIndexedDB(cleanCode, cleanFotos);
+    }
 
     if (typeof addFichaVisita === 'function') {
       addFichaVisita(fichaPayload);

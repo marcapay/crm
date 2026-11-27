@@ -20,7 +20,7 @@ export const DEFAULT_WATERMARK_CONFIG = {
  * @param {number} quality - Qualidade JPEG (0.1 a 1.0)
  * @returns {Promise<string>}
  */
-export async function compressImageForStorage(imageSrc, maxDim = 900, quality = 0.75) {
+export async function compressImageForStorage(imageSrc, maxDim = 850, quality = 0.72) {
   if (!imageSrc || typeof imageSrc !== 'string') return imageSrc;
   if (!imageSrc.startsWith('data:image/')) return imageSrc;
   if (imageSrc.length < 50000) return imageSrc;

@@ -868,91 +868,11 @@ export default function PainelGestaoPortais() {
                         </div>
                       )}
                     </div>
-
-                    {/* Dados Detalhados do Contrato */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                      <div className="input-group">
-                        <label style={{ fontSize: '0.8rem' }}>Número do Contrato</label>
-                        <input 
-                          type="text" 
-                          className="input-field" 
-                          value={newContractNumber} 
-                          onChange={e => setNewContractNumber(e.target.value)} 
-                          placeholder="Ex: LOC-2026/01" 
-                        />
-                      </div>
-
-                      <div className="input-group">
-                        <label style={{ fontSize: '0.8rem' }}>Dia do Vencimento</label>
-                        <select
-                          className="input-field"
-                          value={newContractDueDate}
-                          onChange={e => setNewContractDueDate(e.target.value)}
-                        >
-                          {[5, 10, 15, 20, 25, 28].map(dia => (
-                            <option key={dia} value={dia}>Todo dia {dia}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                      <div className="input-group">
-                        <label style={{ fontSize: '0.8rem' }}>Início da Vigência</label>
-                        <input 
-                          type="date" 
-                          className="input-field" 
-                          value={newContractStartDate} 
-                          onChange={e => setNewContractStartDate(e.target.value)} 
-                        />
-                      </div>
-
-                      <div className="input-group">
-                        <label style={{ fontSize: '0.8rem' }}>Término da Vigência</label>
-                        <input 
-                          type="date" 
-                          className="input-field" 
-                          value={newContractEndDate} 
-                          onChange={e => setNewContractEndDate(e.target.value)} 
-                        />
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                      <div className="input-group">
-                        <label style={{ fontSize: '0.8rem' }}>Índice de Reajuste</label>
-                        <select
-                          className="input-field"
-                          value={newContractAdjustmentIndex}
-                          onChange={e => setNewContractAdjustmentIndex(e.target.value)}
-                        >
-                          <option value="IGP-M Anual">IGP-M Anual</option>
-                          <option value="IPCA Anual">IPCA Anual</option>
-                          <option value="INPC Anual">INPC Anual</option>
-                          <option value="Fixo / Sem Reajuste">Fixo / Sem Reajuste</option>
-                        </select>
-                      </div>
-
-                      <div className="input-group">
-                        <label style={{ fontSize: '0.8rem' }}>Garantia Locatícia</label>
-                        <select
-                          className="input-field"
-                          value={newContractGuarantee}
-                          onChange={e => setNewContractGuarantee(e.target.value)}
-                        >
-                          <option value="Fiador Solidário">Fiador Solidário</option>
-                          <option value="Caução (Depósito)">Caução (Depósito)</option>
-                          <option value="Seguro Fiança">Seguro Fiança</option>
-                          <option value="Título de Capitalização">Título de Capitalização</option>
-                          <option value="Sem Garantia">Sem Garantia</option>
-                        </select>
-                      </div>
-                    </div>
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '1rem' }}>
                     <button type="button" className="btn btn-secondary" onClick={() => setShowPropModal(false)}>Cancelar</button>
-                    <button type="submit" className="btn btn-primary">Cadastrar Imóvel & Contrato</button>
+                    <button type="submit" className="btn btn-primary">Cadastrar Imóvel</button>
                   </div>
                 </form>
               </div>
